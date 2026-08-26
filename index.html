@@ -3902,8 +3902,13 @@ function rollForwardUnfinishedTasks() {
     }
   }
   const days = Object.keys(records).sort();
-  if (days.length === 0) return;
+  if (days.length === 0) { cleanTodayGhosts(today); return; }
   let carry = [];
+  const carryIds = new Set();
+  const carryTexts = new Set();
+  // 所有过去日期中「已完成/已归档」的任务（用于剔除旧日未完成的重复副本）
+  const resolvedIds = new Set();
+  const resolvedTexts = new Set();
   for (const d of days) {
     const tasks = (records[d].tasks) || [];
     // 跨天后，把前一天已完成的每日任务归档进历史（仅归档一次）
@@ -3914,32 +3919,59 @@ function rollForwardUnfinishedTasks() {
         t.archived = true;
         needSave = true;
       }
+      if (t.done || t.archived) { resolvedIds.add(t.id); resolvedTexts.add(t.text); }
     });
     if (needSave) Store.setDaily(d, records[d]);
-    const unfinished = tasks.filter(t => !t.done).map(t => ({ id: t.id, text: t.text }));
-    const combined = [];
-    const seenIds = new Set();
-    const seenTexts = new Set();
-    [...carry, ...unfinished].forEach(t => {
-      if (seenIds.has(t.id) || seenTexts.has(t.text)) return;
-      combined.push({ id: t.id, text: t.text });
-      seenIds.add(t.id); seenTexts.add(t.text);
-    });
-    carry = combined;
+    // 本日若已完成的任务，从待顺延队列中移除（避免旧日未完成的副本被重复顺延）
+    carry = carry.filter(t => !resolvedIds.has(t.id) && !resolvedTexts.has(t.text));
+    // 本日未完成的任务加入待顺延队列（已完成的任务不再顺延）
+    tasks
+      .filter(t => !t.done && !t.archived && !resolvedIds.has(t.id) && !resolvedTexts.has(t.text))
+      .forEach(t => {
+        if (carryIds.has(t.id) || carryTexts.has(t.text)) return;
+        carry.push({ id: t.id, text: t.text });
+        carryIds.add(t.id); carryTexts.add(t.text);
+      });
   }
-  if (carry.length === 0) return;
-  const todayRec = Store.getDaily(today);
-  if (!todayRec.tasks) todayRec.tasks = [];
-  const tIds = new Set(todayRec.tasks.map(t => t.id));
-  const tTexts = new Set(todayRec.tasks.map(t => t.text));
-  let added = 0;
-  carry.forEach(t => {
-    if (tIds.has(t.id) || tTexts.has(t.text)) return;
-    todayRec.tasks.push({ id: t.id, text: t.text, done: false, rolled: true });
-    tIds.add(t.id); tTexts.add(t.text);
-    added++;
-  });
-  if (added > 0) Store.setDaily(today, todayRec);
+  if (carry.length > 0) {
+    const todayRec = Store.getDaily(today);
+    if (!todayRec.tasks) todayRec.tasks = [];
+    const tIds = new Set(todayRec.tasks.map(t => t.id));
+    const tTexts = new Set(todayRec.tasks.map(t => t.text));
+    let added = 0;
+    carry.forEach(t => {
+      if (tIds.has(t.id) || tTexts.has(t.text)) return;
+      todayRec.tasks.push({ id: t.id, text: t.text, done: false, rolled: true });
+      tIds.add(t.id); tTexts.add(t.text);
+      added++;
+    });
+    if (added > 0) Store.setDaily(today, todayRec);
+  }
+  cleanTodayGhosts(today);
+}
+
+// 清理今天记录中「顺延且未完成」、但其 id/文本已在某过去日期完成归档的任务（旧顺延逻辑遗留的幽灵数据）
+function cleanTodayGhosts(today) {
+  const rec = Store.getDaily(today);
+  if (!rec.tasks || !rec.tasks.length) return;
+  const archivedIds = new Set();
+  const archivedTexts = new Set();
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && k.startsWith('lxk_daily_')) {
+      const dk = k.replace('lxk_daily_', '');
+      if (dk < today) {
+        try {
+          const tasks = (JSON.parse(localStorage.getItem(k)) || {}).tasks || [];
+          tasks.forEach(t => { if (t.done || t.archived) { archivedIds.add(t.id); archivedTexts.add(t.text); } });
+        } catch (e) {}
+      }
+    }
+  }
+  if (archivedIds.size === 0 && archivedTexts.size === 0) return;
+  const before = rec.tasks.length;
+  rec.tasks = rec.tasks.filter(t => !(t.rolled && (archivedIds.has(t.id) || archivedTexts.has(t.text))));
+  if (rec.tasks.length !== before) Store.setDaily(today, rec);
 }
 
 function renderDailyTasks(container) {

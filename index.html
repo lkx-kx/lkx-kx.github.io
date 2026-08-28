@@ -4515,7 +4515,7 @@ function toggleScheduleDone(id, date) {
 }
 
 // ===== 历史任务（已完成任务自动归档） =====
-const _monthUI = { history: null, sleep: null };
+const _monthUI = { history: null, sleep: null, exercise: null };
 function monthUIState(section, latestMonth) {
   if (!_monthUI[section]) {
     _monthUI[section] = new Set();
@@ -5261,10 +5261,17 @@ function renderExercise(container) {
       `).join('')}
     </div>
     <div class="card">
-      <button class="btn btn-primary" style="margin-bottom:16px;" onclick="showAddExerciseModal()">➕ 添加运动记录</button>
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="showAddExerciseModal()">➕ 添加运动记录</button>
+        <button class="btn btn-outline" style="flex:1;" onclick="showExerciseBackfill()">📅 补打卡</button>
+      </div>
       <div id="exercise-list">
         ${renderExerciseList(data, currentExerciseTab)}
       </div>
+    </div>
+    <div class="card">
+      <div style="font-size:14px;font-weight:600;color:var(--text-main);margin-bottom:12px;">📋 运动记录（按月）</div>
+      ${renderExerciseRecords()}
     </div>
   `;
 }
@@ -5348,6 +5355,141 @@ function deleteExercise(tabId, itemId) {
   data.exercise[tabId] = (data.exercise[tabId] || []).filter(i => i.id !== itemId);
   Store.saveDaily(data);
   renderPage('exercise');
+}
+
+// ===== 运动打卡：补打卡 + 月度记录（样式参考睡眠模块） =====
+const EXERCISE_TYPE_META = {
+  cardio: { name: '有氧运动', icon: '🏃' },
+  strength: { name: '无氧运动', icon: '💪' },
+  swimming: { name: '游泳', icon: '🏊' }
+};
+
+// 聚合所有 lxk_daily_* 中的运动记录 → [{day, type, item}]
+function getAllExerciseRecords() {
+  const out = [];
+  Store.getAllDates().forEach(day => {
+    let rec;
+    try { rec = JSON.parse(localStorage.getItem('lxk_daily_' + day)); } catch (e) { return; }
+    if (!rec || !rec.exercise) return;
+    ['cardio', 'strength', 'swimming'].forEach(type => {
+      (rec.exercise[type] || []).forEach(item => out.push({ day, type, item }));
+    });
+  });
+  return out;
+}
+
+// 按月折叠的运动记录卡片（最新月默认展开）
+function renderExerciseRecords() {
+  const all = getAllExerciseRecords();
+  if (all.length === 0) {
+    return `<div class='empty-state'><div class='es-icon'>🏃</div><div>还没有运动记录，动起来吧～</div></div>`;
+  }
+  const byMonth = {};   // m -> [day,...]
+  const byDay = {};     // day -> [{type,item},...]
+  all.forEach(r => {
+    const m = r.day.slice(0, 7);
+    (byMonth[m] = byMonth[m] || []).push(r.day);
+    (byDay[r.day] = byDay[r.day] || []).push(r);
+  });
+  const months = Object.keys(byMonth).sort().reverse();
+  const openSet = monthUIState('exercise', months[0]);
+  return months.map(m => {
+    // 去重 day 列表
+    const days = [...new Set(byMonth[m])].sort().reverse();
+    const totalMin = days.reduce((s, day) => s + byDay[day].reduce((ss, r) => ss + Number(r.item.duration || 0), 0), 0);
+    const totalCal = days.reduce((s, day) => s + byDay[day].reduce((ss, r) => ss + Number(r.item.calories || 0), 0), 0);
+    return `<div class="month-card ${openSet.has(m) ? 'open' : ''}" id="mc-exercise-${m}">
+      <div class="month-card-header" onclick="toggleMonthCard('exercise','${m}')">
+        <div><span class="month-card-title">${fmtMonthLabel(m)}</span><span class="month-card-count">${days.length} 天 · ${totalMin} 分钟 · ${totalCal} 千卡</span></div>
+        <span class="month-arrow">▸</span>
+      </div>
+      <div class="month-card-body">
+        ${days.map(day => byDay[day].map(r => {
+          const meta = EXERCISE_TYPE_META[r.type];
+          return `<div class='exercise-record'>
+            <span class='er-type'>${meta.icon}</span>
+            <div class='er-info'>
+              <div class='er-duration'>${day} <span style='color:var(--text-light)'>${meta.name} · ⏱️ ${r.item.duration} 分钟 · 🔥 ${r.item.calories} 千卡</span></div>
+            </div>
+            <button class='btn btn-danger btn-sm' data-day='${r.day}' data-type='${r.type}' data-id='${r.item.id}' onclick='deleteExerciseFromRecord(this)'>删除</button>
+          </div>`;
+        }).join('')).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// 从某天的记录里删除一条运动记录（补打卡/历史删除通用）
+function deleteExerciseFromRecord(btn) {
+  const day = btn.getAttribute('data-day');
+  const type = btn.getAttribute('data-type');
+  const id = btn.getAttribute('data-id');
+  const rec = Store.getDaily(day);
+  const item = (rec.exercise[type] || []).find(i => i.id === id);
+  if (item) {
+    const cum = Store.getCumulative();
+    cum.totalExerciseMinutes = Math.max(0, cum.totalExerciseMinutes - Number(item.duration || 0));
+    cum.totalCalories = Math.max(0, cum.totalCalories - Number(item.calories || 0));
+    cum.exerciseByType[type] = Math.max(0, (cum.exerciseByType[type] || 0) - Number(item.duration || 0));
+    Store.saveCumulative(cum);
+  }
+  rec.exercise[type] = (rec.exercise[type] || []).filter(i => i.id !== id);
+  Store.saveDaily(day, rec);
+  renderPage('exercise');
+}
+
+function showExerciseBackfill() {
+  const today = Store.todayKey();
+  showModal(`
+    <div class='modal-title'>📅 补打运动卡</div>
+    <div style='font-size:12px;color:var(--text-sub);margin-bottom:12px;'>可选择过去的日期补录运动记录，记录会归入所选日历日，并计入当月汇总与累计统计。若当天还没有其它数据，会自动为那天建立一条记录。</div>
+    <div class='form-group'>
+      <label>运动日期</label>
+      ${datePickerHtml('ex-bf-date', today, '选择日期')}
+    </div>
+    <div class='form-group'>
+      <label>运动类型</label>
+      <select class='input' id='ex-bf-type'>
+        <option value='cardio'>🏃 有氧运动</option>
+        <option value='strength'>💪 无氧运动</option>
+        <option value='swimming'>🏊 游泳</option>
+      </select>
+    </div>
+    <div class='form-group'>
+      <label>运动时长（分钟）</label>
+      <input type='number' class='input' id='ex-bf-duration' placeholder='如：30'>
+    </div>
+    <div class='form-group'>
+      <label>消耗热量（千卡）</label>
+      <input type='number' class='input' id='ex-bf-calories' placeholder='如：200'>
+    </div>
+    <div class='modal-actions'>
+      <button class='btn btn-outline' onclick='closeModal()'>取消</button>
+      <button class='btn btn-primary' onclick='exerciseBackfill()'>补打</button>
+    </div>
+  `);
+}
+
+function exerciseBackfill() {
+  const date = document.getElementById('ex-bf-date').value;
+  const type = document.getElementById('ex-bf-type').value;
+  const duration = Number(document.getElementById('ex-bf-duration').value) || 0;
+  const calories = Number(document.getElementById('ex-bf-calories').value) || 0;
+  if (!date) { showToast('请选择日期'); return; }
+  if (duration <= 0 && calories <= 0) { showToast('请输入有效数据'); return; }
+  const rec = Store.getDaily(date);
+  if (!rec.exercise) rec.exercise = { cardio: [], strength: [], swimming: [] };
+  rec.exercise[type] = rec.exercise[type] || [];
+  rec.exercise[type].push({ id: uid(), duration, calories });
+  Store.saveDaily(date, rec);
+  const cum = Store.getCumulative();
+  cum.totalExerciseMinutes += duration;
+  cum.totalCalories += calories;
+  cum.exerciseByType[type] = (cum.exerciseByType[type] || 0) + duration;
+  Store.saveCumulative(cum);
+  closeModal();
+  renderPage('exercise');
+  showToast('已补打 ' + date + ' 的运动记录 💪');
 }
 
 // ====================================================================

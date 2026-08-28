@@ -1047,6 +1047,15 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   color: var(--accent-orange);
 }
 
+.er-group-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-sub);
+  margin: 12px 0 8px;
+  padding-left: 2px;
+}
+.er-group-title:first-child { margin-top: 0; }
+
 /* ============ LEARNING MODULES ============ */
 .learning-modules {
   display: grid;
@@ -5207,32 +5216,31 @@ function fileToDataURL(file) {
 // ====================================================================
 // EXERCISE
 // ====================================================================
-let currentExerciseTab = 'cardio';
+const EXERCISE_TYPES = [
+  { id: 'cardio', name: '有氧运动', icon: '🏃' },
+  { id: 'strength', name: '无氧运动', icon: '💪' },
+  { id: 'swimming', name: '游泳', icon: '🏊' }
+];
 
 function renderExercise(container) {
   const data = Store.getDaily();
   const cum = Store.getCumulative();
-  const tabConfig = [
-    { id: 'cardio', name: '有氧运动', icon: '🏃', color: '#E8A0BF' },
-    { id: 'strength', name: '无氧运动', icon: '💪', color: '#95C99C' },
-    { id: 'swimming', name: '游泳', icon: '🏊', color: '#A3C6E0' }
-  ];
+  const exTypes = data.exercise || {};
 
-  const todayMinutes = data.exercise.cardio.reduce((s,r)=>s+Number(r.duration||0),0) +
-    data.exercise.strength.reduce((s,r)=>s+Number(r.duration||0),0) +
-    data.exercise.swimming.reduce((s,r)=>s+Number(r.duration||0),0);
-  const todayCalories = data.exercise.cardio.reduce((s,r)=>s+Number(r.calories||0),0) +
-    data.exercise.strength.reduce((s,r)=>s+Number(r.calories||0),0) +
-    data.exercise.swimming.reduce((s,r)=>s+Number(r.calories||0),0);
+  const todayMinutes = Object.keys(exTypes).reduce((s, k) =>
+    s + (exTypes[k] || []).reduce((ss, r) => ss + Number(r.duration || 0), 0), 0);
+  const todayCalories = Object.keys(exTypes).reduce((s, k) =>
+    s + (exTypes[k] || []).reduce((ss, r) => ss + Number(r.calories || 0), 0), 0);
 
   container.innerHTML = `
     <div class="page-header">
       <span class="ph-icon">${DOG_ICONS['exercise']}</span>
       <span class="ph-title">运动打卡</span>
-      <span class="ph-desc">有氧 · 无氧 · 游泳</span>
+      <span class="ph-desc">有氧 · 无氧 · 游泳 · 自定义</span>
     </div>
-    <div class="card">
+    <div class="card" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
       <button class="btn btn-pink mini-checkin" onclick="doExerciseCheckin()">${data.exerciseCheckin ? '✅ 已运动打卡' : '🏃 运动打卡'}</button>
+      <button class="btn btn-pink mini-checkin" onclick="showExerciseBackfill()">📅 补打卡</button>
     </div>
     <div class="card" style="margin-bottom:20px;">
       <div style="display:flex;gap:20px;">
@@ -5253,20 +5261,12 @@ function renderExercise(container) {
         </div>
       </div>
     </div>
-    <div class="exercise-tabs">
-      ${tabConfig.map(t => `
-        <div class="exercise-tab ${currentExerciseTab === t.id ? 'active' : ''}" onclick="switchExerciseTab('${t.id}')">
-          ${t.icon} ${t.name}
-        </div>
-      `).join('')}
-    </div>
     <div class="card">
-      <div style="display:flex;gap:10px;margin-bottom:16px;">
-        <button class="btn btn-primary" style="flex:1;" onclick="showAddExerciseModal()">➕ 添加运动记录</button>
-        <button class="btn btn-outline" style="flex:1;" onclick="showExerciseBackfill()">📅 补打卡</button>
+      <div style="margin-bottom:16px;">
+        <button class="btn btn-primary" style="width:100%;" onclick="showAddExerciseModal()">➕ 添加运动记录</button>
       </div>
       <div id="exercise-list">
-        ${renderExerciseList(data, currentExerciseTab)}
+        ${renderExerciseList(data)}
       </div>
     </div>
     <div class="card">
@@ -5276,40 +5276,56 @@ function renderExercise(container) {
   `;
 }
 
-function renderExerciseList(data, tabId) {
-  const list = data.exercise[tabId] || [];
-  const icons = { cardio: '🏃', strength: '💪', swimming: '🏊' };
-  if (list.length === 0) {
+function renderExerciseList(data) {
+  const exTypes = data.exercise || {};
+  const items = [];
+  Object.keys(exTypes).forEach(typeId => {
+    (exTypes[typeId] || []).forEach(r => {
+      const meta = exerciseItemMeta(typeId, r);
+      items.push({ typeId, item: r, name: meta.name, icon: meta.icon });
+    });
+  });
+  if (items.length === 0) {
     return `
       <div class="empty-state">
-        <div class="es-icon">${icons[tabId]}</div>
+        <div class="es-icon">🏃</div>
         <div>还没有运动记录，动起来吧～</div>
       </div>
     `;
   }
-  return list.map(r => `
-    <div class="exercise-record">
-      <span class="er-type">${icons[tabId]}</span>
-      <div class="er-info">
-        <div class="er-duration">⏱️ ${r.duration} 分钟</div>
-        <div class="er-cal">🔥 ${r.calories} 千卡</div>
-      </div>
-      <div class="er-calories">${r.calories}</div>
-      <span style="font-size:12px;color:var(--text-light);">千卡</span>
-      <button class="btn btn-danger btn-sm" onclick="deleteExercise('${tabId}','${r.id}')">删除</button>
-    </div>
+  const groups = {};
+  items.forEach(it => { (groups[it.name] = groups[it.name] || []).push(it); });
+  return Object.keys(groups).map(name => `
+    <div class="er-group-title">${groups[name][0].icon} ${escHtml(name)}</div>
+    ${groups[name].map(({ typeId, item }) => `
+      <div class="exercise-record">
+        <span class="er-type">${groups[name][0].icon}</span>
+        <div class="er-info">
+          <div class="er-duration">⏱️ ${item.duration} 分钟</div>
+          <div class="er-cal">🔥 ${item.calories} 千卡</div>
+        </div>
+        <div class="er-calories">${item.calories}</div>
+        <span style="font-size:12px;color:var(--text-light);">千卡</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteExercise('${typeId}','${item.id}')">删除</button>
+      </div>`).join('')}
   `).join('');
 }
 
-function switchExerciseTab(tabId) {
-  currentExerciseTab = tabId;
-  renderPage('exercise');
-}
-
 function showAddExerciseModal() {
-  const tabNames = { cardio: '有氧运动', strength: '无氧运动', swimming: '游泳' };
+  const opts = EXERCISE_TYPES.map(t => `<option value='${t.id}'>${t.icon} ${t.name}</option>`).join('') +
+    `<option value='custom'>➕ 自定义</option>`;
   showModal(`
-    <div class="modal-title">➕ 添加运动记录 - ${tabNames[currentExerciseTab]}</div>
+    <div class="modal-title">➕ 添加运动记录</div>
+    <div class="form-group">
+      <label>运动类型</label>
+      <select class="input" id="ex-type" onchange="onExTypeChange()">
+        ${opts}
+      </select>
+    </div>
+    <div class="form-group" id="ex-custom-wrap" style="display:none;">
+      <label>自定义运动名称</label>
+      <input type="text" class="input" id="ex-custom-name" placeholder="如：瑜伽、普拉提">
+    </div>
     <div class="form-group">
       <label>运动时长（分钟）</label>
       <input type="number" class="input" id="ex-duration" placeholder="如：30" autofocus>
@@ -5325,17 +5341,36 @@ function showAddExerciseModal() {
   `);
 }
 
+function onExTypeChange() {
+  const sel = document.getElementById('ex-type');
+  const wrap = document.getElementById('ex-custom-wrap');
+  if (sel && wrap) wrap.style.display = sel.value === 'custom' ? 'block' : 'none';
+}
+
 function addExercise() {
+  const typeSel = document.getElementById('ex-type').value;
+  let typeId, typeName, typeIcon;
+  if (typeSel === 'custom') {
+    const cname = (document.getElementById('ex-custom-name').value || '').trim();
+    if (!cname) { showToast('请输入自定义运动名称'); return; }
+    typeId = 'c_' + uid();
+    typeName = cname;
+    typeIcon = '🏋️';
+  } else {
+    const meta = EXERCISE_TYPE_META[typeSel];
+    typeId = typeSel; typeName = meta.name; typeIcon = meta.icon;
+  }
   const duration = Number(document.getElementById('ex-duration').value) || 0;
   const calories = Number(document.getElementById('ex-calories').value) || 0;
   if (duration <= 0 && calories <= 0) { showToast('请输入有效数据'); return; }
   const data = Store.getDaily();
-  data.exercise[currentExerciseTab].push({ id: uid(), duration, calories });
+  data.exercise[typeId] = data.exercise[typeId] || [];
+  data.exercise[typeId].push({ id: uid(), duration, calories, typeName, typeIcon });
   Store.saveDaily(data);
   const cum = Store.getCumulative();
   cum.totalExerciseMinutes += duration;
   cum.totalCalories += calories;
-  cum.exerciseByType[currentExerciseTab] = (cum.exerciseByType[currentExerciseTab] || 0) + duration;
+  cum.exerciseByType[typeId] = (cum.exerciseByType[typeId] || 0) + duration;
   Store.saveCumulative(cum);
   closeModal();
   renderPage('exercise');
@@ -5364,6 +5399,12 @@ const EXERCISE_TYPE_META = {
   swimming: { name: '游泳', icon: '🏊' }
 };
 
+// 取得某条运动记录（兼容旧数据无 typeName 的情况）的展示名称与图标
+function exerciseItemMeta(typeId, item) {
+  if (item && item.typeName) return { name: item.typeName, icon: item.typeIcon || '🏋️' };
+  return EXERCISE_TYPE_META[typeId] || { name: typeId, icon: '🏋️' };
+}
+
 // 聚合所有 lxk_daily_* 中的运动记录 → [{day, type, item}]
 function getAllExerciseRecords() {
   const out = [];
@@ -5371,7 +5412,7 @@ function getAllExerciseRecords() {
     let rec;
     try { rec = JSON.parse(localStorage.getItem('lxk_daily_' + day)); } catch (e) { return; }
     if (!rec || !rec.exercise) return;
-    ['cardio', 'strength', 'swimming'].forEach(type => {
+    Object.keys(rec.exercise).forEach(type => {
       (rec.exercise[type] || []).forEach(item => out.push({ day, type, item }));
     });
   });
@@ -5405,11 +5446,11 @@ function renderExerciseRecords() {
       </div>
       <div class="month-card-body">
         ${days.map(day => byDay[day].map(r => {
-          const meta = EXERCISE_TYPE_META[r.type];
+          const meta = exerciseItemMeta(r.type, r.item);
           return `<div class='exercise-record'>
             <span class='er-type'>${meta.icon}</span>
             <div class='er-info'>
-              <div class='er-duration'>${day} <span style='color:var(--text-light)'>${meta.name} · ⏱️ ${r.item.duration} 分钟 · 🔥 ${r.item.calories} 千卡</span></div>
+              <div class='er-duration'>${day} <span style='color:var(--text-light)'>${escHtml(meta.name)} · ⏱️ ${r.item.duration} 分钟 · 🔥 ${r.item.calories} 千卡</span></div>
             </div>
             <button class='btn btn-danger btn-sm' data-day='${r.day}' data-type='${r.type}' data-id='${r.item.id}' onclick='deleteExerciseFromRecord(this)'>删除</button>
           </div>`;
@@ -5449,11 +5490,16 @@ function showExerciseBackfill() {
     </div>
     <div class='form-group'>
       <label>运动类型</label>
-      <select class='input' id='ex-bf-type'>
+      <select class='input' id='ex-bf-type' onchange='onExBfTypeChange()'>
         <option value='cardio'>🏃 有氧运动</option>
         <option value='strength'>💪 无氧运动</option>
         <option value='swimming'>🏊 游泳</option>
+        <option value='custom'>➕ 自定义</option>
       </select>
+    </div>
+    <div class='form-group' id='ex-bf-custom-wrap' style='display:none;'>
+      <label>自定义运动名称</label>
+      <input type='text' class='input' id='ex-bf-custom-name' placeholder='如：瑜伽、普拉提'>
     </div>
     <div class='form-group'>
       <label>运动时长（分钟）</label>
@@ -5472,24 +5518,39 @@ function showExerciseBackfill() {
 
 function exerciseBackfill() {
   const date = document.getElementById('ex-bf-date').value;
-  const type = document.getElementById('ex-bf-type').value;
+  const typeSel = document.getElementById('ex-bf-type').value;
+  let typeId, typeName, typeIcon;
+  if (typeSel === 'custom') {
+    const cname = (document.getElementById('ex-bf-custom-name').value || '').trim();
+    if (!cname) { showToast('请输入自定义运动名称'); return; }
+    typeId = 'c_' + uid(); typeName = cname; typeIcon = '🏋️';
+  } else {
+    const meta = EXERCISE_TYPE_META[typeSel];
+    typeId = typeSel; typeName = meta.name; typeIcon = meta.icon;
+  }
   const duration = Number(document.getElementById('ex-bf-duration').value) || 0;
   const calories = Number(document.getElementById('ex-bf-calories').value) || 0;
   if (!date) { showToast('请选择日期'); return; }
   if (duration <= 0 && calories <= 0) { showToast('请输入有效数据'); return; }
   const rec = Store.getDaily(date);
   if (!rec.exercise) rec.exercise = { cardio: [], strength: [], swimming: [] };
-  rec.exercise[type] = rec.exercise[type] || [];
-  rec.exercise[type].push({ id: uid(), duration, calories });
+  rec.exercise[typeId] = rec.exercise[typeId] || [];
+  rec.exercise[typeId].push({ id: uid(), duration, calories, typeName, typeIcon });
   Store.saveDaily(date, rec);
   const cum = Store.getCumulative();
   cum.totalExerciseMinutes += duration;
   cum.totalCalories += calories;
-  cum.exerciseByType[type] = (cum.exerciseByType[type] || 0) + duration;
+  cum.exerciseByType[typeId] = (cum.exerciseByType[typeId] || 0) + duration;
   Store.saveCumulative(cum);
   closeModal();
   renderPage('exercise');
   showToast('已补打 ' + date + ' 的运动记录 💪');
+}
+
+function onExBfTypeChange() {
+  const sel = document.getElementById('ex-bf-type');
+  const wrap = document.getElementById('ex-bf-custom-wrap');
+  if (sel && wrap) wrap.style.display = sel.value === 'custom' ? 'block' : 'none';
 }
 
 // ====================================================================

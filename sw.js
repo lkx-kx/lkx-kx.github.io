@@ -3,7 +3,7 @@
  * 策略：HTML/导航请求走 network-first（永远先拉最新版，成功即返回并更新缓存，
  *       离线才回退缓存）；其他静态资源走 cache-first。
  */
-const CACHE = 'lxk-workbench-v1';
+const CACHE = 'lxk-workbench-v2';
 const APP_SHELL = ['./', './index.html'];
 
 self.addEventListener('install', (event) => {

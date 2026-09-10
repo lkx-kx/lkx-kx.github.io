@@ -1910,6 +1910,16 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   border-color: var(--accent-purple);
 }
 
+.cal-cell.cal-affair {
+  background: #FFF4E6;
+  border-color: #F2C078;
+}
+
+.cal-cell.cal-other {
+  background: #EEF1F6;
+  border-color: #AEB9CC;
+}
+
 .cal-cell.cal-duty {
   background: #FFF1E0;
   border-color: var(--accent-caramel);
@@ -2000,6 +2010,8 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .leave-card.lc-annual { border-top-color: var(--glass-border); }
 .leave-card.lc-comp { border-top-color: var(--glass-border); }
 .leave-card.lc-sick { border-top-color: var(--glass-border); }
+.leave-card.lc-affair { border-top-color: #F2C078; }
+.leave-card.lc-other { border-top-color: #AEB9CC; }
 
 .leave-card .lc-value {
   font-size: 24px;
@@ -2568,9 +2580,9 @@ const Store = {
     return { start: this.annualBlockYear() + '-01-01', end: this.annualExpiryDate() };
   },
 
-  // Count used leave days across all months
+  // Count used leave days across all months (fractional & hour-aware)
   getLeaveUsed() {
-    let annual = 0, comp = 0, sick = 0, checkins = 0;
+    let annual = 0, comp = 0, sick = 0, affair = 0, other = 0, checkins = 0;
     const aw = this.annualWindow();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -2580,14 +2592,16 @@ const Store = {
         for (const day in monthData) {
           const r = monthData[day];
           const fullDate = ym + '-' + day; // 'YYYY-MM-DD'
-          if (r.type === 'annual') { if (fullDate >= aw.start && fullDate <= aw.end) annual++; }
-          if (r.type === 'comp') comp++;
-          if (r.type === 'sick') sick++;
+          if (r.type === 'annual') { if (fullDate >= aw.start && fullDate <= aw.end) annual += leaveDaysOf(r); }
+          if (r.type === 'comp') comp += leaveDaysOf(r);
+          if (r.type === 'sick') sick += leaveDaysOf(r);
+          if (r.type === 'affair') affair += leaveDaysOf(r);
+          if (r.type === 'other') other += leaveDaysOf(r);
           if (r.type === 'checkin') checkins++;
         }
       }
     }
-    return { annual, comp, sick, checkins };
+    return { annual, comp, sick, affair, other, checkins };
   },
 
   // ===== Todos (long-term, not daily-reset) =====
@@ -3361,6 +3375,50 @@ function getDayKind(y, m, d) {
 
 let calYear, calMonth;
 let modalLeaveType = 'checkin';
+let modalLeaveUnit = 'day';
+let modalLeaveAmount = 1;
+
+// 请假类类型（区别于 打卡/值班/补班）
+function isLeaveType(t) { return ['sick', 'annual', 'comp', 'affair', 'other'].includes(t); }
+
+// 折算为「天」天数：无记录按旧逻辑记 1 天；按小时则 /8
+function leaveDaysOf(rec) {
+  if (!rec || !rec.leaveUnit) return 1;
+  if (rec.leaveUnit === 'hour') return (Number(rec.leaveAmount) || 0) / 8;
+  return Number(rec.leaveAmount) || 0;
+}
+
+// 时长文案（用于今日状态/悬浮提示）
+function leaveDurationLabel(rec) {
+  if (!rec || !rec.leaveUnit) return '';
+  if (rec.leaveUnit === 'hour') {
+    const h = Number(rec.leaveAmount) || 0;
+    return ' · ' + (h % 1 === 0 ? h : h.toFixed(1)) + '小时';
+  }
+  const d = Number(rec.leaveAmount) || 0;
+  return ' · ' + (d % 1 === 0 ? d : d.toFixed(1)) + '天';
+}
+
+// 日历格状态文案（含时长；自定义类别显示具体名称）
+function leaveCellStatus(rec) {
+  const dur = (rec.leaveUnit === 'hour')
+    ? ((Number(rec.leaveAmount) || 0) + 'h')
+    : ((Number(rec.leaveAmount) || 0) + '天');
+  switch (rec.type) {
+    case 'sick':   return '🤒病假' + (rec.leaveUnit ? dur : '');
+    case 'annual': return '🏖年假' + (rec.leaveUnit ? dur : '');
+    case 'comp':   return '💤调休' + (rec.leaveUnit ? dur : '');
+    case 'affair': return '📝事假' + (rec.leaveUnit ? dur : '');
+    case 'other':  return '📌' + (rec.leaveCategory || '其他') + (rec.leaveUnit ? dur : '');
+  }
+  return '';
+}
+
+// 余额/统计数字格式化（去掉多余的 .0）
+function fmtLeaveDays(n) {
+  n = Number(n) || 0;
+  return (n % 1 === 0) ? String(n) : n.toFixed(1);
+}
 
 // 日程：重复 / 全天 辅助
 function schedOccursOn(s, date) {
@@ -3465,9 +3523,11 @@ function renderWorkCheckin(container) {
 
     if (rec) {
       if (rec.type === 'checkin') { cls += ' cal-checked'; status = (rec.checkin || '--:--') + (rec.checkout ? '<br>→' + rec.checkout : ''); }
-      else if (rec.type === 'sick') { cls += ' cal-sick'; status = '🤒病假'; }
-      else if (rec.type === 'annual') { cls += ' cal-annual'; status = '🏖年假'; }
-      else if (rec.type === 'comp') { cls += ' cal-comp'; status = '💤调休'; }
+      else if (rec.type === 'sick') { cls += ' cal-sick'; status = leaveCellStatus(rec); }
+      else if (rec.type === 'annual') { cls += ' cal-annual'; status = leaveCellStatus(rec); }
+      else if (rec.type === 'comp') { cls += ' cal-comp'; status = leaveCellStatus(rec); }
+      else if (rec.type === 'affair') { cls += ' cal-affair'; status = leaveCellStatus(rec); }
+      else if (rec.type === 'other') { cls += ' cal-other'; status = leaveCellStatus(rec); }
       else if (rec.type === 'duty') { cls += ' cal-duty'; status = '🔆值班' + (rec.checkin ? '<br>' + rec.checkin + (rec.checkout ? '→' + rec.checkout : '') : ''); }
       else if (rec.type === 'makeup') { cls += ' cal-makeup'; status = '🛠补班' + (rec.checkin ? '<br>' + rec.checkin + (rec.checkout ? '→' + rec.checkout : '') : ''); }
     } else if (isMakeup) {
@@ -3553,6 +3613,16 @@ function renderWorkCheckin(container) {
           <div class="lc-label">🤒 病假天数</div>
           <div class="lc-sub">今年已用 ${leaveUsed.sick} 天</div>
         </div>
+        <div class="leave-card lc-affair">
+          <div class="lc-value">${fmtLeaveDays(leaveUsed.affair)}</div>
+          <div class="lc-label">📝 事假天数</div>
+          <div class="lc-sub">今年已用 ${fmtLeaveDays(leaveUsed.affair)} 天</div>
+        </div>
+        <div class="leave-card lc-other">
+          <div class="lc-value">${fmtLeaveDays(leaveUsed.other)}</div>
+          <div class="lc-label">📌 其他请假</div>
+          <div class="lc-sub">今年已用 ${fmtLeaveDays(leaveUsed.other)} 天</div>
+        </div>
       </div>
     </div>
 
@@ -3571,6 +3641,8 @@ function renderWorkCheckin(container) {
       <div class="cal-legend">
         <div class="legend-item"><span class="legend-dot" style="background:#E8F5E9;border:1px solid var(--accent-green);"></span>已打卡</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FFF0F0;border:1px solid #F0B0B0;"></span>病假</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#FFF4E6;border:1px solid #F2C078;"></span>事假</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#EEF1F6;border:1px solid #AEB9CC;"></span>其他请假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#E3F2FD;border:1px solid var(--accent-blue);"></span>年假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#F3E5F5;border:1px solid var(--accent-purple);"></span>调休</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FFF1E0;border:1px solid var(--accent-caramel);"></span>值班</div>
@@ -3628,10 +3700,13 @@ function todayPunchKey() {
 }
 function leaveStatusText(rec) {
   if (!rec || !rec.type) return '';
+  const dur = leaveDurationLabel(rec);
   switch (rec.type) {
-    case 'sick':   return '<span style="color:#C68888;font-size:16px;">🤒 今日病假</span>';
-    case 'annual': return '<span style="color:var(--accent-blue);font-size:16px;">🏖 今日年假</span>';
-    case 'comp':   return '<span style="color:var(--accent-purple);font-size:16px;">💤 今日调休</span>';
+    case 'sick':   return '<span style="color:#C68888;font-size:16px;">🤒 今日病假' + dur + '</span>';
+    case 'annual': return '<span style="color:var(--accent-blue);font-size:16px;">🏖 今日年假' + dur + '</span>';
+    case 'comp':   return '<span style="color:var(--accent-purple);font-size:16px;">💤 今日调休' + dur + '</span>';
+    case 'affair': return '<span style="color:var(--accent-caramel);font-size:16px;">📝 今日事假' + dur + '</span>';
+    case 'other':  return '<span style="color:#7A8AA0;font-size:16px;">📌 今日' + (rec.leaveCategory || '其他') + dur + '</span>';
     case 'duty':   return '<span style="color:var(--accent-caramel);font-size:16px;">🔆 今日值班</span>';
     case 'makeup': return '<span style="color:var(--accent-caramel);font-size:16px;">🛠 今日补班</span>';
     default: return '';
@@ -3699,15 +3774,18 @@ function openDateModal(dayStr) {
   const att = Store.getAttendance(monthKey);
   const rec = att[dayStr] || {};
   const kind = getDayKind(calYear, calMonth, parseInt(dayStr));
-  const TYPE_LABEL = { checkin: '✅ 打卡', sick: '🤒 病假', annual: '🏖 年假', comp: '💤 调休', duty: '🔆 值班', makeup: '🛠 补班' };
+  const TYPE_LABEL = { checkin: '✅ 打卡', sick: '🤒 病假', annual: '🏖 年假', comp: '💤 调休', duty: '🔆 值班', makeup: '🛠 补班', affair: '📝 事假', other: '📌 其他' };
   // 不同日期类型给出不同的打卡选项
   let baseBtns;
-  if (kind === 'work' || kind === 'makeup') baseBtns = [['checkin','✅ 打卡'],['sick','🤒 病假'],['annual','🏖 年假'],['comp','💤 调休']];
-  else if (kind === 'weekend') baseBtns = [['annual','🏖 年假'],['comp','💤 调休'],['duty','🔆 值班'],['makeup','🛠 补班']];
+  if (kind === 'work' || kind === 'makeup') baseBtns = [['checkin','✅ 打卡'],['sick','🤒 病假'],['annual','🏖 年假'],['comp','💤 调休'],['affair','📝 事假'],['other','📌 其他']];
+  else if (kind === 'weekend') baseBtns = [['annual','🏖 年假'],['comp','💤 调休'],['affair','📝 事假'],['other','📌 其他'],['duty','🔆 值班'],['makeup','🛠 补班']];
   else baseBtns = [['duty','🔆 值班']]; // 法定节假日：默认休息，可值班
   // 若该天已有记录且类型不在当前选项中（如旧数据），补一个按钮避免丢失
   if (rec.type && !baseBtns.some(b => b[0] === rec.type)) baseBtns = baseBtns.concat([[rec.type, TYPE_LABEL[rec.type] || rec.type]]);
   modalLeaveType = rec.type || baseBtns[0][0];
+  modalLeaveUnit = rec.leaveUnit || 'day';
+  if (rec.leaveAmount != null && rec.leaveAmount !== '') modalLeaveAmount = Number(rec.leaveAmount);
+  else modalLeaveAmount = (modalLeaveUnit === 'hour') ? 4 : 1;
   const leaveBtnsHtml = baseBtns.map(([t, label]) =>
     `<button class="leave-btn ${modalLeaveType===t?'active':''}" onclick="selectLeaveType('${t}')">${label}</button>`
   ).join('');
@@ -3716,7 +3794,7 @@ function openDateModal(dayStr) {
     <div class="modal-title">${calYear}年${calMonth + 1}月${parseInt(dayStr)}日${kind==='weekend'?' · 周末':kind==='holiday'?' · 法定节假日':kind==='makeup'?' · 调休补班':''}</div>
     <div class="form-group">
       <label>类型</label>
-      <div class="leave-options">
+      <div class="leave-options" id="leave-type-options">
         ${leaveBtnsHtml}
       </div>
     </div>
@@ -3728,6 +3806,23 @@ function openDateModal(dayStr) {
       <div class="form-group">
         <label>下班时间（选填，默认 ${getWorkDefaults().end}）</label>
         ${timePickerHtml('modal-checkout', rec.checkout || getWorkDefaults().end, '选择时间')}
+      </div>
+    </div>
+    <div id="leave-duration" style="${isLeaveType(modalLeaveType)?'':'display:none'}">
+      <div class="form-group">
+        <label>请假时长</label>
+        <div class="leave-options">
+          <button class="leave-btn ${modalLeaveUnit==='day'?'active':''}" onclick="selectLeaveUnit('day')">📅 按天</button>
+          <button class="leave-btn ${modalLeaveUnit==='hour'?'active':''}" onclick="selectLeaveUnit('hour')">⏰ 按小时</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label id="leave-amt-label">${modalLeaveUnit==='hour'?'小时数（支持 0.5）':'天数（支持 0.5 天）'}</label>
+        <input type="number" class="input" id="modal-leave-amt" value="${modalLeaveAmount}" step="0.5" min="0.5">
+      </div>
+      <div class="form-group" id="leave-cat-wrap" style="${modalLeaveType==='other'?'':'display:none'}">
+        <label>请假类别（自定义）</label>
+        <input type="text" class="input" id="modal-leave-cat" value="${escHtml(rec.leaveCategory||'')}" placeholder="如：婚假、探亲假、陪产假…">
       </div>
     </div>
     <div class="form-group">
@@ -3755,10 +3850,24 @@ function openDateModal(dayStr) {
 
 function selectLeaveType(type) {
   modalLeaveType = type;
-  document.querySelectorAll('.leave-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('#leave-type-options .leave-btn').forEach(btn => btn.classList.remove('active'));
   event.target.closest('.leave-btn').classList.add('active');
   const timesDiv = document.getElementById('checkin-times');
   if (timesDiv) timesDiv.style.display = (type === 'checkin' || type === 'duty' || type === 'makeup') ? '' : 'none';
+  const durDiv = document.getElementById('leave-duration');
+  if (durDiv) durDiv.style.display = isLeaveType(type) ? '' : 'none';
+  const catWrap = document.getElementById('leave-cat-wrap');
+  if (catWrap) catWrap.style.display = (type === 'other') ? '' : 'none';
+}
+
+function selectLeaveUnit(u) {
+  modalLeaveUnit = u;
+  document.querySelectorAll('#leave-duration .leave-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.closest('.leave-btn').classList.add('active');
+  const lbl = document.getElementById('leave-amt-label');
+  if (lbl) lbl.textContent = (u === 'hour' ? '小时数（支持 0.5）' : '天数（支持 0.5 天）');
+  const inp = document.getElementById('modal-leave-amt');
+  if (inp && (inp.value === '' || Number(inp.value) < 0.5)) inp.value = (u === 'hour' ? 4 : 1);
 }
 
 function saveAttendance(dayStr) {
@@ -3768,6 +3877,15 @@ function saveAttendance(dayStr) {
   const wasDuty = att[dayStr] && att[dayStr].type === 'duty';
 
   att[dayStr] = { type: modalLeaveType };
+  if (isLeaveType(modalLeaveType)) {
+    const u = modalLeaveUnit || 'day';
+    const amt = Number(document.getElementById('modal-leave-amt').value) || (u === 'hour' ? 4 : 1);
+    att[dayStr].leaveUnit = u;
+    att[dayStr].leaveAmount = amt;
+    if (modalLeaveType === 'other') {
+      att[dayStr].leaveCategory = (document.getElementById('modal-leave-cat').value || '').trim();
+    }
+  }
   if (modalLeaveType === 'checkin' || modalLeaveType === 'duty' || modalLeaveType === 'makeup') {
     att[dayStr].checkin = document.getElementById('modal-checkin').value || '09:00';
     const checkoutVal = document.getElementById('modal-checkout').value;

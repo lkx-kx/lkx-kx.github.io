@@ -4227,9 +4227,32 @@ function toggleTask(id) {
 
 function deleteTask(id) {
   const data = Store.getDaily();
+  const task = data.tasks.find(t => t.id === id);
   data.tasks = data.tasks.filter(t => t.id !== id);
   Store.saveDaily(data);
+  // 若删除的是从往日顺延(rolled)过来的任务，需同步清除所有往日记录里同 id 的未完成副本，
+  // 否则 rollForwardUnfinishedTasks 会在下次渲染时把它再次顺延回来。
+  if (task) purgeRolledSource(id);
   renderPage('daily-tasks');
+}
+
+// 从所有往日(day < today)未完成记录中移除指定 id 的任务（已完成/已归档的保留作历史）
+function purgeRolledSource(id) {
+  if (!id) return;
+  const today = Store.todayKey();
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith('lxk_daily_')) continue;
+    const dk = k.replace('lxk_daily_', '');
+    if (dk >= today) continue;
+    try {
+      const rec = JSON.parse(localStorage.getItem(k));
+      if (!rec || !rec.tasks || !rec.tasks.length) continue;
+      const before = rec.tasks.length;
+      rec.tasks = rec.tasks.filter(t => t.id !== id || (t.done || t.archived));
+      if (rec.tasks.length !== before) Store.setDaily(dk, rec);
+    } catch (e) {}
+  }
 }
 
 function editTask(id) {

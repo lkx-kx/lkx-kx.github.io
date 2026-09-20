@@ -805,6 +805,24 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 }
 
 /* 历史任务 */
+.history-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 18px 2px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hs-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sub);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 1px 9px;
+}
 .history-list { display: flex; flex-direction: column; gap: 10px; }
 .history-item {
   display: flex;
@@ -2354,7 +2372,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
       <span class="icon" data-page-node-id="1wXwC6JPHRNFHNNKVAL5DS">📋</span><span data-page-node-id="NJonxZQs1KzfxDGHhq5tJc">每日任务</span>
     </div>
     <div class="nav-item" data-page="history" onclick="navigate('history')" data-page-node-id="m9gSwMMG95gTQLzdof2Yx5">
-      <span class="icon" data-page-node-id="7COB7CbLcqWWgt1WoXsqZu">📦</span><span data-page-node-id="TAFBi5I3CWeL32KvXrrCxG">历史任务</span>
+      <span class="icon" data-page-node-id="7COB7CbLcqWWgt1WoXsqZu">📦</span><span data-page-node-id="TAFBi5I3CWeL32KvXrrCxG">历史记录</span>
     </div>
   </div>
 
@@ -2835,7 +2853,7 @@ const ICON_PAGES = [
   ['dashboard','桌面'], ['work-checkin','工作打卡'], ['todo','待办事项'],
   ['daily-tasks','每日任务'], ['lunch-menu','午饭菜单'], ['daily-learning','每日学习'],
   ['reading','每日阅读'], ['exercise','运动打卡'], ['journal','一日小记'],
-  ['history','历史任务']
+  ['history','历史记录']
 ];
 
 function openAppearance() {
@@ -4328,8 +4346,8 @@ function renderTodo(container) {
     }).join('');
   }
 
-  // 日程列表（按日期 + 时间排序）
-  const sched = Store.getSchedule().slice().sort((a, b) =>
+  // 日程列表（按日期 + 时间排序，已完成的一次性日程不再显示）
+  const sched = Store.getSchedule().filter(s => !s.done).slice().sort((a, b) =>
     (a.date + ' ' + (a.time || '99:99')).localeCompare(b.date + ' ' + (b.time || '99:99'))
   );
   let schedHtml;
@@ -4658,14 +4676,14 @@ function toggleScheduleDone(id, date) {
   const wasDone = schedDoneOn(s, date);
   setSchedDoneOn(s, date, !wasDone);
   Store.saveSchedule(sched);
-  if (!wasDone) {
-    Store.archiveTask({ id: s.id + '@' + date, text: s.title, doneDate: date, doneTime: nowHMS(), source: 'sched', icon: '📆' });
-  }
+    if (!wasDone) {
+      Store.archiveTask({ id: s.id + '@' + date, text: s.title, doneDate: date, doneTime: nowHMS(), source: 'sched', icon: '📆', repeat: s.repeat, time: s.allday ? '' : (s.time || ''), allday: s.allday, note: s.note });
+    }
   renderPage(currentPage);
 }
 
 // ===== 历史任务（已完成任务自动归档） =====
-const _monthUI = { history: null, sleep: null, exercise: null };
+const _monthUI = { history: null, historySched: null, sleep: null, exercise: null };
 function monthUIState(section, latestMonth) {
   if (!_monthUI[section]) {
     _monthUI[section] = new Set();
@@ -4684,54 +4702,77 @@ function fmtMonthLabel(ym) {
   if (p.length < 2) return ym || '';
   return p[0] + '年' + parseInt(p[1], 10) + '月';
 }
-function renderHistory(container) {
-  const raw = Store.getHistory().slice().sort((a, b) =>
-    (b.doneDate + ' ' + (b.doneTime || '')).localeCompare(a.doneDate + ' ' + (a.doneTime || ''))
-  );
+function historySectionHtml(items, sectionKey, title, icon, emptyText, renderItemFn) {
+  if (items.length === 0) {
+    return `<div class="card"><div class="empty-state"><div class="es-icon">${icon}</div><div>${emptyText}</div></div></div>`;
+  }
   const byMonth = {};
-  raw.forEach(h => {
+  items.forEach(h => {
     const m = (h.doneDate || '').slice(0, 7);
     (byMonth[m] = byMonth[m] || []).push(h);
   });
   const months = Object.keys(byMonth).sort().reverse();
-  const openSet = monthUIState('history', months[0]);
-  container.innerHTML = `
-    <div class="page-header">
-      <span class="ph-icon">${DOG_ICONS['history']}</span>
-      <span class="ph-title">历史任务</span>
-      <span class="ph-desc">已完成任务自动归档于此 · 共 ${raw.length} 条</span>
-    </div>
-    ${raw.length === 0 ? `
-      <div class="card"><div class="empty-state">
-        <div class="es-icon">📦</div>
-        <div>还没有已完成的任务，完成一个就会自动归档到这里～</div>
-      </div></div>
-    ` : months.map(m => `
-      <div class="month-card ${openSet.has(m) ? 'open' : ''}" id="mc-history-${m}">
-        <div class="month-card-header" onclick="toggleMonthCard('history','${m}')">
+  const openSet = monthUIState(sectionKey, months[0]);
+  return `
+    <div class="history-section-title">${title} <span class="hs-count">${items.length} 条</span></div>
+    ${months.map(m => `
+      <div class="month-card ${openSet.has(m) ? 'open' : ''}" id="mc-${sectionKey}-${m}">
+        <div class="month-card-header" onclick="toggleMonthCard('${sectionKey}','${m}')">
           <div><span class="month-card-title">${fmtMonthLabel(m)}</span><span class="month-card-count">${byMonth[m].length} 条</span></div>
           <span class="month-arrow">▸</span>
         </div>
         <div class="month-card-body">
           <div class="history-list">
-            ${byMonth[m].map(h => `
-              <div class="history-item">
-                <div class="history-check">✓</div>
-                <div class="history-body">
-                  <div class="history-text">${escHtml(h.text)}</div>
-                  <div class="history-meta">
-                    <span class="history-src ${h.source === 'todo' ? 'src-todo' : h.source === 'sched' ? 'src-sched' : 'src-daily'}">${h.source === 'todo' ? '待办事项' : h.source === 'sched' ? '日程' : '每日任务'}</span>
-                    ${h.category ? `<span class="history-cat">${escHtml(h.category)}</span>` : ''}
-                    <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
-                  </div>
-                </div>
-                <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
-              </div>
-            `).join('')}
+            ${byMonth[m].map(renderItemFn).join('')}
           </div>
         </div>
       </div>
     `).join('')}
+  `;
+}
+
+function renderHistory(container) {
+  const raw = Store.getHistory().slice().sort((a, b) =>
+    (b.doneDate + ' ' + (b.doneTime || '')).localeCompare(a.doneDate + ' ' + (a.doneTime || ''))
+  );
+  const tasks = raw.filter(h => h.source !== 'sched');
+  const sched = raw.filter(h => h.source === 'sched');
+  container.innerHTML = `
+    <div class="page-header">
+      <span class="ph-icon">${DOG_ICONS['history']}</span>
+      <span class="ph-title">历史记录</span>
+      <span class="ph-desc">已完成任务与日程自动归档于此 · 共 ${raw.length} 条</span>
+    </div>
+    ${historySectionHtml(tasks, 'history', '📋 历史任务', '📋', '还没有已完成的任务，完成一个就会自动归档到这里～', h => `
+      <div class="history-item">
+        <div class="history-check">✓</div>
+        <div class="history-body">
+          <div class="history-text">${escHtml(h.text)}</div>
+          <div class="history-meta">
+            <span class="history-src ${h.source === 'todo' ? 'src-todo' : h.source === 'sched' ? 'src-sched' : 'src-daily'}">${h.source === 'todo' ? '待办事项' : h.source === 'sched' ? '日程' : '每日任务'}</span>
+            ${h.category ? `<span class="history-cat">${escHtml(h.category)}</span>` : ''}
+            <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
+          </div>
+        </div>
+        <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
+      </div>
+    `)}
+    ${historySectionHtml(sched, 'historySched', '📆 历史日程', '📆', '还没有已完成的日程，完成一个就会自动归档到这里～', h => `
+      <div class="history-item">
+        <div class="history-check">✓</div>
+        <div class="history-body">
+          <div class="history-text">${escHtml(h.text)}</div>
+          <div class="history-meta">
+            <span class="history-src src-sched">日程</span>
+            <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
+            ${h.time ? `<span class="history-cat">⏰ ${escHtml(h.time)}</span>` : ''}
+            ${h.repeat && h.repeat !== 'none' ? `<span class="sched-repeat-badge">🔁 ${repeatLabel(h.repeat)}</span>` : ''}
+          </div>
+          ${h.note ? `<div class="sched-note">${escHtml(h.note)}</div>` : ''}
+        </div>
+        <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
+      </div>
+    `)}
   `;
 }
 

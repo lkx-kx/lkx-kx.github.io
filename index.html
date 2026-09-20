@@ -805,6 +805,19 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 }
 
 /* 历史任务 */
+.history-columns {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+.history-col {
+  flex: 1;
+  min-width: 0;
+}
+/* 窄屏（手机/侧栏展开）改为上下堆叠，避免挤压 */
+@media (max-width: 720px) {
+  .history-columns { flex-direction: column; gap: 0; }
+}
 .history-section-title {
   font-size: 16px;
   font-weight: 700;
@@ -4743,36 +4756,42 @@ function renderHistory(container) {
       <span class="ph-title">历史记录</span>
       <span class="ph-desc">已完成任务与日程自动归档于此 · 共 ${raw.length} 条</span>
     </div>
-    ${historySectionHtml(tasks, 'history', '📋 历史任务', '📋', '还没有已完成的任务，完成一个就会自动归档到这里～', h => `
-      <div class="history-item">
-        <div class="history-check">✓</div>
-        <div class="history-body">
-          <div class="history-text">${escHtml(h.text)}</div>
-          <div class="history-meta">
-            <span class="history-src ${h.source === 'todo' ? 'src-todo' : h.source === 'sched' ? 'src-sched' : 'src-daily'}">${h.source === 'todo' ? '待办事项' : h.source === 'sched' ? '日程' : '每日任务'}</span>
-            ${h.category ? `<span class="history-cat">${escHtml(h.category)}</span>` : ''}
-            <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
+    <div class="history-columns">
+      <div class="history-col">
+        ${historySectionHtml(tasks, 'history', '📋 历史任务', '📋', '还没有已完成的任务，完成一个就会自动归档到这里～', h => `
+          <div class="history-item">
+            <div class="history-check">✓</div>
+            <div class="history-body">
+              <div class="history-text">${escHtml(h.text)}</div>
+              <div class="history-meta">
+                <span class="history-src ${h.source === 'todo' ? 'src-todo' : h.source === 'sched' ? 'src-sched' : 'src-daily'}">${h.source === 'todo' ? '待办事项' : h.source === 'sched' ? '日程' : '每日任务'}</span>
+                ${h.category ? `<span class="history-cat">${escHtml(h.category)}</span>` : ''}
+                <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
+              </div>
+            </div>
+            <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
           </div>
-        </div>
-        <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
+        `)}
       </div>
-    `)}
-    ${historySectionHtml(sched, 'historySched', '📆 历史日程', '📆', '还没有已完成的日程，完成一个就会自动归档到这里～', h => `
-      <div class="history-item">
-        <div class="history-check">✓</div>
-        <div class="history-body">
-          <div class="history-text">${escHtml(h.text)}</div>
-          <div class="history-meta">
-            <span class="history-src src-sched">日程</span>
-            <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
-            ${h.time ? `<span class="history-cat">⏰ ${escHtml(h.time)}</span>` : ''}
-            ${h.repeat && h.repeat !== 'none' ? `<span class="sched-repeat-badge">🔁 ${repeatLabel(h.repeat)}</span>` : ''}
+      <div class="history-col">
+        ${historySectionHtml(sched, 'historySched', '📆 历史日程', '📆', '还没有已完成的日程，完成一个就会自动归档到这里～', h => `
+          <div class="history-item">
+            <div class="history-check">✓</div>
+            <div class="history-body">
+              <div class="history-text">${escHtml(h.text)}</div>
+              <div class="history-meta">
+                <span class="history-src src-sched">日程</span>
+                <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
+                ${h.time ? `<span class="history-cat">⏰ ${escHtml(h.time)}</span>` : ''}
+                ${h.repeat && h.repeat !== 'none' ? `<span class="sched-repeat-badge">🔁 ${repeatLabel(h.repeat)}</span>` : ''}
+              </div>
+              ${h.note ? `<div class="sched-note">${escHtml(h.note)}</div>` : ''}
+            </div>
+            <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
           </div>
-          ${h.note ? `<div class="sched-note">${escHtml(h.note)}</div>` : ''}
-        </div>
-        <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
+        `)}
       </div>
-    `)}
+    </div>
   `;
 }
 

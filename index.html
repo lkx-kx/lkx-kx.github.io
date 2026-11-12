@@ -3384,27 +3384,74 @@ const MAKEUP_DAYS = {
     '2027-10-09', // 国庆调休（周六上班）
   ],
 };
+// 内置权威数据（已核对国务院办公厅通知）作为离线兜底；未来年份自动从镜像拉取
 const _holidaySets = {};
-function holidaySet(year) {
-  if (_holidaySets[year]) return _holidaySets[year];
-  const set = new Set();
+const _makeupSets = {};
+const _holidayFetched = {};   // 本年本会话是否已尝试拉取/已内置
+const _holidayRefreshing = {}; // 本年是否正在拉取中
+
+function bundledHolidayDates(year) {
+  const out = [];
   (HOLIDAY_RANGES[year] || []).forEach(([s, e]) => {
     let cur = new Date(s + 'T00:00:00');
     const end = new Date(e + 'T00:00:00');
     while (cur <= end) {
-      set.add(cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0') + '-' + String(cur.getDate()).padStart(2, '0'));
+      out.push(cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0') + '-' + String(cur.getDate()).padStart(2, '0'));
       cur.setDate(cur.getDate() + 1);
     }
   });
-  _holidaySets[year] = set;
-  return set;
+  return out;
 }
-const _makeupSets = {};
+function holidaySet(year) {
+  if (_holidaySets[year]) return _holidaySets[year];
+  let dates;
+  if (year in HOLIDAY_RANGES) dates = bundledHolidayDates(year);
+  else { try { dates = JSON.parse(localStorage.getItem('lxk_holiday_' + year) || '[]'); } catch (e) { dates = []; } }
+  _holidaySets[year] = new Set(dates);
+  return _holidaySets[year];
+}
 function makeupSet(year) {
   if (_makeupSets[year]) return _makeupSets[year];
-  const set = new Set(MAKEUP_DAYS[year] || []);
-  _makeupSets[year] = set;
-  return set;
+  let dates;
+  if (year in HOLIDAY_RANGES) dates = (MAKEUP_DAYS[year] || []).slice();
+  else { try { dates = JSON.parse(localStorage.getItem('lxk_makeup_' + year) || '[]'); } catch (e) { dates = []; } }
+  _makeupSets[year] = new Set(dates);
+  return _makeupSets[year];
+}
+
+// 自动更新：每年首次联网时从维护镜像（NateScarlet/holiday-cn，跟随国务院通知同步）拉取当年节假日，
+// 写入 localStorage 缓存；之后离线也能用。内置 2026/2027 为权威兜底不覆盖；2028 及以后自动补齐。
+function refreshHolidays(year) {
+  if (_holidayFetched[year]) return;
+  if (year in HOLIDAY_RANGES) { _holidayFetched[year] = true; return; } // 已内置权威数据，无需联网
+  try { if (localStorage.getItem('lxk_holiday_' + year)) { _holidayFetched[year] = true; return; } } catch (e) {}
+  if (_holidayRefreshing[year]) return;
+  _holidayRefreshing[year] = true;
+  const urls = [
+    'https://cdn.jsdelivr.net/gh/NateScarlet/holiday-cn@master/' + year + '.json',
+    'https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/' + year + '.json'
+  ];
+  let i = 0;
+  const attempt = () => {
+    if (i >= urls.length) { _holidayFetched[year] = true; _holidayRefreshing[year] = false; return; }
+    const url = urls[i++];
+    fetch(url).then(r => r.ok ? r.json() : Promise.reject()).then(payload => {
+      const arr = Array.isArray(payload) ? payload : (payload && payload.days) || [];
+      if (!Array.isArray(arr)) throw new Error('bad payload');
+      const hol = arr.filter(x => x && x.isOffDay === true).map(x => x.date);
+      const mk = arr.filter(x => x && x.isOffDay === false).map(x => x.date);
+      try {
+        localStorage.setItem('lxk_holiday_' + year, JSON.stringify(hol));
+        localStorage.setItem('lxk_makeup_' + year, JSON.stringify(mk));
+      } catch (e) {}
+      _holidaySets[year] = new Set(hol);
+      _makeupSets[year] = new Set(mk);
+      if (typeof currentPage !== 'undefined' && currentPage === 'work-checkin' && calYear === year) renderPage(currentPage);
+      _holidayFetched[year] = true;
+      _holidayRefreshing[year] = false;
+    }).catch(() => attempt());
+  };
+  attempt();
 }
 // y/m/d 中 m 为 0 基（与日历一致）；周六日或法定节假日视为休息日
 function isRestDay(y, m, d) {
@@ -3545,6 +3592,10 @@ function schedPills(sched) {
 function renderWorkCheckin(container) {
   const now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
+
+  // 自动更新当年及下一年的节假日数据（联网即从镜像拉取并缓存，离线则用内置/缓存）
+  refreshHolidays(calYear);
+  refreshHolidays(calYear + 1);
 
   const monthKey = calYear + '-' + String(calMonth + 1).padStart(2, '0');
   const attendance = Store.getAttendance(monthKey);

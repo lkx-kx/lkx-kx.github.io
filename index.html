@@ -2403,6 +2403,51 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .sample-entry.returned { opacity: 0.6; }
 .sample-entry.returned .se-color { text-decoration: line-through; }
 .se-info { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 150px; }
+
+/* ===== 样品记录 · 智能录入 ===== */
+.smart-card { border: 1px solid var(--border-soft); }
+.smart-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.smart-emoji { font-size: 24px; line-height: 1; }
+.smart-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
+.smart-sub { font-size: 12px; color: var(--text-sub); }
+.smart-textarea { width: 100%; resize: vertical; font-size: 14px; line-height: 1.7; min-height: 76px; }
+.smart-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.chip {
+  border: 1px solid var(--border-soft);
+  background: var(--cream-side, #FFF8E7);
+  color: var(--text-sub);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.chip:hover { background: #fff; color: var(--text-main); border-color: #A7C7A0; }
+.si-empty { font-size: 13px; color: var(--text-sub); padding: 8px 0; }
+.si-preview-head { font-size: 13px; color: var(--text-sub); margin: 14px 0 10px; }
+.si-preview-head b { color: #A7C7A0; }
+.si-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+.si-card {
+  background: var(--cream-side, #FFF8E7);
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.si-name { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; word-break: break-all; }
+.si-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.si-tag {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  color: var(--text-sub);
+}
+.si-tag.qty { color: var(--text-main); font-weight: 700; }
+.si-tag.borr { color: #C98A3A; border-color: #F0D9B0; background: #FFF6E8; }
+.si-tag.ret { color: #7FA97A; border-color: #CFE3C8; background: #F1F8EF; }
+.si-date { font-size: 11px; color: var(--text-sub); }
+.si-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .se-color {
   display: inline-block;
   padding: 2px 10px;
@@ -5042,6 +5087,91 @@ function saveLunchNotes() {
 }
 
 // ====================================================================
+// 样品记录 · 智能录入（自然语言自动拆解 名称/颜色/尺码/数量/状态/日期）
+// ====================================================================
+const SAMPLE_COLORS = [
+  '米白色','奶白色','雪白色','纯白色','白色','米色','米黄色','杏色','卡其色','驼色','咖啡色','棕色','褐色','黑色','玄色',
+  '大红色','酒红色','玫红色','粉红色','桃红色','红色','橙色','橘色','鹅黄色','姜黄色','黄色','草绿色','军绿色','墨绿色','绿色',
+  '青色','青绿色','天蓝色','湖蓝色','藏蓝色','宝蓝色','深蓝色','蓝色','紫罗兰色','紫色','银灰色','灰色','银色','金色','香槟色',
+  '花色','拼色','印花','格子','条纹','牛仔蓝','雾霾蓝','豆绿色','浅灰色','深灰色','浅粉色','南瓜色','薄荷绿','珊瑚色',
+  '米白','奶白','雪白','白','米黄','卡其','驼色','咖啡','棕','褐','黑','红','橙','黄','绿','青','蓝','紫','灰','银','金','粉'
+];
+
+function sampleDateOffset(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+
+function sampleStrip(s, text) {
+  return s.split(text).join(' ');
+}
+
+function parseOneSample(line) {
+  let s = ' ' + line + ' ';
+  let date = Store.todayKey();
+
+  // 1) 日期：2026-11-13 / 11月13日 / 昨天 / 前天 / 今天
+  const dm = s.match(/(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})[日号]?/);
+  if (dm) { date = dm[1] + '-' + pad2(dm[2]) + '-' + pad2(dm[3]); s = sampleStrip(s, dm[0]); }
+  else if (/前天/.test(s)) { date = sampleDateOffset(-2); s = sampleStrip(s, '前天'); }
+  else if (/昨天/.test(s)) { date = sampleDateOffset(-1); s = sampleStrip(s, '昨天'); }
+  else if (/今天/.test(s)) { date = sampleDateOffset(0); s = sampleStrip(s, '今天'); }
+
+  // 2) 状态：已归还 / 未归还 / 借出
+  let status = 'borrowed';
+  if (/(已归还|归还了?|还了|returned)/i.test(s)) { status = 'returned'; s = s.replace(/已归还|归还了?|还了|returned/gi, ' '); }
+  else if (/(未归还|未还|借出|借走|外借|borrowed)/i.test(s)) { status = 'borrowed'; s = s.replace(/未归还|未还|借出|借走|外借|borrowed/gi, ' '); }
+
+  // 3) 数量：×5 / 2件 / 数量3 / 两件
+  let qty = 1;
+  let qm = s.match(/(?:×|x|X|\*|＊|✕)\s*(\d+)/)
+        || s.match(/(\d+)\s*(件|个|条|只|双|副|匹|套|打|箱|枚|顶|支|瓶|本)/)
+        || s.match(/数量[:：]?\s*(\d+)/)
+        || s.match(/(\d+)\s*数量/);
+  if (qm) { qty = parseInt(qm[1], 10) || 1; s = sampleStrip(s, qm[0]); }
+  else {
+    const cn = s.match(/(两|二|三|四|五|六|七|八|九|十)\s*(件|个|条|只|双|副|匹|套|打|箱|枚|顶|支|瓶|本)/);
+    if (cn) {
+      const map = { '两':2,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10 };
+      qty = map[cn[1]] || 1;
+      s = sampleStrip(s, cn[0]);
+    }
+  }
+
+  // 4) 尺码：XS/S/M/L/XL…（可带“码/号”）/ 38码 / 均码
+  let size = '';
+  const smLetter = s.match(/\b(XS|S|M|L|XL|XXL|XXXL|XXXXL|2XL|3XL|4XL|5XL)(?:\s*(?:码|号|尺码))?/i);
+  const smNum = s.match(/(\d{2,3})\s*(码|号|尺码)/);
+  const smJun = s.match(/(均码|统一码|自由码|one\s*size)/i);
+  if (smLetter) { size = smLetter[0].replace(/\s*(?:码|号|尺码)/g, ''); s = sampleStrip(s, smLetter[0]); }
+  else if (smNum) { size = smNum[0].replace(/\s+/g, ''); s = sampleStrip(s, smNum[0]); }
+  else if (smJun) { size = '均码'; s = sampleStrip(s, smJun[0]); }
+
+  // 5) 颜色：最长优先匹配，可识别多色（如“黑/蓝”），避免 “白” 命中 “米白”
+  const colors = [];
+  const sorted = SAMPLE_COLORS.slice().sort((a, b) => b.length - a.length);
+  let s2 = s;
+  for (const c of sorted) {
+    if (s2.indexOf(c) !== -1) { colors.push(c.replace(/色$/, '')); s2 = sampleStrip(s2, c); }
+  }
+  let cm;
+  while ((cm = s2.match(/[一-龥]{1,3}色/))) { colors.push(cm[0].replace('色', '')); s2 = sampleStrip(s2, cm[0]); }
+  s = s2;
+  const color = colors.join('/');
+
+  // 6) 名称 = 剩余文本
+  let name = s.replace(/\s+/g, ' ').trim().replace(/^[，,、；;。\s]+|[，,、；;。\s]+$/g, '');
+  if (!name) name = '未命名样品';
+
+  return { name, color, size, qty, status, date };
+}
+
+function parseSmartSamples(raw) {
+  return (raw || '').split(/[\n；;、]+/).map(x => x.trim()).filter(Boolean).map(parseOneSample);
+}
+
+// ====================================================================
 // 样品记录（按产品名称自动归类 · 借用/归还状态）
 // ====================================================================
 function renderSampleRecords(container) {
@@ -5107,11 +5237,95 @@ function renderSampleRecords(container) {
       <span class="ph-desc">按产品名称自动归类 · 记录借用与归还</span>
     </div>
     ${statsHtml}
+
+    <div class="card smart-card">
+      <div class="smart-head">
+        <span class="smart-emoji">💬</span>
+        <div>
+          <div class="smart-title">智能录入</div>
+          <div class="smart-sub">一句话拆出 名称 / 颜色 / 尺码 / 数量，自动归类</div>
+        </div>
+      </div>
+      <textarea id="sm-smart" class="input smart-textarea" rows="3" placeholder="例如：羊毛大衣 米白 M 2件&#10;红色连衣裙 S码 已归还&#10;（每行一条，可一次录多条）" oninput="previewSmartSamples()"></textarea>
+      <div class="smart-chips">
+        <button class="chip" onclick="fillSmart('羊毛大衣 米白 M 2件')">羊毛大衣 米白 M 2件</button>
+        <button class="chip" onclick="fillSmart('红色连衣裙 S码 已归还')">红色连衣裙 S码 已归还</button>
+        <button class="chip" onclick="fillSmart('黑色T恤 蓝色 L ×5 昨天')">黑色T恤 蓝 L ×5 昨天</button>
+      </div>
+      <div id="sm-preview"></div>
+    </div>
+
     <div class="card">
-      <button class="btn btn-primary" onclick="showAddSampleModal()">➕ 添加样品</button>
+      <button class="btn btn-primary" onclick="showAddSampleModal()">➕ 手动添加样品</button>
       <div style="margin-top:16px;">${groupsHtml}</div>
     </div>
   `;
+}
+
+function fillSmart(text) {
+  const ta = document.getElementById('sm-smart');
+  if (!ta) return;
+  ta.value = ta.value ? ta.value + '\n' + text : text;
+  previewSmartSamples();
+}
+
+function clearSmartInput() {
+  const ta = document.getElementById('sm-smart');
+  if (ta) ta.value = '';
+  const box = document.getElementById('sm-preview');
+  if (box) box.innerHTML = '';
+}
+
+function previewSmartSamples() {
+  const ta = document.getElementById('sm-smart');
+  const box = document.getElementById('sm-preview');
+  if (!ta || !box) return;
+  const raw = ta.value;
+  if (!raw.trim()) { box.innerHTML = ''; return; }
+  const list = parseSmartSamples(raw);
+  if (!list.length) { box.innerHTML = '<div class="si-empty">没有可解析的内容</div>'; return; }
+  box.innerHTML = `
+    <div class="si-preview-head">已解析 <b>${list.length}</b> 条，确认后自动归类添加</div>
+    <div class="si-grid">
+      ${list.map(it => `
+        <div class="si-card">
+          <div class="si-name">${escHtml(it.name)}</div>
+          <div class="si-tags">
+            <span class="si-tag">${escHtml(it.color || '—')}</span>
+            <span class="si-tag">${escHtml(it.size || '—')}</span>
+            <span class="si-tag qty">×${escHtml(it.qty)}</span>
+            <span class="si-tag ${it.status === 'returned' ? 'ret' : 'borr'}">${it.status === 'returned' ? '已归还' : '未归还'}</span>
+          </div>
+          <div class="si-date">录入 ${escHtml(it.date)}</div>
+        </div>`).join('')}
+    </div>
+    <div class="si-actions">
+      <button class="btn btn-outline btn-sm" onclick="clearSmartInput()">清空</button>
+      <button class="btn btn-primary btn-sm" onclick="commitSmartSamples()">确认添加 ${list.length} 条</button>
+    </div>`;
+}
+
+function commitSmartSamples() {
+  const ta = document.getElementById('sm-smart');
+  if (!ta) return;
+  const list = parseSmartSamples(ta.value);
+  if (!list.length) { showToast('没有可添加的内容'); return; }
+  const arr = Store.getSamples();
+  list.forEach(it => arr.push({
+    id: uid(),
+    name: it.name,
+    color: it.color,
+    size: it.size,
+    qty: it.qty,
+    date: it.date,
+    status: it.status
+  }));
+  Store.saveSamples(arr);
+  ta.value = '';
+  const box = document.getElementById('sm-preview');
+  if (box) box.innerHTML = '';
+  renderPage('sample-records');
+  showToast('已添加 ' + list.length + ' 条样品～ 📦');
 }
 
 function showAddSampleModal() {

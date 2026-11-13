@@ -2350,6 +2350,73 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* ============ 样品记录 ============ */
+.sample-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.sample-stat {
+  flex: 1 1 120px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(150,110,50,0.06);
+}
+.sample-stat .ss-num { font-size: 22px; font-weight: 700; color: var(--text-main); }
+.sample-stat .ss-label { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+
+.sample-group {
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(150,110,50,0.06);
+}
+.sg-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  border-bottom: 1px dashed var(--border-soft);
+  padding-bottom: 8px;
+}
+.sg-name { font-size: 15px; font-weight: 700; color: var(--text-main); }
+.sg-sum { font-size: 12px; color: var(--text-sub); }
+
+.sg-entries { display: flex; flex-direction: column; gap: 8px; }
+.sample-entry {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--cream-side, #FFF8E7);
+  border: 1px solid var(--border-soft);
+}
+.sample-entry.returned { opacity: 0.6; }
+.sample-entry.returned .se-color { text-decoration: line-through; }
+.se-info { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 150px; }
+.se-color {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid var(--border-soft);
+  font-size: 13px;
+  color: var(--text-main);
+}
+.se-size { font-size: 13px; color: var(--text-sub); }
+.se-qty { font-size: 13px; font-weight: 700; color: var(--text-main); }
+.se-meta { font-size: 12px; color: var(--text-sub); }
+.se-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.se-actions .input.sm { width: auto; padding: 4px 8px; font-size: 12px; }
 </style>
 </head>
 <body class="nav-hidden" data-page-node-id="eEXgmr8kh1aXdERokLhtSl">
@@ -2366,52 +2433,24 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
     <div class="subtitle" data-page-node-id="SIE8BuAQcMoHFs9PSTTUTq">每一天都要闪闪发光</div>
   </div>
 
-  <div class="nav-section" data-page-node-id="mfN7Kj1llhzrYlpf0pWGBF">
-    <div class="nav-section-title" data-page-node-id="mH011TOTFD1KHhHERNmthn">🐾 <span data-page-node-id="WsqOtgWBWGnoPGupM6u7Iu">首页</span></div>
-    <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')" data-page-node-id="KIkfLXrygGn1vXUEcaObUW">
-      <span class="icon" data-page-node-id="aDzzS9CB13GJOBAgolLjPn">🏠</span><span data-page-node-id="ybZFXoz1iO74r1r0qdQHc3">桌面</span>
+  <div class="nav-section">
+    <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+      <span class="icon">🏠</span><span>桌面</span>
     </div>
-  </div>
-
-  <div class="nav-section" data-page-node-id="4k8KYze60QR739HRgao7MP">
-    <div class="nav-section-title" data-page-node-id="7XCT8lQ5Av6wy7I14LPode">🐾 <span data-page-node-id="1XT0oAaZwTiZzA0G5wtSYJ">工作</span></div>
-    <div class="nav-item" data-page="work-checkin" onclick="navigate('work-checkin')" data-page-node-id="wHfNfzw6P8Ya5MGdnWRQ7n">
-      <span class="icon" data-page-node-id="HHAuaFwcyavODNDjQJtN6P">✅</span><span data-page-node-id="eiJGQ2w6srl3p7jfrL6due">工作打卡</span>
+    <div class="nav-item" data-page="work-checkin" onclick="navigate('work-checkin')">
+      <span class="icon">✅</span><span>工作打卡</span>
     </div>
-    <div class="nav-item" data-page="todo" onclick="navigate('todo')" data-page-node-id="dPvxoM7zltHjF8651w2gNb">
-      <span class="icon" data-page-node-id="qJZrtY2oA4Pd1mcYHmocdC">📝</span><span data-page-node-id="A9WSC9k197nHi4OK9hxFdH">待办事项</span>
+    <div class="nav-item" data-page="todo" onclick="navigate('todo')">
+      <span class="icon">📝</span><span>待办事项</span>
     </div>
-    <div class="nav-item" data-page="daily-tasks" onclick="navigate('daily-tasks')" data-page-node-id="FRlGiHI945sbiODCJbJqwA">
-      <span class="icon" data-page-node-id="1wXwC6JPHRNFHNNKVAL5DS">📋</span><span data-page-node-id="NJonxZQs1KzfxDGHhq5tJc">每日任务</span>
+    <div class="nav-item" data-page="daily-tasks" onclick="navigate('daily-tasks')">
+      <span class="icon">📋</span><span>每日任务</span>
     </div>
-    <div class="nav-item" data-page="history" onclick="navigate('history')" data-page-node-id="m9gSwMMG95gTQLzdof2Yx5">
-      <span class="icon" data-page-node-id="7COB7CbLcqWWgt1WoXsqZu">📦</span><span data-page-node-id="TAFBi5I3CWeL32KvXrrCxG">历史记录</span>
+    <div class="nav-item" data-page="lunch-menu" onclick="navigate('lunch-menu')">
+      <span class="icon">🍱</span><span>午饭菜单</span>
     </div>
-  </div>
-
-  <div class="nav-section" data-page-node-id="yKXFkRZvrmTTRCWR24laJu">
-    <div class="nav-section-title" data-page-node-id="CI3cSFcn637RrXj8zc0v2s">🐾 <span data-page-node-id="wlDUWPxFKvQUh76QLI4kso">学习</span></div>
-    <div class="nav-item" data-page="daily-learning" onclick="navigate('daily-learning')" data-page-node-id="M87NVzGMyEXefCaYiozZjp">
-      <span class="icon" data-page-node-id="6kDFUuFs8jW7dZi6gHUvaW">📖</span><span data-page-node-id="4PjZFRXSUI0h3b9UnOcfeZ">每日学习</span>
-    </div>
-    <div class="nav-item" data-page="reading" onclick="navigate('reading')" data-page-node-id="fTlL9Eag3hSPQOqedfXWa6">
-      <span class="icon" data-page-node-id="LpHAydhg461L3OpByxHIEw">📕</span><span data-page-node-id="f4DgIUAuz7qK44dB0kDSfY">每日阅读</span>
-    </div>
-  </div>
-
-  <div class="nav-section" data-page-node-id="5iX6jgoGl8XQJuKyjNwZgP">
-    <div class="nav-section-title" data-page-node-id="ftdk4VvHrgc71XOZDRFsgi">🐾 <span data-page-node-id="Mp1k6Ep0SDciTkjYLsXmR5">生活</span></div>
-    <div class="nav-item" data-page="lunch-menu" onclick="navigate('lunch-menu')" data-page-node-id="RscDuL1TRmplvPsAFJbRnX">
-      <span class="icon" data-page-node-id="tj6KD7huwZLprN2qc0JgYL">🍱</span><span data-page-node-id="r4hPBEJ4CmH5tHfAUFD6Ak">午饭菜单</span>
-    </div>
-    <div class="nav-item" data-page="exercise" onclick="navigate('exercise')" data-page-node-id="U6EqbGClAjTIo2FDc204WI">
-      <span class="icon" data-page-node-id="JSaPY8WCqhOJfUdPvnMvTr">🏃</span><span data-page-node-id="EAuxoGLXDc3abVCQukCJsJ">运动打卡</span>
-    </div>
-    <div class="nav-item" data-page="sleep" onclick="navigate('sleep')" data-page-node-id="MhoA93ZtT2jTpJtrBTYa5C">
-      <span class="icon" data-page-node-id="TyTxS16EkBdQ75nyfvdJAE">🛏️</span><span data-page-node-id="636HMg0YoPAOvbOK0fvVu9">睡眠打卡</span>
-    </div>
-    <div class="nav-item" data-page="journal" onclick="navigate('journal')" data-page-node-id="HkfbZ0jXU3txqDxcLtlPUG">
-      <span class="icon" data-page-node-id="UYISrLgYKwskBdJg1VKxCe">📝</span><span data-page-node-id="CpBWW5TvH07EVAkR9q2Ex6">一日小记</span>
+    <div class="nav-item" data-page="sample-records" onclick="navigate('sample-records')">
+      <span class="icon">📦</span><span>样品记录</span>
     </div>
   </div>
 
@@ -2664,6 +2703,15 @@ const Store = {
     localStorage.setItem('lxk_schedule', JSON.stringify(arr));
   },
 
+  // ===== 样品记录（借用 / 归还管理） =====
+  getSamples() {
+    const raw = localStorage.getItem('lxk_samples');
+    return raw ? JSON.parse(raw) : [];
+  },
+  saveSamples(arr) {
+    localStorage.setItem('lxk_samples', JSON.stringify(arr));
+  },
+
   // ===== 历史任务（已完成任务自动归档） =====
   getHistory() {
     const raw = localStorage.getItem('lxk_history_tasks');
@@ -2730,12 +2778,8 @@ const DOG_ICONS = {
   'work-checkin': dogSvg('#E8C9A0', '#C49A6C', BDG_CHECK),
   'daily-tasks': dogSvg('#D4E8D0', '#A5D6A7', BDG_CLIP),
   'lunch-menu': dogSvg('#FFE0B2', '#FFCC80', BDG_BOWL),
-  'daily-learning': dogSvg('#E0D0F0', '#C8A6D4', BDG_BOOK),
-  'reading': dogSvg('#F5D0E0', '#E8A0BF', BDG_HEART),
-  'exercise': dogSvg('#FFD0B0', '#F4A460', BDG_RUN),
-  'journal': dogSvg('#F0E0C0', '#D4C0A0', BDG_PEN),
   'todo': dogSvg('#FCE0C0', '#E8B98A', BDG_PEN),
-  'history': dogSvg('#E8D8C0', '#C9A87E', BDG_BOX)
+  'sample-records': dogSvg('#DCE8D5', '#A7C7A0', BDG_BOX)
 };
 
 function initDogIcons() {
@@ -2864,9 +2908,7 @@ function pickImage(cb, maxW) {
 
 const ICON_PAGES = [
   ['dashboard','桌面'], ['work-checkin','工作打卡'], ['todo','待办事项'],
-  ['daily-tasks','每日任务'], ['lunch-menu','午饭菜单'], ['daily-learning','每日学习'],
-  ['reading','每日阅读'], ['exercise','运动打卡'], ['journal','一日小记'],
-  ['history','历史记录']
+  ['daily-tasks','每日任务'], ['lunch-menu','午饭菜单'], ['sample-records','样品记录']
 ];
 
 function openAppearance() {
@@ -3015,12 +3057,7 @@ function renderPage(page) {
     case 'daily-tasks': renderDailyTasks(pageDiv); break;
     case 'lunch-menu': renderLunchMenu(pageDiv); break;
     case 'todo': renderTodo(pageDiv); break;
-    case 'daily-learning': renderDailyLearning(pageDiv); break;
-    case 'reading': renderReading(pageDiv); break;
-    case 'exercise': renderExercise(pageDiv); break;
-    case 'sleep': renderSleep(pageDiv); break;
-    case 'journal': renderJournal(pageDiv); break;
-    case 'history': renderHistory(pageDiv); break;
+    case 'sample-records': renderSampleRecords(pageDiv); break;
   }
   updateNavIcon();
 }
@@ -3036,7 +3073,7 @@ function renderDashboard(container) {
   const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
   const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${weekdays[now.getDay()]}`;
 
-  // ===== 首页「当日概览」四大板块数据 =====
+  // ===== 首页「当日概览」三大板块数据 =====
   const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   const todayDayKey = String(now.getDate()).padStart(2, '0');
   const att = Store.getAttendance(monthKey);
@@ -3091,51 +3128,6 @@ function renderDashboard(container) {
     }
   }
 
-  // 4) 昨日睡眠情况
-  const y = new Date(now); y.setDate(y.getDate() - 1);
-  const yKey = y.getFullYear() + '-' + String(y.getMonth() + 1).padStart(2, '0') + '-' + String(y.getDate()).padStart(2, '0');
-  const yRec = Store.getSleep()[yKey];
-  let sleepHtml;
-  if (yRec && yRec.sleep && yRec.wake) {
-    const hrs = ((yRec.wake - yRec.sleep) / 3600000).toFixed(1);
-    sleepHtml = `<div class="today-pills">
-        <span class="today-pill">😴 睡 ${fmtHM(yRec.sleep)}</span>
-        <span class="today-pill">☀️ 起 ${fmtHM(yRec.wake)}</span>
-      </div><div class="today-progress">共 ${hrs} 小时睡眠</div>`;
-  } else if (yRec && yRec.sleep) {
-    sleepHtml = `<div class="today-empty">昨天记录睡觉 ${fmtHM(yRec.sleep)}，但还没打起床卡</div>`;
-  } else {
-    sleepHtml = '<div class="today-empty">昨天没有睡眠记录</div>';
-  }
-
-  // ===== 今日打卡看板数据 =====
-  const learningCount = Object.values(data.learning || {}).reduce((s, a) => s + (a ? a.length : 0), 0);
-  const exerciseCount = (data.exercise?.cardio?.length || 0) + (data.exercise?.strength?.length || 0) + (data.exercise?.swimming?.length || 0);
-  // 今日打卡：仅 5 个打卡模块，已打卡显示绿点，否则灰点
-  const sleepTodayRec = Store.getSleep()[Store.todayKey()] || {};
-  const sleepChecked = !!sleepTodayRec.sleep || (now.getHours() < 12 && yRec && yRec.sleep);
-  const modules = [
-    { id: 'work-checkin', name: '工作打卡', checked: !!todayRec },
-    { id: 'daily-learning', name: '每日学习', checked: !!data.learningCheckin || learningCount > 0 },
-    { id: 'reading', name: '每日阅读', checked: !!data.readingCheckin },
-    { id: 'exercise', name: '运动打卡', checked: !!data.exerciseCheckin || exerciseCount > 0 },
-    { id: 'sleep', name: '睡眠打卡', checked: sleepChecked }
-  ];
-  const moduleGridHtml = `
-    <div class="dash-section">
-      <div class="dash-section-title">今日打卡<span class="ds-desc">点击卡片直达对应模块</span></div>
-      <div class="board-card">
-        <div class="board-grid module-board-grid">
-          ${modules.map(m => `
-            <div class="board-item module-item" onclick="navigate('${m.id}')">
-              <span class="mi-title">${escHtml(m.name)}</span>
-              <span class="mi-dot ${m.checked ? 'on' : ''}" title="${m.checked ? '今日已打卡' : '今日未打卡'}"></span>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-    </div>
-  `;
 
   const todayOverviewHtml = `
     <div class="dash-section">
@@ -3153,10 +3145,6 @@ function renderDashboard(container) {
           <div class="board-item overview-item">
             <div class="bi-header"><div class="bi-title">当日午饭菜单</div></div>
             <div class="bi-body">${lunchHtml}</div>
-          </div>
-          <div class="board-item overview-item">
-            <div class="bi-header"><div class="bi-title">昨日睡眠情况</div></div>
-            <div class="bi-body">${sleepHtml}</div>
           </div>
         </div>
       </div>
@@ -3181,7 +3169,6 @@ function renderDashboard(container) {
         </div>
       </div>
       ${todayOverviewHtml}
-      ${moduleGridHtml}
     </div>
   `;
   startClock();
@@ -5052,6 +5039,210 @@ function saveLunchNotes() {
   lunch.notes = document.getElementById('lunch-notes').value;
   saveLunch(lunch);
   showToast('备注已保存～ 📝');
+}
+
+// ====================================================================
+// 样品记录（按产品名称自动归类 · 借用/归还状态）
+// ====================================================================
+function renderSampleRecords(container) {
+  const items = Store.getSamples();
+  const groups = {};
+  items.forEach(it => {
+    const key = (it.name || '').trim() || '未命名样品';
+    (groups[key] = groups[key] || []).push(it);
+  });
+  const names = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'zh'));
+
+  const total = items.length;
+  const distinct = names.length;
+  const borrowed = items.filter(i => i.status !== 'returned').length;
+  const returned = total - borrowed;
+  const totalQty = items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+
+  const statsHtml = `
+    <div class="sample-stats">
+      <div class="sample-stat"><div class="ss-num">${total}</div><div class="ss-label">样品记录数</div></div>
+      <div class="sample-stat"><div class="ss-num">${distinct}</div><div class="ss-label">产品种类</div></div>
+      <div class="sample-stat"><div class="ss-num">${borrowed}</div><div class="ss-label">未归还</div></div>
+      <div class="sample-stat"><div class="ss-num">${returned}</div><div class="ss-label">已归还</div></div>
+    </div>`;
+
+  const groupsHtml = names.length === 0
+    ? `<div class="empty-state"><div class="es-icon">📦</div><div>还没有样品记录，点上方按钮添加吧～</div></div>`
+    : names.map(name => {
+        const list = groups[name];
+        const groupQty = list.reduce((s, i) => s + (Number(i.qty) || 0), 0);
+        const groupBorrowed = list.filter(i => i.status !== 'returned').length;
+        const entries = list.map(it => `
+          <div class="sample-entry ${it.status === 'returned' ? 'returned' : ''}">
+            <div class="se-info">
+              <span class="se-color">${escHtml(it.color || '—')}</span>
+              <span class="se-size">尺码 ${escHtml(it.size || '—')}</span>
+              <span class="se-qty">×${escHtml(it.qty || 0)}</span>
+            </div>
+            <div class="se-meta">录入 ${fmtCNDate(it.date)}</div>
+            <div class="se-actions">
+              <select class="input sm" onchange="setSampleStatus('${it.id}', this.value)">
+                <option value="borrowed" ${it.status !== 'returned' ? 'selected' : ''}>未归还</option>
+                <option value="returned" ${it.status === 'returned' ? 'selected' : ''}>已归还</option>
+              </select>
+              <button class="btn btn-outline btn-sm" onclick="editSample('${it.id}')">编辑</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteSample('${it.id}')">删除</button>
+            </div>
+          </div>`).join('');
+        return `
+          <div class="sample-group">
+            <div class="sg-header">
+              <span class="sg-name">📦 ${escHtml(name)}</span>
+              <span class="sg-sum">共 ${groupQty} 件 · ${groupBorrowed} 未归还</span>
+            </div>
+            <div class="sg-entries">${entries}</div>
+          </div>`;
+      }).join('');
+
+  container.innerHTML = `
+    <div class="page-header">
+      <span class="ph-icon">${DOG_ICONS['sample-records']}</span>
+      <span class="ph-title">样品记录</span>
+      <span class="ph-desc">按产品名称自动归类 · 记录借用与归还</span>
+    </div>
+    ${statsHtml}
+    <div class="card">
+      <button class="btn btn-primary" onclick="showAddSampleModal()">➕ 添加样品</button>
+      <div style="margin-top:16px;">${groupsHtml}</div>
+    </div>
+  `;
+}
+
+function showAddSampleModal() {
+  showModal(`
+    <div class="modal-title">➕ 添加样品</div>
+    <div class="form-group">
+      <label>产品名称</label>
+      <input type="text" class="input" id="sm-name" placeholder="如：羊毛大衣" autofocus>
+    </div>
+    <div class="form-group">
+      <label>颜色</label>
+      <input type="text" class="input" id="sm-color" placeholder="如：米白">
+    </div>
+    <div class="form-group">
+      <label>尺码</label>
+      <input type="text" class="input" id="sm-size" placeholder="如：M / 38">
+    </div>
+    <div class="form-group">
+      <label>数量</label>
+      <input type="number" class="input" id="sm-qty" value="1" min="1">
+    </div>
+    <div class="form-group">
+      <label>样品状态</label>
+      <select class="input" id="sm-status">
+        <option value="borrowed">未归还</option>
+        <option value="returned">已归还</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>录入日期</label>
+      ${datePickerHtml('sm-date', Store.todayKey(), '今天')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveSample()">保存</button>
+    </div>
+  `);
+}
+
+function saveSample() {
+  const name = (document.getElementById('sm-name').value || '').trim();
+  if (!name) { showToast('请填写产品名称'); return; }
+  const qty = parseInt(document.getElementById('sm-qty').value, 10);
+  const item = {
+    id: uid(),
+    name,
+    color: (document.getElementById('sm-color').value || '').trim(),
+    size: (document.getElementById('sm-size').value || '').trim(),
+    qty: isNaN(qty) || qty < 1 ? 1 : qty,
+    date: document.getElementById('sm-date').value || Store.todayKey(),
+    status: document.getElementById('sm-status').value
+  };
+  const arr = Store.getSamples();
+  arr.push(item);
+  Store.saveSamples(arr);
+  closeModal();
+  renderPage('sample-records');
+  showToast('样品已添加～ 📦');
+}
+
+function editSample(id) {
+  const it = Store.getSamples().find(x => x.id === id);
+  if (!it) return;
+  showModal(`
+    <div class="modal-title">✏️ 编辑样品</div>
+    <div class="form-group">
+      <label>产品名称</label>
+      <input type="text" class="input" id="sm-e-name" value="${escAttr(it.name)}" autofocus>
+    </div>
+    <div class="form-group">
+      <label>颜色</label>
+      <input type="text" class="input" id="sm-e-color" value="${escAttr(it.color || '')}">
+    </div>
+    <div class="form-group">
+      <label>尺码</label>
+      <input type="text" class="input" id="sm-e-size" value="${escAttr(it.size || '')}">
+    </div>
+    <div class="form-group">
+      <label>数量</label>
+      <input type="number" class="input" id="sm-e-qty" value="${escAttr(it.qty || 1)}" min="1">
+    </div>
+    <div class="form-group">
+      <label>样品状态</label>
+      <select class="input" id="sm-e-status">
+        <option value="borrowed" ${it.status !== 'returned' ? 'selected' : ''}>未归还</option>
+        <option value="returned" ${it.status === 'returned' ? 'selected' : ''}>已归还</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>录入日期</label>
+      ${datePickerHtml('sm-e-date', it.date || Store.todayKey(), '选择日期')}
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveSampleEdit('${it.id}')">保存</button>
+    </div>
+  `);
+}
+
+function saveSampleEdit(id) {
+  const arr = Store.getSamples();
+  const it = arr.find(x => x.id === id);
+  if (!it) return;
+  const name = (document.getElementById('sm-e-name').value || '').trim();
+  if (!name) { showToast('请填写产品名称'); return; }
+  const qty = parseInt(document.getElementById('sm-e-qty').value, 10);
+  it.name = name;
+  it.color = (document.getElementById('sm-e-color').value || '').trim();
+  it.size = (document.getElementById('sm-e-size').value || '').trim();
+  it.qty = isNaN(qty) || qty < 1 ? 1 : qty;
+  it.date = document.getElementById('sm-e-date').value || Store.todayKey();
+  it.status = document.getElementById('sm-e-status').value;
+  Store.saveSamples(arr);
+  closeModal();
+  renderPage('sample-records');
+  showToast('已更新～');
+}
+
+function setSampleStatus(id, status) {
+  const arr = Store.getSamples();
+  const it = arr.find(x => x.id === id);
+  if (!it) return;
+  it.status = status;
+  Store.saveSamples(arr);
+  renderPage('sample-records');
+}
+
+function deleteSample(id) {
+  const arr = Store.getSamples().filter(x => x.id !== id);
+  Store.saveSamples(arr);
+  renderPage('sample-records');
 }
 
 // ====================================================================

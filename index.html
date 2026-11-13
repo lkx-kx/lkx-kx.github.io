@@ -549,43 +549,81 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .ov-sample-label { font-size: 12px; color: var(--text-sub); }
 .ov-sample-sep { color: var(--text-light); margin: 0 6px; }
 
-/* 桌面 · 快捷入口 */
-.launcher-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-.launcher-card {
+/* 桌面顶部独立卡片（原单一 hero 卡拆成多张，避免空旷） */
+.hero-stats {
+  display: grid;
+  grid-template-columns: 1.6fr 1.3fr 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.hs-card {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  padding: 18px 16px;
+  border-radius: 24px;
+  padding: 20px 22px;
   box-shadow: var(--glass-shadow);
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
   position: relative;
   overflow: hidden;
 }
-.launcher-card:hover { transform: translateY(-3px); box-shadow: var(--glass-shadow), 0 10px 28px rgba(120, 100, 70, 0.12); }
-.launcher-icon { font-size: 26px; display: block; position: relative; z-index: 1; }
-.launcher-name { font-size: 15px; font-weight: 700; color: var(--text-main); margin-top: 8px; }
-.launcher-desc { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+.hs-clock { display: flex; flex-direction: column; justify-content: center; }
+.hs-clock .clock { font-size: 46px; letter-spacing: 3px; }
+.hs-clock .date-display { margin-top: 4px; }
+.hs-weather {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 15px; color: var(--text-main); cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.hs-weather:hover { opacity: 0.7; }
+.hs-weather .w-temp { font-weight: 700; }
+.hs-weather .w-loc { color: var(--text-sub); font-size: 12px; }
+.hs-label { font-size: 13px; color: var(--text-sub); font-weight: 600; margin-bottom: 10px; }
+.hs-value { font-size: 34px; font-weight: 700; color: var(--accent-caramel); line-height: 1; }
+.hs-unit { font-size: 14px; font-weight: 600; color: var(--text-sub); margin-left: 4px; }
+
+/* 最近动态 */
+.recent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.recent-col {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 22px;
+  padding: 16px 16px 6px;
+  box-shadow: var(--glass-shadow);
+}
+.recent-col-title { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+.recent-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 8px; border-radius: 14px; cursor: pointer; transition: background 0.15s ease;
+}
+.recent-row:hover { background: rgba(255, 255, 255, 0.42); }
+.recent-main { min-width: 0; }
+.recent-title { font-size: 14px; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-sub { font-size: 12px; color: var(--text-sub); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent-pill {
+  flex-shrink: 0; font-size: 12px; padding: 3px 11px; border-radius: 999px; font-weight: 600; white-space: nowrap;
+}
+.recent-pill.borrowed { background: #FBE3C8; color: #C98A3A; }
+.recent-pill.returned { background: #D8EBD0; color: #5E9A54; }
 
 @media (max-width: 768px) {
-  .dashboard-hero { flex-direction: column; text-align: center; gap: 18px; padding: 24px 20px; }
-  .hero-left { text-align: center; }
-  .hero-meta { justify-content: center; }
-  .hero-left .clock { font-size: 38px; }
-  .hero-center { padding: 0; }
-  .hero-center .quote-cn { font-size: 15px; }
   .board-card { padding: 16px; }
   .module-board-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .module-item { min-height: 50px; padding: 12px 13px; }
   .module-item .mi-title { font-size: 13px; }
   .overview-board-grid { grid-template-columns: 1fr 1fr; }
   .overview-item { min-height: 90px; padding: 12px 10px; }
+  .hero-stats { grid-template-columns: 1fr 1fr; }
+  .hs-clock { grid-column: 1 / -1; }
+  .hs-clock .clock { font-size: 40px; }
+  .recent-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
   .module-board-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero-stats { grid-template-columns: 1fr; }
 }
 
 /* ============ PAGE HEADER ============ */
@@ -3247,46 +3285,78 @@ function renderDashboard(container) {
     </div>
   `;
 
-  const DASH_LAUNCHERS = [
-    { page: 'work-checkin', icon: '✅', name: '工作打卡', desc: '签到 · 请假 · 假期' },
-    { page: 'todo', icon: '📝', name: '待办事项', desc: '任务 · 日程' },
-    { page: 'daily-tasks', icon: '📋', name: '每日任务', desc: '今日计划' },
-    { page: 'sample-records', icon: '📦', name: '样品记录', desc: '借用 · 归还' },
-    { page: 'lunch-menu', icon: '🍱', name: '午饭菜单', desc: '今天吃什么' }
-  ];
-  const launcherHtml = `
-    <div class="dash-section">
-      <div class="dash-section-title">🚀 快捷入口</div>
-      <div class="launcher-grid">
-        ${DASH_LAUNCHERS.map(l => `
-          <div class="launcher-card" onclick="navigate('${l.page}')">
-            <span class="launcher-icon">${l.icon}</span>
-            <div class="launcher-name">${l.name}</div>
-            <div class="launcher-desc">${l.desc}</div>
-          </div>`).join('')}
-      </div>
-    </div>
-  `;
+  // 5) 本月打卡天数
+  const monthCheckins = Object.values(att).filter(v => v && v.type === 'checkin').length;
+
+  // 6) 最近样品（按录入日期倒序，取前 6）
+  const recentSamples = samples.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 6);
+  const recentSampleHtml = recentSamples.length === 0
+    ? '<div class="today-empty">还没有样品记录，去「样品记录」添加吧</div>'
+    : recentSamples.map(s => `
+        <div class="recent-row" onclick="navigate('sample-records')">
+          <div class="recent-main">
+            <div class="recent-title">${escHtml(s.name || '未命名样品')}</div>
+            <div class="recent-sub">${escHtml([s.color, s.size].filter(Boolean).join(' · '))}${s.qty ? ' · ' + s.qty + ' 件' : ''}</div>
+          </div>
+          <span class="recent-pill ${s.status === 'returned' ? 'returned' : 'borrowed'}">${s.status === 'returned' ? '已归还' : '未归还'}</span>
+        </div>`).join('');
+
+  // 7) 近期日程（未完成、日期≥今天，按日期+时间升序，取前 5）
+  const tk = Store.todayKey();
+  const upcoming = Store.getSchedule().filter(s => !s.done && s.date >= tk)
+    .sort((a, b) => (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99'))).slice(0, 5);
+  const recentSchedHtml = upcoming.length === 0
+    ? '<div class="today-empty">近期没有待办日程～</div>'
+    : upcoming.map(s => `
+        <div class="recent-row" onclick="navigate('todo')">
+          <div class="recent-main">
+            <div class="recent-title">${escHtml(s.title || s.text || '日程')}</div>
+            <div class="recent-sub">📅 ${escHtml(s.date)}${s.allday ? ' 全天' : (s.time ? ' ' + escHtml(s.time) : '')}${s.repeat && s.repeat !== 'none' ? ' · 🔁' + repeatLabel(s.repeat) : ''}</div>
+          </div>
+        </div>`).join('');
 
   container.innerHTML = `
     <div class="dashboard">
-      <div class="dashboard-hero">
-        <div class="hero-left">
+
+      <div class="hero-stats">
+        <div class="hs-card hs-clock">
           <div class="clock" id="dash-clock">--:--:--</div>
           <div class="date-display">${dateStr}</div>
-          <div class="hero-meta">
-            <div class="weather-box" id="dash-weather" onclick="setWeatherCity()" title="点击切换城市">🌤 天气加载中…</div>
-            <div class="hero-streak">🔥 连续打卡 ${cum.streak} 天</div>
-          </div>
         </div>
-        <div class="hero-center">
-          <div class="quote-label">🌸 每日一句 · Daily Quote</div>
-          <div class="quote-cn">${quote.cn}</div>
-          <div class="quote-en">${quote.en}</div>
+        <div class="hs-card hs-weather" id="dash-weather" onclick="setWeatherCity()" title="点击切换城市">
+          🌤 天气加载中…
+        </div>
+        <div class="hs-card hs-streak">
+          <div class="hs-label">🔥 连续打卡</div>
+          <div class="hs-value">${cum.streak}<span class="hs-unit">天</span></div>
+        </div>
+        <div class="hs-card hs-month">
+          <div class="hs-label">📅 本月打卡</div>
+          <div class="hs-value">${monthCheckins}<span class="hs-unit">天</span></div>
         </div>
       </div>
+
+      <div class="quote-card">
+        <div class="quote-label">🌸 每日一句 · Daily Quote</div>
+        <div class="quote-cn">${quote.cn}</div>
+        <div class="quote-en">${quote.en}</div>
+      </div>
+
       ${todayOverviewHtml}
-      ${launcherHtml}
+
+      <div class="dash-section">
+        <div class="dash-section-title">📎 最近动态<span class="ds-desc">样品与日程一览</span></div>
+        <div class="recent-grid">
+          <div class="recent-col">
+            <div class="recent-col-title">📦 最近样品</div>
+            ${recentSampleHtml}
+          </div>
+          <div class="recent-col">
+            <div class="recent-col-title">📆 近期日程</div>
+            ${recentSchedHtml}
+          </div>
+        </div>
+      </div>
     </div>
   `;
   startClock();

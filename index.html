@@ -3105,6 +3105,8 @@ body {
 .variant-del { border: 1px solid var(--border-soft); background: transparent; color: var(--text-light); border-radius: 4px; height: 26px; line-height: 24px; cursor: pointer; padding: 0; }
 .variant-del:hover { color: var(--accent-caramel); border-color: var(--accent-caramel); }
 .variant-count { font-size: 11px; color: var(--accent-caramel); margin-top: 8px; }
+.bl-table th:last-child, .bl-table td:last-child { width: 72px; white-space: nowrap; }
+.bl-table .btn { white-space: nowrap; }
 
 /* ============ 采购 / 销售清单 ============ */
 .bill-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
@@ -3153,11 +3155,21 @@ body {
 /* 弹窗：内容再多也只在自身内部滚动，不撑出页面 */
 .modal-overlay { padding: 20px 12px; }
 .modal {
-  width: min(560px, 100%);
+  width: min(880px, 100%);
   max-height: calc(100vh - 40px);
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+/* 内容较少的确认类弹窗保持紧凑，避免空旷 */
+.modal.modal-compact { width: min(520px, 100%); }
+.modal .calc-line, .modal .bill-scroll { width: 100%; }
+.modal .calc-line { flex-wrap: wrap; gap: 10px 16px; }
+.modal .calc-line .input { min-width: 130px; flex: 1 1 auto; width: auto; }
+.modal .calc-line label { white-space: nowrap; }
+@media (max-width: 700px) {
+  .modal { width: 100%; }
+  .modal.modal-compact { width: 100%; }
 }
 .modal-title { position: sticky; top: -28px; z-index: 2; padding: 0 0 10px; background: var(--cream-card); }
 .modal-actions { position: sticky; bottom: -28px; z-index: 2; padding: 12px 0 0; background: var(--cream-card); }
@@ -3671,6 +3683,22 @@ const Store = {
   saveSamples(arr) {
     localStorage.setItem('lxk_samples', JSON.stringify(arr));
   },
+  // 已归还样品历史（保留 30 天，自动清理过期记录）
+  getSampleHistory() {
+    const raw = localStorage.getItem('lxk_sample_history');
+    let arr = raw ? JSON.parse(raw) : [];
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const kept = arr.filter(x => {
+      const t = Date.parse(x.returnedAt || '');
+      return !isNaN(t) && t >= cutoff;
+    });
+    if (kept.length !== arr.length) {
+      localStorage.setItem('lxk_sample_history', JSON.stringify(kept));
+      arr = kept;
+    }
+    return arr;
+  },
+  saveSampleHistory(arr) { safeSetItem('lxk_sample_history', JSON.stringify(arr)); },
 
   // ===== 产品库 =====
   getProducts() {
@@ -3719,14 +3747,48 @@ const Store = {
     return raw ? JSON.parse(raw) : [];
   },
   savePoOrders(arr) { safeSetItem('lxk_po_orders', JSON.stringify(arr)); },
+  getPoTemplate() {
+    const base = { name: '固定模板', headers: PO_TEMPLATE_HEADERS.slice(), preamble: [], sheetName: '采购订单' };
+    const raw = localStorage.getItem('lxk_po_template');
+    if (!raw) return base;
+    try {
+      const o = JSON.parse(raw);
+      return {
+        name: o.name || base.name,
+        headers: Array.isArray(o.headers) && o.headers.length ? o.headers : base.headers,
+        preamble: Array.isArray(o.preamble) ? o.preamble : [],
+        sheetName: o.sheetName || base.sheetName
+      };
+    } catch (e) { return base; }
+  },
+  savePoTemplate(obj) { safeSetItem('lxk_po_template', JSON.stringify(obj)); },
   getSettleDocs() {
     const raw = localStorage.getItem('lxk_settle_docs');
     return raw ? JSON.parse(raw) : [];
   },
   saveSettleDocs(arr) { safeSetItem('lxk_settle_docs', JSON.stringify(arr)); },
   getSettleTemplates() {
+    const out = {};
+    Object.keys(SETTLE_TEMPLATES_DEFAULT).forEach(k => {
+      out[k] = { name: '默认表头', headers: SETTLE_TEMPLATES_DEFAULT[k].slice(), preamble: [] };
+    });
     const raw = localStorage.getItem('lxk_settle_templates');
-    return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(SETTLE_TEMPLATES_DEFAULT));
+    if (!raw) return out;
+    try {
+      const o = JSON.parse(raw);
+      Object.keys(out).forEach(k => {
+        const v = o[k];
+        if (Array.isArray(v)) { out[k] = { name: '自定义表头', headers: v.slice(), preamble: [] }; }
+        else if (v && typeof v === 'object') {
+          out[k] = {
+            name: v.name || '自定义表头',
+            headers: Array.isArray(v.headers) && v.headers.length ? v.headers.slice() : out[k].headers,
+            preamble: Array.isArray(v.preamble) ? v.preamble : []
+          };
+        }
+      });
+    } catch (e) { /* 保留默认 */ }
+    return out;
   },
   saveSettleTemplates(obj) { safeSetItem('lxk_settle_templates', JSON.stringify(obj)); },
 
@@ -6405,8 +6467,45 @@ function parseSmartSamples(raw) {
 // ====================================================================
 // 样品记录（按产品名称自动归类 · 借用/归还状态）
 // ====================================================================
+function archiveSampleToHistory(it, at) {
+  const hist = Store.getSampleHistory();
+  hist.unshift(Object.assign({}, it, { status: 'returned', returnedAt: at || new Date().toISOString() }));
+  Store.saveSampleHistory(hist);
+}
+function reconcileSampleHistory() {
+  const arr = Store.getSamples();
+  const keep = [];
+  let moved = 0;
+  arr.forEach(it => {
+    if (it.status === 'returned') {
+      const at = it.date ? it.date + 'T12:00:00' : new Date().toISOString();
+      archiveSampleToHistory(it, at);
+      moved++;
+    } else keep.push(it);
+  });
+  if (moved) Store.saveSamples(keep);
+}
+function restoreSampleHistory(id) {
+  const hist = Store.getSampleHistory();
+  const i = hist.findIndex(x => x.id === id);
+  if (i < 0) return;
+  const it = hist.splice(i, 1)[0];
+  Store.saveSampleHistory(hist);
+  const arr = Store.getSamples();
+  arr.push(Object.assign({}, it, { status: 'borrowed', returnedAt: '' }));
+  Store.saveSamples(arr);
+  renderPage('sample-records');
+  showToast('已恢复为未归还');
+}
+function deleteSampleHistory(id) {
+  Store.saveSampleHistory(Store.getSampleHistory().filter(x => x.id !== id));
+  renderPage('sample-records');
+}
+
 function renderSampleRecords(container) {
+  reconcileSampleHistory();
   const items = Store.getSamples();
+  const history = Store.getSampleHistory();
   const productMap = new Map(Store.getProducts().map(p => [p.id, p]));
   const groups = {};
   items.forEach(it => {
@@ -6418,7 +6517,7 @@ function renderSampleRecords(container) {
   const total = items.length;
   const distinct = names.length;
   const borrowed = items.filter(i => i.status !== 'returned').length;
-  const returned = total - borrowed;
+  const returned = history.length;
   const totalQty = items.reduce((s, i) => s + (Number(i.qty) || 0), 0);
 
   const statsHtml = `
@@ -6445,8 +6544,8 @@ function renderSampleRecords(container) {
             <div class="se-meta">${it.productId && productMap.get(it.productId) ? `<span class="sample-link" onclick="navigate('products')">🔗 ${escHtml(productMap.get(it.productId).name)}</span> · ` : ''}录入 ${fmtCNDate(it.date)}</div>
             <div class="se-actions">
               <div class="se-status">
-                <button class="st-pill ${it.status !== 'returned' ? 'on' : ''}" onclick="setSampleStatus('${it.id}','borrowed')">未归还</button>
-                <button class="st-pill ret ${it.status === 'returned' ? 'on' : ''}" onclick="setSampleStatus('${it.id}','returned')">已归还</button>
+                <button class="st-pill on" onclick="setSampleStatus('${it.id}','borrowed')">未归还</button>
+                <button class="st-pill ret" title="点选后移入样品历史" onclick="setSampleStatus('${it.id}','returned')">已归还</button>
               </div>
               <button class="btn btn-outline btn-sm" onclick="editSample('${it.id}')">编辑</button>
               <button class="btn btn-danger btn-sm" onclick="deleteSample('${it.id}')">删除</button>
@@ -6461,6 +6560,25 @@ function renderSampleRecords(container) {
             <div class="sg-entries">${entries}</div>
           </div>`;
       }).join('');
+
+  const historyHtml = history.length ? `<div class="bill-scroll"><table class="bill-table">
+    <thead><tr><th>产品名称</th><th>颜色 / 尺码</th><th>数量</th><th>归还日期</th><th>保留</th><th>操作</th></tr></thead>
+    <tbody>${history.map(h => {
+      const t = Date.parse(h.returnedAt || '');
+      const days = isNaN(t) ? 30 : Math.max(0, 30 - Math.floor((Date.now() - t) / 86400000));
+      return `<tr>
+        <td><div class="bill-name">${escHtml(h.name || '未命名样品')}</div>${h.productId && productMap.get(h.productId) ? `<div class="bill-sub">🔗 ${escHtml(productMap.get(h.productId).name)}</div>` : ''}</td>
+        <td>${escHtml([h.color, h.size ? '尺码 ' + h.size : ''].filter(Boolean).join(' / ') || '—')}</td>
+        <td>${escHtml(h.qty || 0)}</td>
+        <td>${escHtml((h.returnedAt || '').slice(0, 10) || h.date || '—')}</td>
+        <td>剩余 ${days} 天</td>
+        <td><div class="bill-actions">
+          <button class="btn btn-outline btn-sm" onclick="restoreSampleHistory('${h.id}')">恢复未归还</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSampleHistory('${h.id}')">删除</button>
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`
+    : emptyState('📥', '暂无已归还样品', '在上方样品中点「已归还」，会自动收纳到这里并保留 30 天。');
 
   container.innerHTML = `
     <div class="page-header">
@@ -6491,6 +6609,13 @@ function renderSampleRecords(container) {
     <div class="card">
       <button class="btn btn-primary" onclick="showAddSampleModal()">➕ 手动添加样品</button>
       <div style="margin-top:16px;">${groupsHtml}</div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <div class="section-head">
+        <div><div class="section-title">样品历史（已归还）</div><div class="section-sub">归还后自动收纳，每条保留 30 天，过期自动清理</div></div>
+        <span style="font-size:12px;color:var(--text-light);">共 ${history.length} 条</span>
+      </div>
+      ${historyHtml}
     </div>
   `;
 }
@@ -6545,16 +6670,20 @@ function commitSmartSamples() {
   if (!list.length) { showToast('没有可添加的内容'); return; }
   const arr = Store.getSamples();
   const productByName = new Map(Store.getProducts().map(p => [p.name, p.id]));
-  list.forEach(it => arr.push({
-    id: uid(),
-    productId: productByName.get((it.name || '').trim()) || '',
-    name: it.name,
-    color: it.color,
-    size: it.size,
-    qty: it.qty,
-    date: it.date,
-    status: it.status
-  }));
+  list.forEach(it => {
+    const item = {
+      id: uid(),
+      productId: productByName.get((it.name || '').trim()) || '',
+      name: it.name,
+      color: it.color,
+      size: it.size,
+      qty: it.qty,
+      date: it.date,
+      status: it.status
+    };
+    if (item.status === 'returned') archiveSampleToHistory(item, (item.date || Store.todayKey()) + 'T12:00:00');
+    else arr.push(item);
+  });
   Store.saveSamples(arr);
   ta.value = '';
   const box = document.getElementById('sm-preview');
@@ -6640,11 +6769,12 @@ function saveSample() {
     status: document.getElementById('sm-status').value
   };
   const arr = Store.getSamples();
-  arr.push(item);
+  if (item.status === 'returned') archiveSampleToHistory(item, (item.date || Store.todayKey()) + 'T12:00:00');
+  else arr.push(item);
   Store.saveSamples(arr);
   closeModal();
   renderPage('sample-records');
-  showToast('样品已添加～ 📦');
+  showToast(item.status === 'returned' ? '已归还样品已收纳到样品历史～ 📥' : '样品已添加～ 📦');
 }
 
 function editSample(id) {
@@ -6703,19 +6833,31 @@ function saveSampleEdit(id) {
   it.size = (document.getElementById('sm-e-size').value || '').trim();
   it.qty = isNaN(qty) || qty < 1 ? 1 : qty;
   it.date = document.getElementById('sm-e-date').value || Store.todayKey();
-  it.status = document.getElementById('sm-e-status').value;
-  Store.saveSamples(arr);
+  const status = document.getElementById('sm-e-status').value;
+  it.status = status;
+  if (status === 'returned') {
+    Store.saveSamples(arr.filter(x => x.id !== id));
+    archiveSampleToHistory(it, (it.date || Store.todayKey()) + 'T12:00:00');
+  } else {
+    Store.saveSamples(arr);
+  }
   closeModal();
   renderPage('sample-records');
-  showToast('已更新～');
+  showToast(status === 'returned' ? '已移入样品历史～' : '已更新～');
 }
 
 function setSampleStatus(id, status) {
   const arr = Store.getSamples();
   const it = arr.find(x => x.id === id);
   if (!it) return;
-  it.status = status;
-  Store.saveSamples(arr);
+  if (status === 'returned') {
+    Store.saveSamples(arr.filter(x => x.id !== id));
+    archiveSampleToHistory(it, new Date().toISOString());
+    showToast('已归还，自动收纳到样品历史（保留 30 天）');
+  } else {
+    it.status = status;
+    Store.saveSamples(arr);
+  }
   renderPage('sample-records');
 }
 
@@ -7195,9 +7337,26 @@ function deleteProductField(key) {
 }
 
 /* ---------------- 采购 / 销售清单 ---------------- */
-function statusTags(r) {
-  return `<span class="st-tag ${r.payStatus === 'settled' ? 'on' : ''}">${r.payStatus === 'settled' ? '已结算' : '未结算'}</span>`
-       + `<span class="st-tag warn ${r.makeStatus === 'made' ? 'on' : ''}">${r.makeStatus === 'made' ? '已做单' : '未做单'}</span>`;
+function statusTags(r, page) {
+  page = page || 'purchases';
+  const btn = (field, val, on, label, cls) =>
+    `<button class="st-pill ${cls || ''} ${on ? 'on' : ''}" title="点击切换" onclick="setBillStatus('${page}','${r.id}','${field}','${val}')">${label}</button>`;
+  return `<span class="se-status">`
+    + btn('payStatus', 'unsettled', r.payStatus !== 'settled', '未结算')
+    + btn('payStatus', 'settled', r.payStatus === 'settled', '已结算')
+    + btn('makeStatus', 'unmade', r.makeStatus !== 'made', '未做单', 'ret')
+    + btn('makeStatus', 'made', r.makeStatus === 'made', '已做单', 'ret')
+    + `</span>`;
+}
+function setBillStatus(page, id, field, val) {
+  if (field !== 'payStatus' && field !== 'makeStatus') return;
+  const arr = page === 'sales' ? Store.getSales() : Store.getPurchases();
+  const it = arr.find(x => x.id === id);
+  if (!it) return;
+  it[field] = val;
+  if (page === 'sales') Store.saveSales(arr); else Store.savePurchases(arr);
+  renderPage(page);
+  showToast('状态已更新');
 }
 
 function billDateFields(prefix, r) {
@@ -7225,9 +7384,11 @@ function billStatusFields(prefix, r) {
 
 function readBillCommon(prefix) {
   const val = id => (document.getElementById(prefix + '_' + id) || {}).value || '';
+  const price = parseFloat(val('price')) || 0;
+  const detail = billParsedLines(prefix, '', parseFloat(val('qty')) || 0, price);
   return {
-    qty: parseFloat(val('qty')) || 0,
-    unitPrice: parseFloat(val('price')) || 0,
+    qty: detail.length ? detail.reduce((n, l) => n + (Number(l.qty) || 0), 0) : (parseFloat(val('qty')) || 0),
+    unitPrice: price,
     billNo: val('billno').trim(),
     orderDate: val('order'),
     deliveryDate: val('delivery'),
@@ -7241,8 +7402,11 @@ function readBillCommon(prefix) {
 function calcBillTotal(prefix) {
   const q = parseFloat((document.getElementById(prefix + '_qty') || {}).value) || 0;
   const p = parseFloat((document.getElementById(prefix + '_price') || {}).value) || 0;
+  const detail = billParsedLines(prefix, '', q, p);
+  const total = detail.length ? detail.reduce((n, l) => n + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0) : q * p;
   const el = document.getElementById(prefix + '_total');
-  if (el) el.textContent = money(q * p);
+  if (el) el.textContent = money(total);
+  return total;
 }
 
 function noProductModal(page) {
@@ -7299,9 +7463,14 @@ function openPurchaseModal(id) {
     </div>
     <div class="form-group"><label>单据编号</label><input type="text" class="input" id="pu_billno" value="${escAttr(r ? r.billNo : '')}" placeholder="可留空"></div>
     <div class="calc-line">
-      <label>数量</label><input type="number" class="input" id="pu_qty" value="${escAttr(r ? r.qty : 1)}" min="0" step="1" oninput="calcBillTotal('pu')">
+      <label>数量</label><input type="number" class="input" id="pu_qty" value="${escAttr(r ? r.qty : 1)}" min="0" step="1" oninput="onBillQtyChange('pu')">
       <label>成本单价</label><input type="number" class="input" id="pu_price" value="${escAttr(price)}" min="0" step="0.01" oninput="calcBillTotal('pu')">
       <span class="calc-total" id="pu_total">¥0.00</span>
+    </div>
+    <div class="form-group"><label>按款式 / 颜色 / 尺码录入数量</label>
+      <div class="field-hint" style="margin-bottom:8px;">同一产品的不同款式、颜色、尺码可分别填写数量；留空则只按上方总数量记录。</div>
+      <div id="pu-line-editor"></div>
+      <textarea id="pu_lines" style="display:none;"></textarea>
     </div>
     <div style="height:14px;"></div>
     ${billDateFields('pu', r)}
@@ -7312,13 +7481,21 @@ function openPurchaseModal(id) {
       <button class="btn btn-primary" onclick="savePurchase('${r ? r.id : ''}')">保存</button>
     </div>
   `);
+  openBillLineEditor('pu', r ? linesFromRecord(r, price) : productLineSeeds(selected, price));
   calcBillTotal('pu');
 }
 
 function onPurchaseProductChange() {
   const id = document.getElementById('pu_product').value;
   const p = Store.getProducts().find(x => x.id === id);
-  if (p) document.getElementById('pu_price').value = (p.values && p.values.costPrice) || '';
+  if (!p) return;
+  const price = (p.values && p.values.costPrice) || '';
+  document.getElementById('pu_price').value = price;
+  if (billLineDraft && billLineDraft.prefix === 'pu') {
+    billLineDraft.lines = productLineSeeds(p, price);
+    renderBillLines('pu');
+    syncBillLines('pu');
+  }
   calcBillTotal('pu');
 }
 
@@ -7328,9 +7505,11 @@ function savePurchase(id) {
   if (!p) { showToast('请选择产品'); return; }
   const common = readBillCommon('pu');
   if (!(common.qty > 0)) { showToast('请填写正确的采购数量'); return; }
+  const lines = billParsedLines('pu', productSpec(p), common.qty, common.unitPrice);
+  const total = lines.length ? lines.reduce((n, l) => n + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0) : common.qty * common.unitPrice;
   const rec = Object.assign({
     id: id || uid(), productId, productName: p.name, spec: productSpec(p),
-    total: +(common.qty * common.unitPrice).toFixed(2), createdAt: Store.todayKey()
+    lines, total: +total.toFixed(2), createdAt: Store.todayKey()
   }, common);
   const arr = Store.getPurchases();
   if (id) {
@@ -7384,7 +7563,16 @@ function parseSalesLines(text, spec, qty, price) {
   rules.forEach(rule => {
     let unitPrice = null;
     const at = rule.lastIndexOf('@');
-    if (at >= 0) { unitPrice = parseFloat(rule.slice(at + 1)) || 0; rule = rule.slice(0, at); }
+    if (at >= 0) { unitPrice = parseFloat(rule.slice(at + 1)) || 0; rule = rule.slice(0, at).trim(); }
+    // 结构化明细（款式|颜色|尺码|数量|单价）
+    if (rule.indexOf('|') >= 0) {
+      const a = rule.split('|').map(x => x.trim());
+      const q = parseFloat(a[3]);
+      if (!(q > 0)) return;
+      const p = unitPrice === null ? (parseFloat(a[4]) || 0) : unitPrice;
+      lines.push({ style: a[0] || '', color: a[1] || '', size: a[2] || '', qty: q, unitPrice: p });
+      return;
+    }
     const parts = rule.split(/[\s,，/]+/).filter(Boolean);
     const qi = parts.findIndex(p => /^\d+(\.\d+)?$/.test(p));
     if (qi < 0) return;
@@ -7392,27 +7580,131 @@ function parseSalesLines(text, spec, qty, price) {
     if (!(q > 0)) return;
     const meta = parts.slice(0, qi);
     lines.push({
-      color: meta.length >= 2 ? meta[0] : '',
-      size: meta.length >= 2 ? meta[1] : (meta[0] || ''),
+      style: meta.length >= 3 ? meta[0] : '',
+      color: meta.length >= 3 ? meta[1] : (meta.length >= 2 ? meta[0] : ''),
+      size: meta.length >= 3 ? meta[2] : (meta.length >= 2 ? meta[1] : (meta[0] || '')),
       qty: q,
       unitPrice: unitPrice === null ? (Number(price) || 0) : unitPrice
     });
   });
-  if (!lines.length) lines.push({ color: '', size: spec || '', qty: Number(qty) || 0, unitPrice: Number(price) || 0 });
+  if (!lines.length) lines.push({ style: '', color: '', size: spec || '', qty: Number(qty) || 0, unitPrice: Number(price) || 0 });
   return lines;
 }
 
 function salesLinesToText(lines) {
-  return (lines || []).map(l => [l.color, l.size, l.qty].filter(v => v !== '' && v !== null && v !== undefined).join(' ') + ' @' + (l.unitPrice || 0)).join('\n');
+  return (lines || []).filter(l =>
+    [l.style, l.color, l.size].some(v => String(v || '').trim()) || (Number(l.qty) || 0) > 0 || (Number(l.unitPrice) || 0) > 0
+  ).map(l => [l.style || '', l.color || '', l.size || '', l.qty || 0, l.unitPrice || 0].join('|')).join('\n');
 }
 
+/* ---- 按款式 / 颜色 / 尺码的结构化明细编辑器（采购与销售共用） ---- */
+let billLineDraft = null;
+function linesFromRecord(r, defaultPrice) {
+  if (r && r.lines && r.lines.length) {
+    return r.lines.map(l => ({ style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(l.unitPrice) || 0 }));
+  }
+  return [{ style: '', color: '', size: (r && r.spec) || '', qty: (r && Number(r.qty)) || 0, unitPrice: Number(defaultPrice) || 0 }];
+}
+function productLineSeeds(p, price) {
+  const seeds = [];
+  if (p && p.variants && p.variants.length) {
+    p.variants.forEach(s => (s.colors || []).forEach(c => (c.sizes || []).forEach(z => {
+      if ([s.style, c.color, z.size].some(Boolean)) {
+        seeds.push({ style: s.style || '', color: c.color || '', size: z.size || '', qty: 0, unitPrice: Number(price) || 0 });
+      }
+    })));
+  }
+  if (!seeds.length) {
+    seeds.push({ style: '', color: '', size: productSpec(p) || '', qty: 0, unitPrice: Number(price) || 0 });
+  }
+  return seeds;
+}
+function openBillLineEditor(prefix, lines) {
+  billLineDraft = { prefix, lines: lines.map(l => Object.assign({ style: '', color: '', size: '', qty: 0, unitPrice: 0 }, l)) };
+  const hidden = document.getElementById(prefix + '_lines');
+  if (hidden) hidden.value = salesLinesToText(billLineDraft.lines);
+  renderBillLines(prefix);
+}
+function syncBillLines(prefix) {
+  if (!billLineDraft || billLineDraft.prefix !== prefix) return;
+  const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  billLineDraft.lines.forEach((l, i) => {
+    l.style = val(`bl_${prefix}_${i}_style`);
+    l.color = val(`bl_${prefix}_${i}_color`);
+    l.size = val(`bl_${prefix}_${i}_size`);
+    l.qty = parseFloat(val(`bl_${prefix}_${i}_qty`)) || 0;
+    l.unitPrice = parseFloat(val(`bl_${prefix}_${i}_price`)) || 0;
+  });
+  const hidden = document.getElementById(prefix + '_lines');
+  if (hidden) hidden.value = salesLinesToText(billLineDraft.lines);
+  calcBillTotal(prefix);
+}
+function renderBillLines(prefix) {
+  const box = document.getElementById(prefix + '-line-editor');
+  if (!box || !billLineDraft || billLineDraft.prefix !== prefix) return;
+  const priceLabel = prefix === 'pu' ? '成本单价' : '销售单价';
+  box.innerHTML = `
+    <div class="bill-scroll"><table class="bill-table bl-table">
+      <thead><tr><th>款式</th><th>颜色</th><th>尺码</th><th>数量</th><th>${priceLabel}</th><th>金额</th><th>操作</th></tr></thead>
+      <tbody>${billLineDraft.lines.map((l, i) => `
+        <tr>
+          <td><input class="input" id="bl_${prefix}_${i}_style" value="${escAttr(l.style)}" placeholder="可留空" oninput="syncBillLines('${prefix}')"></td>
+          <td><input class="input" id="bl_${prefix}_${i}_color" value="${escAttr(l.color)}" placeholder="可留空" oninput="syncBillLines('${prefix}')"></td>
+          <td><input class="input" id="bl_${prefix}_${i}_size" value="${escAttr(l.size)}" placeholder="如 XL / M" oninput="syncBillLines('${prefix}')"></td>
+          <td><input class="input" type="number" min="0" step="1" id="bl_${prefix}_${i}_qty" value="${escAttr(l.qty)}" oninput="syncBillLines('${prefix}')"></td>
+          <td><input class="input" type="number" min="0" step="0.01" id="bl_${prefix}_${i}_price" value="${escAttr(l.unitPrice)}" oninput="syncBillLines('${prefix}')"></td>
+          <td class="bill-total">${money((Number(l.qty) || 0) * (Number(l.unitPrice) || 0))}</td>
+          <td><button type="button" class="btn btn-text btn-sm" onclick="billRemoveLine('${prefix}',${i})">移除</button></td>
+        </tr>`).join('')}</tbody>
+    </table></div>
+    <div class="form-actions"><button type="button" class="btn btn-text btn-sm" onclick="billAddLine('${prefix}')">＋ 添加规格明细</button>
+      <span class="form-actions-spacer"></span><span class="field-hint">总数量与总金额按以上明细自动汇总；也可只填上方总数量。</span></div>`;
+}
+function billAddLine(prefix) {
+  if (!billLineDraft || billLineDraft.prefix !== prefix) return;
+  syncBillLines(prefix);
+  billLineDraft.lines.push({ style: '', color: '', size: '', qty: 0, unitPrice: 0 });
+  renderBillLines(prefix);
+}
+function billRemoveLine(prefix, i) {
+  if (!billLineDraft || billLineDraft.prefix !== prefix) return;
+  syncBillLines(prefix);
+  billLineDraft.lines.splice(i, 1);
+  if (!billLineDraft.lines.length) billLineDraft.lines.push({ style: '', color: '', size: '', qty: 0, unitPrice: 0 });
+  renderBillLines(prefix);
+}
+function billHiddenLines(prefix) {
+  const el = document.getElementById(prefix + '_lines');
+  return el ? (el.value || '') : '';
+}
+function billParsedLines(prefix, spec, qty, price) {
+  const text = billHiddenLines(prefix);
+  if (!text.trim()) return [];
+  return parseSalesLines(text, spec, qty, price).filter(l => (Number(l.qty) || 0) > 0);
+}
+function onBillQtyChange(prefix) {
+  const qEl = document.getElementById(prefix + '_qty');
+  const q = parseFloat(qEl && qEl.value) || 0;
+  if (billLineDraft && billLineDraft.prefix === prefix && billLineDraft.lines.length === 1) {
+    billLineDraft.lines[0].qty = q;
+    const inp = document.getElementById(`bl_${prefix}_0_qty`);
+    if (inp) inp.value = q;
+    const hidden = document.getElementById(prefix + '_lines');
+    if (hidden) hidden.value = salesLinesToText(billLineDraft.lines);
+  }
+  calcBillTotal(prefix);
+}
+
+function settledMatches(s, l) {
+  const styleOk = !(s && s.style) || (s.style || '') === (l.style || '');
+  return styleOk && (s && s.color || '') === (l.color || '') && (s && s.size || '') === (l.size || '');
+}
 function salesRemainingLines(r) {
-  const original = r && r.lines && r.lines.length ? r.lines : [{ color: '', size: r && r.spec || '', qty: Number(r && r.qty) || 0, unitPrice: Number(r && r.unitPrice) || 0 }];
+  const original = r && r.lines && r.lines.length ? r.lines : [{ style: '', color: '', size: r && r.spec || '', qty: Number(r && r.qty) || 0, unitPrice: Number(r && r.unitPrice) || 0 }];
   const settled = (r && r.settledLines) || [];
-  const used = key => settled.filter(s => (s.color || '') + '|' + (s.size || '') === key).reduce((n, s) => n + (Number(s.qty) || 0), 0);
   return original.map(l => {
-    const key = (l.color || '') + '|' + (l.size || '');
-    const left = (Number(l.qty) || 0) - used(key);
+    const used = settled.filter(s => settledMatches(s, l)).reduce((n, s) => n + (Number(s.qty) || 0), 0);
+    const left = (Number(l.qty) || 0) - used;
     return left > 0 ? Object.assign({}, l, { qty: left }) : null;
   }).filter(Boolean);
 }
@@ -7444,14 +7736,15 @@ function openSalesModal(id) {
     </div>
     <div class="form-group"><label>单据编号</label><input type="text" class="input" id="sa_billno" value="${escAttr(r ? r.billNo : '')}" placeholder="可留空"></div>
     <div class="calc-line">
-      <label>数量</label><input type="number" class="input" id="sa_qty" value="${escAttr(r ? r.qty : 1)}" min="0" step="1" oninput="calcBillTotal('sa')">
+      <label>数量</label><input type="number" class="input" id="sa_qty" value="${escAttr(r ? r.qty : 1)}" min="0" step="1" oninput="onBillQtyChange('sa')">
       <label>销售单价</label><input type="number" class="input" id="sa_price" value="${escAttr(price)}" min="0" step="0.01" oninput="calcBillTotal('sa')">
       <span class="calc-total" id="sa_total">¥0.00</span>
     </div>
     <div style="height:14px;"></div>
-    <div class="form-group"><label>数量明细（可选，用于结算材料剩余计算）</label>
-      <textarea class="input" id="sa_lines" rows="3" placeholder="每行：颜色 尺码 数量 @单价&#10;如：蓝色 XL 50 @260&#10;蓝色 L 50 @260">${escHtml(r && r.lines && r.lines.length ? salesLinesToText(r.lines) : '')}</textarea>
-      <div class="field-hint">留空则按上方总数量生成一条明细；填写后按明细计算金额与剩余</div>
+    <div class="form-group"><label>按款式 / 颜色 / 尺码录入数量</label>
+      <div class="field-hint" style="margin-bottom:8px;">每个规格分别录入数量，结算材料的剩余数量会自动按规格追踪。</div>
+      <div id="sa-line-editor"></div>
+      <textarea id="sa_lines" style="display:none;">${escHtml(r && r.lines && r.lines.length ? salesLinesToText(r.lines) : '')}</textarea>
     </div>
     ${billDateFields('sa', r)}
     ${billStatusFields('sa', r)}
@@ -7462,6 +7755,9 @@ function openSalesModal(id) {
     </div>
   `);
   if (linkVal) document.getElementById('sa_link').value = linkVal;
+  openBillLineEditor('sa', r && r.lines && r.lines.length
+    ? linesFromRecord(r, price)
+    : [{ style: '', color: '', size: (r && r.spec) || '', qty: r ? (Number(r.qty) || 0) : 0, unitPrice: Number(price) || 0 }]);
   calcBillTotal('sa');
 }
 
@@ -7473,7 +7769,14 @@ function onSalesLinkChange() {
     const b = Store.getPurchases().find(x => x.id === v.slice(2));
     if (b) p = Store.getProducts().find(x => x.id === b.productId);
   }
-  if (p) document.getElementById('sa_price').value = (p.values && p.values.salePrice) || '';
+  if (!p) return;
+  const price = (p.values && p.values.salePrice) || '';
+  document.getElementById('sa_price').value = price;
+  if (billLineDraft && billLineDraft.prefix === 'sa') {
+    billLineDraft.lines = productLineSeeds(p, price);
+    renderBillLines('sa');
+    syncBillLines('sa');
+  }
   calcBillTotal('sa');
 }
 
@@ -7551,6 +7854,37 @@ function downloadAoa(aoa, filename, sheetName) {
   XLSX.utils.book_append_sheet(wb, ws, sheetName || 'Sheet1');
   XLSX.writeFile(wb, filename);
 }
+// 读取上传的 Excel 模板：返回表头行、前导行与工作表名称
+function readExcelTemplate(file, cb) {
+  if (typeof XLSX === 'undefined') { showToast('Excel 组件未加载，请刷新页面重试'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const sheetName = wb.SheetNames[0];
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1, defval: '', blankrows: true });
+      cb({ name: file.name, aoa, sheetName });
+    } catch (err) {
+      showToast('模板解析失败：' + (err && err.message ? err.message : '文件格式不正确'));
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function detectHeaderRow(aoa, aliasesList) {
+  let headerIdx = 0, best = -1;
+  aoa.slice(0, 15).forEach((row, i) => {
+    const hit = row.filter(cell => {
+      const v = String(cell || '').trim();
+      return aliasesList.some(aliases => aliases.some(a => v === a || v.indexOf(a) >= 0));
+    }).length;
+    if (hit > best) { best = hit; headerIdx = i; }
+  });
+  if (best < 2) headerIdx = 0;
+  const headers = (aoa[headerIdx] || []).map(h => String(h || '').trim());
+  while (headers.length && !headers[headers.length - 1]) headers.pop();
+  if (!headers.length) return { headerIdx, headers: [] };
+  return { headerIdx, headers };
+}
 
 function poAutoMapping(headers) {
   const mapping = {};
@@ -7570,16 +7904,22 @@ let poDraft = null;
 
 function renderPoOrders(container) {
   const batches = Store.getPoOrders();
+  const tpl = Store.getPoTemplate();
   container.innerHTML = `
     <div class="page-header">
       <span class="ph-icon">${DOG_ICONS['po-orders']}</span>
       <span class="ph-title">采购订单</span>
-      <span class="ph-desc">上传订单附件明细 · 按固定模板加工并导出 Excel</span>
+      <span class="ph-desc">上传订单附件明细 · 按当前导出模板加工并导出 Excel</span>
     </div>
     <div class="card">
       <div class="section-head">
-        <div><div class="section-title">订单附件明细</div><div class="section-sub">模板固定，仅产品信息不同；上传后自动识别列并标准化</div></div>
-        <button class="btn btn-text btn-sm" onclick="downloadPoTemplate()">下载固定模板</button>
+        <div><div class="section-title">订单附件明细</div><div class="section-sub">当前导出模板：${escHtml(tpl.name)}（${tpl.headers.length} 列）· 附件明细仅产品信息不同，上传后自动识别并整理</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('po-tpl-file').click()">⬆ 上传导出模板</button>
+          <button class="btn btn-text btn-sm" onclick="resetPoTemplate()">恢复默认</button>
+          <button class="btn btn-text btn-sm" onclick="downloadPoTemplate()">下载当前模板</button>
+          <input type="file" id="po-tpl-file" accept=".xlsx,.xls" style="display:none;" onchange="handlePoTemplateUpload(this)">
+        </div>
       </div>
       <div class="upload-zone" onclick="document.getElementById('po-file').click()">
         <div class="uz-icon">⬆</div>
@@ -7689,15 +8029,55 @@ function renderPoPreview() {
 
 function clearPoDraft() { poDraft = null; const box = document.getElementById('po-preview'); if (box) box.innerHTML = ''; }
 
-function poDraftAoa() {
-  return [PO_TEMPLATE_HEADERS].concat(poDraft.rows.map(r => PO_HEADER_KEYS.map(k => r[k] || '')));
+function poHeaderKeys(headers) {
+  return (headers || []).map(h => {
+    const v = String(h || '').trim();
+    return PO_HEADER_KEYS.find(k => v === PO_FIELD_LABELS[k] || (PO_FIELD_ALIASES[k] || []).some(a => v === a || v.indexOf(a) >= 0)) || '';
+  });
 }
+function poAoaFromRows(rows) {
+  const tpl = Store.getPoTemplate();
+  const headers = tpl.headers && tpl.headers.length ? tpl.headers : PO_TEMPLATE_HEADERS;
+  const keys = poHeaderKeys(headers);
+  const data = (rows || []).map(r => headers.map((h, i) => {
+    const k = keys[i];
+    return k ? (r[k] == null ? '' : r[k]) : '';
+  }));
+  return (tpl.preamble || []).concat([headers], data);
+}
+function poDraftAoa() { return poAoaFromRows(poDraft ? poDraft.rows : []); }
 function exportPoDraft() {
   if (!poDraft || !poDraft.rows.length) { showToast('没有可导出的数据'); return; }
-  downloadAoa(poDraftAoa(), '采购订单_' + poDraft.fileName.replace(/\.[^.]+$/, '') + '.xlsx', '采购订单');
+  const tpl = Store.getPoTemplate();
+  downloadAoa(poDraftAoa(), '采购订单_' + poDraft.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
 }
 function downloadPoTemplate() {
-  downloadAoa([PO_TEMPLATE_HEADERS, ['示例产品名称', '示例款式', '米白', 'XL', 10, 120, '示例供应商', '6900000000000', '棉', 'CG-001', '2026-11-23', '2026-11-30']], '采购订单固定模板.xlsx', '采购订单');
+  const tpl = Store.getPoTemplate();
+  const sample = {
+    name: '示例产品名称', style: '示例款式', color: '米白', size: 'XL', qty: 10, unitPrice: 120,
+    supplier: '示例供应商', barcode: '6900000000000', material: '棉', billNo: 'CG-001',
+    orderDate: '2026-11-23', deliveryDate: '2026-11-30'
+  };
+  const keys = poHeaderKeys(tpl.headers);
+  const row = tpl.headers.map((h, i) => { const k = keys[i]; return k ? sample[k] : ''; });
+  downloadAoa((tpl.preamble || []).concat([tpl.headers, row]), '采购订单模板_' + tpl.name.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
+}
+function handlePoTemplateUpload(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  readExcelTemplate(f, info => {
+    const found = detectHeaderRow(info.aoa, Object.values(PO_FIELD_ALIASES));
+    if (!found.headers.length) { showToast('没有在模板中识别到表头'); return; }
+    Store.savePoTemplate({ name: f.name, headers: found.headers, preamble: info.aoa.slice(0, found.headerIdx), sheetName: info.sheetName });
+    showToast('导出模板已更新：' + found.headers.length + ' 列');
+    renderPage('po-orders');
+  });
+  input.value = '';
+}
+function resetPoTemplate() {
+  Store.savePoTemplate({ name: '固定模板', headers: PO_TEMPLATE_HEADERS.slice(), preamble: [], sheetName: '采购订单' });
+  renderPage('po-orders');
+  showToast('已恢复默认导出模板');
 }
 function savePoBatch() {
   if (!poDraft || !poDraft.rows.length) { showToast('没有可保存的数据'); return; }
@@ -7710,7 +8090,8 @@ function savePoBatch() {
 function exportPoBatch(id) {
   const b = Store.getPoOrders().find(x => x.id === id);
   if (!b) return;
-  downloadAoa([PO_TEMPLATE_HEADERS].concat(b.rows.map(r => PO_HEADER_KEYS.map(k => r[k] || ''))), '采购订单_' + b.fileName.replace(/\.[^.]+$/, '') + '.xlsx', '采购订单');
+  const tpl = Store.getPoTemplate();
+  downloadAoa(poAoaFromRows(b.rows), '采购订单_' + b.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
 }
 function deletePoBatch(id) {
   if (!confirm('确定删除这条加工记录吗？')) return;
@@ -7787,7 +8168,7 @@ function loadSettleSales() {
   if (!sale) { settleDraft = { salesId: '', lines: [] }; box.innerHTML = ''; return; }
   const remaining = salesRemainingLines(sale);
   const base = remaining.length ? remaining : (sale.lines && sale.lines.length ? sale.lines : [{ color: '', size: sale.spec || '', qty: Number(sale.qty) || 0, unitPrice: Number(sale.unitPrice) || 0 }]);
-  settleDraft = { salesId: id, lines: base.map(l => ({ color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(l.unitPrice) || 0 })) };
+  settleDraft = { salesId: id, lines: base.map(l => ({ style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(l.unitPrice) || 0 })) };
   renderSettleLines();
   const hint = document.getElementById('st-remaining-info');
   if (hint) hint.innerHTML = remaining.length
@@ -7800,6 +8181,7 @@ function renderSettleLines() {
   if (!box) return;
   const rows = settleDraft.lines.map((l, i) => `
     <tr>
+      <td><input class="input" value="${escAttr(l.style || '')}" oninput="settleDraft.lines[${i}].style=this.value" placeholder="可留空"></td>
       <td><input class="input" value="${escAttr(l.color)}" oninput="settleDraft.lines[${i}].color=this.value" placeholder="颜色"></td>
       <td><input class="input" value="${escAttr(l.size)}" oninput="settleDraft.lines[${i}].size=this.value" placeholder="尺码"></td>
       <td><input class="input" type="number" min="0" value="${escAttr(l.qty)}" oninput="settleDraft.lines[${i}].qty=Number(this.value)||0;renderSettleSummary()"></td>
@@ -7809,7 +8191,7 @@ function renderSettleLines() {
     </tr>`).join('');
   box.innerHTML = `
     <div id="st-remaining-info" style="margin-bottom:8px;"></div>
-    <div class="bill-scroll"><table class="bill-table st-table"><thead><tr><th>颜色</th><th>尺码</th><th>本单数量</th><th>销售单价</th><th>金额</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="bill-scroll"><table class="bill-table st-table"><thead><tr><th>款式</th><th>颜色</th><th>尺码</th><th>本单数量</th><th>销售单价</th><th>金额</th><th>操作</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="form-actions">
       <button class="btn btn-text btn-sm" onclick="addSettleLine()">＋ 添加一行</button>
       <span class="form-actions-spacer"></span>
@@ -7836,23 +8218,20 @@ function renderSettleSummary() {
   const amt = settleDraft.lines.reduce((n, l) => n + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0);
   el.textContent = `本单 ${qty} 件 · ${money(amt)}`;
 }
-function addSettleLine() { settleDraft.lines.push({ color: '', size: '', qty: 0, unitPrice: 0 }); renderSettleLines(); }
+function addSettleLine() { settleDraft.lines.push({ style: '', color: '', size: '', qty: 0, unitPrice: 0 }); renderSettleLines(); }
 function removeSettleLine(i) { settleDraft.lines.splice(i, 1); renderSettleLines(); }
 
 function generateSettlement() {
   const sale = Store.getSales().find(x => x.id === settleDraft.salesId);
   if (!sale) { showToast('请选择销售清单'); return; }
   const used = settleDraft.lines.filter(l => (Number(l.qty) || 0) > 0).map(l => ({
-    color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(l.unitPrice) || 0
+    style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(l.unitPrice) || 0
   }));
   if (!used.length) { showToast('请填写本单数量'); return; }
-  const remaining = salesRemainingLines(sale);
-  const remainOf = key => remaining.filter(l => (l.color || '') + '|' + (l.size || '') === key).reduce((n, l) => n + l.qty, 0);
   for (const l of used) {
-    const key = (l.color || '') + '|' + (l.size || '');
-    const matched = (sale.lines || []).find(x => (x.color || '') + '|' + (x.size || '') === key);
+    const matched = (sale.lines || []).find(x => settledMatches(l, x));
     const cap = matched ? Number(matched.qty) || 0 : (sale.lines && sale.lines.length ? 0 : Number(sale.qty) || 0);
-    const already = (sale.settledLines || []).filter(x => (x.color || '') + '|' + (x.size || '') === key).reduce((n, x) => n + (Number(x.qty) || 0), 0);
+    const already = (sale.settledLines || []).filter(x => settledMatches(x, l)).reduce((n, x) => n + (Number(x.qty) || 0), 0);
     if (l.qty + already > cap) { showToast(`${l.size || l.color || '默认'} 本单数量超过剩余可结算数量（剩 ${cap - already} 件）`); return; }
   }
   const arr = Store.getSales();
@@ -7872,24 +8251,54 @@ function generateSettlement() {
   showToast('三份结算材料已生成并导出');
 }
 
+const SETTLE_FIELD_ALIASES = {
+  no: ['序号'], productName: ['产品名称', '商品名称', '品名', '货品名称'],
+  style: ['款式', '款号', '型号'], color: ['颜色', '色号'], size: ['尺码', '尺寸', '规格型号'],
+  qty: ['数量', '件数'], unitPrice: ['销售单价', '单价', '售价'], amount: ['结算金额', '金额', '总额'],
+  unit: ['单位'], note: ['备注']
+};
+function settleFieldOf(header) {
+  const h = String(header || '').trim();
+  for (const field of Object.keys(SETTLE_FIELD_ALIASES)) {
+    if (SETTLE_FIELD_ALIASES[field].some(a => h === a || h.indexOf(a) >= 0)) return field;
+  }
+  return '';
+}
 function settlementAoa(doc, type) {
-  const tpl = Store.getSettleTemplates()[type];
+  const rawTpl = Store.getSettleTemplates()[type];
+  const tpl = Array.isArray(rawTpl) ? { headers: rawTpl, preamble: [] } : (rawTpl || {});
+  const headers = tpl.headers && tpl.headers.length ? tpl.headers : SETTLE_TEMPLATES_DEFAULT[type];
   const map = {
     '序号': null, '产品名称': doc.productName, '款式': doc.spec || '', '颜色': null, '尺码': null,
     '数量': null, '销售单价': null, '结算金额': null, '金额': null,
     '规格型号': null, '单位': '件', '单价': null, '备注': ''
   };
-  const rows = doc.lines.map((l, i) => tpl.map(h => {
+  const rows = doc.lines.map((l, i) => headers.map(h => {
     if (h === '序号') return i + 1;
+    if (h === '款式') return l.style || doc.spec || '';
     if (h === '颜色') return l.color || '';
     if (h === '尺码') return l.size || '';
     if (h === '数量') return l.qty || 0;
     if (h === '销售单价' || h === '单价') return l.unitPrice || 0;
     if (h === '结算金额' || h === '金额') return +((Number(l.qty) || 0) * (Number(l.unitPrice) || 0)).toFixed(2);
-    if (h === '规格型号') return [l.color, l.size].filter(Boolean).join('/') || doc.spec || '';
+    if (h === '规格型号') return [l.style, l.color, l.size].filter(Boolean).join('/') || doc.spec || '';
+    // 自定义模板使用了别名表头时，按字段语义填充
+    const field = settleFieldOf(h);
+    const combo = [l.style, l.color, l.size].filter(Boolean).join('/') || doc.spec || '';
+    if (field === 'productName') return doc.productName;
+    if (field === 'style') return l.style || doc.spec || '';
+    if (field === 'color') return l.color || '';
+    if (field === 'size') return h === '规格型号' ? combo : (l.size || '');
+    if (field === 'qty') return l.qty || 0;
+    if (field === 'unitPrice') return l.unitPrice || 0;
+    if (field === 'amount') return +((Number(l.qty) || 0) * (Number(l.unitPrice) || 0)).toFixed(2);
+    if (field === 'unit') return '件';
     return map[h] !== undefined && map[h] !== null ? map[h] : '';
   }));
-  return [[SETTLE_TEMPLATE_NAMES[type]], ['销售单号：' + (doc.billNo || '—'), '生成日期：' + doc.createdAt], [], tpl].concat(rows);
+  return (tpl.preamble || []).concat(
+    [[SETTLE_TEMPLATE_NAMES[type]], ['销售单号：' + (doc.billNo || '—'), '生成日期：' + doc.createdAt], [], headers],
+    rows
+  );
 }
 function exportSettlementDoc(docId, type) {
   const doc = Store.getSettleDocs().find(x => x.id === docId);
@@ -7901,19 +8310,44 @@ function openSettleTemplatesModal() {
   const tpl = Store.getSettleTemplates();
   showModal(`
     <div class="modal-title">⚙️ 结算材料模板设置</div>
-    <div class="section-sub" style="margin-bottom:12px;">用英文逗号或中文逗号分隔表头，修改后下次生成生效。</div>
+    <div class="section-sub" style="margin-bottom:12px;">可上传现成 Excel 模板（自动识别表头与前导内容），也可直接用逗号编辑表头；修改后下次生成生效。</div>
     ${Object.keys(SETTLE_TEMPLATE_NAMES).map(k => `
-      <div class="form-group"><label>${SETTLE_TEMPLATE_NAMES[k]}</label>
-        <input type="text" class="input" id="tpl_${k}" value="${escAttr(tpl[k].join(','))}">
+      <div class="form-group">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <label style="margin:0;flex:1;">${SETTLE_TEMPLATE_NAMES[k]} <span style="color:var(--text-light);">· 当前：${escHtml(tpl[k].name || '默认表头')}</span></label>
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('tpl_file_${k}').click()">⬆ 上传模板</button>
+          <input type="file" id="tpl_file_${k}" accept=".xlsx,.xls" style="display:none;" onchange="handleSettleTemplateUpload(this,'${k}')">
+        </div>
+        <input type="text" class="input" id="tpl_${k}" value="${escAttr((tpl[k].headers || []).join(','))}" placeholder="用英文逗号或中文逗号分隔表头">
       </div>`).join('')}
     <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveSettleTemplates()">保存</button></div>
   `);
 }
+function handleSettleTemplateUpload(input, type) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  readExcelTemplate(f, info => {
+    const aliases = Object.values(SETTLE_TEMPLATES_DEFAULT).reduce((a, row) => a.concat(row.map(h => [h])), []);
+    const found = detectHeaderRow(info.aoa, aliases);
+    if (!found.headers.length) { showToast('没有在模板中识别到表头'); return; }
+    const all = Store.getSettleTemplates();
+    all[type] = { name: f.name, headers: found.headers, preamble: info.aoa.slice(0, found.headerIdx) };
+    Store.saveSettleTemplates(all);
+    showToast(SETTLE_TEMPLATE_NAMES[type] + ' 模板已更新：' + found.headers.length + ' 列');
+    openSettleTemplatesModal();
+  });
+  input.value = '';
+}
 function saveSettleTemplates() {
+  const old = Store.getSettleTemplates();
   const tpl = {};
   Object.keys(SETTLE_TEMPLATE_NAMES).forEach(k => {
-    tpl[k] = (document.getElementById('tpl_' + k).value || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
-    if (!tpl[k].length) tpl[k] = SETTLE_TEMPLATES_DEFAULT[k];
+    const headers = (document.getElementById('tpl_' + k).value || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
+    tpl[k] = {
+      name: old[k] && old[k].name ? old[k].name : '自定义表头',
+      headers: headers.length ? headers : SETTLE_TEMPLATES_DEFAULT[k],
+      preamble: old[k] && Array.isArray(old[k].preamble) ? old[k].preamble : []
+    };
   });
   Store.saveSettleTemplates(tpl);
   closeModal();
@@ -7972,13 +8406,18 @@ function billCell(page, key, r) {
   if (key === 'product') return `<div class="bill-name">${escHtml(r.productName || '—')}</div><div class="bill-sub">${escHtml(r.spec || '')} ${page === 'sales' ? remainingBadge(r) : ''}</div>`;
   if (key === 'link') return escHtml(r.linkLabel || '—');
   if (key === 'billNo') return escHtml(r.billNo || '—');
-  if (key === 'qty') return escHtml(r.qty || 0);
+  if (key === 'qty') {
+    if (r.lines && r.lines.length) {
+      return r.lines.map(l => `${escHtml([l.style, l.color, l.size].filter(Boolean).join('/') || '默认')} ×${escHtml(l.qty || 0)}`).join('<br>');
+    }
+    return escHtml(r.qty || 0);
+  }
   if (key === 'unitPrice') return money(r.unitPrice);
   if (key === 'total') return `<span class="bill-total">${money(r.total)}</span>`;
   if (key === 'orderDate') return escHtml(fmtCNDate(r.orderDate) || '—');
   if (key === 'deliveryDate') return escHtml(fmtCNDate(r.deliveryDate) || '—');
   if (key === 'billDate') return escHtml(fmtCNDate(r.billDate) || '—');
-  if (key === 'status') return statusTags(r);
+  if (key === 'status') return statusTags(r, page);
   if (key === 'actions') return `<div class="bill-actions">
     <button class="btn btn-outline btn-sm" onclick="open${page === 'purchases' ? 'Purchase' : 'Sales'}Modal('${r.id}')">编辑</button>
     <button class="btn btn-danger btn-sm" onclick="${page === 'purchases' ? 'deletePurchase' : 'deleteSale'}('${r.id}')">删除</button>
@@ -9271,7 +9710,12 @@ function removeJournalImage(id) {
 // MODAL & TOAST
 // ====================================================================
 function showModal(html) {
-  document.getElementById('modal-content').innerHTML = html;
+  const box = document.getElementById('modal-content');
+  box.innerHTML = html;
+  // 信息录入类弹窗自动加宽；简单确认类保持紧凑
+  const dense = /variant-editor|bill-scroll|calc-line|map-grid|po-result|smart-textarea/.test(html)
+    || (html.match(/class="form-group"/g) || []).length >= 3;
+  box.classList.toggle('modal-compact', !dense);
   document.getElementById('modal-overlay').classList.add('show');
 }
 
@@ -10244,6 +10688,7 @@ async function testConnection(showOk) {
 // INIT
 // ====================================================================
 DEFAULT_AVATAR_SVG = document.querySelector('.sidebar-header .avatar').innerHTML;
+reconcileSampleHistory();   // 旧「已归还」样品自动迁入 30 天历史
 applyUITheme();
 applyTheme(getTheme());
 initDogIcons();

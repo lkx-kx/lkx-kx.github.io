@@ -545,7 +545,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .today-task .txt { color: var(--text-main); }
 .today-empty { font-size: 13px; color: var(--text-light); line-height: 1.6; }
 
-/* 桌面 hero 元信息行（天气 + 连续打卡） */
+/* 桌面 hero 元信息行（天气） */
 .hero-meta { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 12px; position: relative; z-index: 1; }
 .hero-meta .weather-box { margin-top: 0; }
 .hero-meta .hero-streak { font-size: 13px; color: var(--text-sub); font-weight: 600; }
@@ -2571,12 +2571,12 @@ body {
 }
 .sidebar-header {
   padding: 14px 16px 12px;
-  text-align: left;
+  text-align: center;
   border-bottom: 1px solid var(--border-soft);
 }
-.sidebar-header .avatar { font-size: 30px; margin-bottom: 6px; justify-content: flex-start; }
-.sidebar-header .avatar .avatar-img { width: 38px; height: 38px; border: 1px solid var(--border-soft); box-shadow: none; }
-.sidebar-header .avatar svg { filter: none; }
+.sidebar-header .avatar { font-size: 30px; margin-bottom: 6px; justify-content: center; }
+.sidebar-header .avatar .avatar-img { width: 44px; height: 44px; border: 1px solid var(--border-soft); box-shadow: none; }
+.sidebar-header .avatar svg { width: 44px; height: 44px; filter: none; }
 .sidebar-header .name { font-size: 15px; font-weight: 600; color: var(--text-main); }
 .sidebar-header .subtitle { font-size: 11px; color: var(--text-light); margin-top: 2px; }
 
@@ -2797,15 +2797,15 @@ body {
 }
 .cal-cell:hover { border-color: var(--accent-caramel) !important; box-shadow: none !important; transform: none !important; }
 .cal-cell.cal-today { border: 1.5px solid var(--accent-caramel) !important; background: #FFF7ED !important; }
-.cal-cell.cal-checked { background: #E8FFEA !important; border-color: #AFF0B5 !important; }
+.cal-cell.cal-checked { background: #F2F8F3 !important; border-color: #C9E3CE !important; }
 .cal-cell.cal-sick { background: #FFECE8 !important; border-color: #FFC9C0 !important; }
 .cal-cell.cal-annual { background: #E8F3FF !important; border-color: #BEDAFF !important; }
 .cal-cell.cal-comp { background: #F5E8FF !important; border-color: #DDC7F5 !important; }
 .cal-cell.cal-affair { background: #FFF1E8 !important; border-color: #FFCF8B !important; }
 .cal-cell.cal-other { background: #F7F8FA !important; border-color: #E5E6EB !important; }
 .cal-cell.cal-duty { background: #FFF7E8 !important; border-color: #FFDD9C !important; }
-.cal-cell.cal-makeup { background: #E8FFEA !important; border-color: #AFF0B5 !important; }
-.cal-cell.cal-makeup-auto { background: #F0FBF2 !important; border-color: #C6E6C9 !important; }
+.cal-cell.cal-makeup { background: #F1F8F2 !important; border-color: #C4DFC8 !important; }
+.cal-cell.cal-makeup-auto { background: #F5FAF5 !important; border-color: #D5E8D8 !important; }
 .cal-cell.cal-rest { background: #FFF7E8 !important; border-color: #FFDD9C !important; }
 .cal-cell.cal-empty { background: #FCFCFD !important; }
 .cal-cell.cal-future { opacity: 0.55; }
@@ -4302,7 +4302,7 @@ function renderWorkCheckin(container) {
     <div class="card" style="text-align:center;padding:20px;">
       <div style="font-size:14px;color:var(--text-sub);margin-bottom:14px;">今日快捷打卡</div>
       ${punchCardInner}
-      <div class="work-streak" style="margin-top:14px;">🔥 已连续打卡 ${cum.streak} 天 · 累计 ${cum.totalCheckins} 次</div>
+      <div class="work-streak" style="margin-top:14px;">🔥 累计打卡 ${cum.totalCheckins} 次</div>
     </div>
 
     <div class="board-card work-leave-tray">
@@ -4348,17 +4348,17 @@ function renderWorkCheckin(container) {
         ${cells}
       </div>
       <div class="cal-legend">
-        <div class="legend-item"><span class="legend-dot" style="background:#E8FFEA;border:1px solid var(--accent-green);"></span>已打卡</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#F2F8F3;border:1px solid #C9E3CE;"></span>已打卡</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FFECE8;border:1px solid #FFE4DE;"></span>病假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FFF7E8;border:1px solid #FB8B4D;"></span>事假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#F2F3F5;border:1px solid #C9CDD4;"></span>其他请假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#E8F3FF;border:1px solid var(--accent-blue);"></span>年假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#F5E8FF;border:1px solid var(--accent-purple);"></span>调休</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FFF7E8;border:1px solid var(--accent-caramel);"></span>值班</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#E8FFEA;border:1px solid var(--accent-green);"></span>补班</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#E8FFEA;border:1px solid #C6E6C9;"></span>调休补班(上班日)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#F1F8F2;border:1px solid #C4DFC8;"></span>补班</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#F5FAF5;border:1px solid #D5E8D8;"></span>调休补班(上班日)</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FAFAFA;border:1px solid var(--border-soft);"></span>未打卡(可补卡)</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#EFF2EC;border:1px solid #E8FFEA;"></span>休息(周末/节假日)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#F6F7F6;border:1px solid #E5E6EB;"></span>休息(周末/节假日)</div>
         <div class="legend-item" style="border-top:1px dashed var(--border-soft);padding-top:4px;width:100%;">
           <span style="display:inline-block;width:10px;height:10px;border-radius:4px;background:#E8F3FF;border:1px solid #BEDAFF;vertical-align:middle;"></span>🔵 待办日程&nbsp;&nbsp;
           <span style="display:inline-block;width:10px;height:10px;border-radius:4px;background:#E8FFEA;border:1px solid #E8FFEA;vertical-align:middle;"></span>🟢 每日任务&nbsp;&nbsp;

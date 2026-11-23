@@ -3036,6 +3036,7 @@ body {
   margin-left: auto; font-size: 11px; color: var(--text-sub);
   background: var(--cream-bg); border-radius: 10px; padding: 3px 9px; white-space: nowrap;
 }
+.prod-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
 .prod-group-del { flex-shrink: 0; }
 .prod-chev { color: var(--text-light); font-size: 10px; transition: transform 0.2s; }
 .prod-group.open .prod-chev { transform: rotate(90deg); }
@@ -3153,6 +3154,41 @@ body {
 .variant-del { border: 1px solid var(--border-soft); background: transparent; color: var(--text-light); border-radius: 4px; height: 26px; line-height: 24px; cursor: pointer; padding: 0; }
 .variant-del:hover { color: var(--accent-caramel); border-color: var(--accent-caramel); }
 .variant-count { font-size: 11px; color: var(--accent-caramel); margin-top: 8px; }
+
+/* 产品编辑两分区 + SKU 层级编辑器 */
+.prod-section { border: 1px solid var(--border-soft); border-radius: 8px; padding: 14px; margin-bottom: 14px; background: var(--cream-card); }
+.prod-section-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px; color: var(--text-main); margin-bottom: 12px; padding-bottom: 9px; border-bottom: 1px solid var(--border-soft); }
+.prod-section-title .sec-idx { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; background: var(--accent-caramel); color: #fff; font-size: 11px; }
+.prod-section-title .sec-note { margin-left: auto; font-size: 11px; font-weight: 400; color: var(--text-light); }
+.prod-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+.prod-form-grid .form-group { margin-bottom: 10px; }
+.prod-form-grid .form-group.wide { grid-column: 1 / -1; }
+.fabric-chips, .tag-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.fabric-chip { border: 1px solid var(--border-soft); background: var(--cream-bg); color: var(--text-sub); border-radius: 4px; padding: 3px 10px; font-size: 12px; cursor: pointer; }
+.fabric-chip.on { background: var(--tag-orange-bg); border-color: var(--accent-caramel); color: var(--tag-orange-text); }
+.tag-chip { display: inline-flex; align-items: center; gap: 4px; background: var(--cream-bg); border: 1px solid var(--border-soft); border-radius: 4px; padding: 2px 6px 2px 9px; font-size: 12px; color: var(--text-sub); }
+.tag-chip button { border: none; background: transparent; color: var(--text-light); cursor: pointer; padding: 0 2px; font-size: 13px; line-height: 1; }
+.tag-chip button:hover { color: var(--accent-red); }
+.img-draft { cursor: grab; }
+.img-draft.dragging { opacity: .4; }
+.img-draft .img-order { position: absolute; left: -6px; bottom: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-caramel); color: #fff; font-size: 10px; line-height: 18px; text-align: center; }
+.img-draft img { cursor: zoom-in; }
+.sku-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.sku-toolbar .sku-hint { font-size: 11px; color: var(--text-light); margin-left: auto; }
+.sku-colors { display: grid; gap: 10px; }
+.sku-color-card { border: 1px solid var(--green-border); border-radius: 6px; padding: 10px 12px; background: var(--green-cell); }
+.sku-color-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.sku-color-head .input { flex: 1 1 140px; min-width: 0; }
+.sku-level { font-size: 11px; color: var(--green-text); font-weight: 600; flex: 0 0 auto; }
+.sku-size-list { margin: 9px 0 0 20px; display: grid; gap: 6px; border-left: 2px solid var(--green-border); padding-left: 10px; }
+.sku-size-row { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) 26px; gap: 6px; align-items: center; }
+.sku-size-row .input { width: 100%; }
+.sku-size-row .input.dup { border-color: var(--accent-red) !important; background: #FEF0F0 !important; }
+.sku-preset { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 8px 0 0 20px; }
+.sku-preset > span { font-size: 11px; color: var(--text-light); margin-right: 2px; }
+.preset-chip { font-size: 11px; color: var(--text-sub); border: 1px solid var(--border-soft); border-radius: 4px; padding: 2px 6px; cursor: pointer; background: var(--cream-card); }
+.preset-chip input { margin: 0 3px 0 0; vertical-align: -1px; }
+.sku-color-actions { display: flex; gap: 6px; align-items: center; margin: 8px 0 0 20px; }
 .bl-table th:last-child, .bl-table td:last-child { width: 72px; white-space: nowrap; }
 .bl-table .btn { white-space: nowrap; }
 
@@ -7024,10 +7060,21 @@ function renderProductList() {
     groups.get(name).push(p);
   });
   const names = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
-  const extraFields = fields.filter(f => ['style', 'color', 'size', 'barcode'].indexOf(f.key) < 0);
+  const commonKeys = ['style', 'color', 'size', 'barcode', 'material', 'supplier', 'buyer', 'costPrice', 'salePrice'];
+  const extraFields = fields.filter(f => commonKeys.indexOf(f.key) < 0);
 
   box.innerHTML = names.map(name => {
     const list = groups.get(name);
+    const first = list[0] || {};
+    const fv = first.values || {};
+    const common = [
+      ((fv.supplier || '').trim() && '供应商：' + fv.supplier.trim()),
+      ((fv.buyer || '').trim() && '采购商：' + fv.buyer.trim()),
+      ((fv.costPrice || '').trim() && '成本 ¥' + fv.costPrice.trim()),
+      ((fv.salePrice || '').trim() && '售价 ¥' + fv.salePrice.trim()),
+      ((fv.material || '').trim() && '面料：' + fv.material.trim())
+    ].filter(Boolean).join(' · ');
+    const tags = Array.isArray(first.tags) ? first.tags : String(fv.tags || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
     const pOpen = poOpen(openSet, 'product', [name], force);
     const thumb = list.find(p => p.images && p.images.length);
     const thumbHtml = thumb
@@ -7107,7 +7154,8 @@ function renderProductList() {
         ${thumbHtml}
         <div style="min-width:0;">
           <div class="prod-name">📦 ${escHtml(name)}</div>
-          <div class="prod-sub">${escHtml(styleNames.slice(0, 4).join(' · ') || '点击展开查看规格')}</div>
+          <div class="prod-sub">${escHtml(common || styleNames.slice(0, 4).join(' · ') || '点击展开查看 SKU')}</div>
+          ${tags.length ? `<div class="prod-tags">${tags.map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('')}</div>` : ''}
         </div>
         <span class="prod-count">${styleNames.length} 款 · ${list.length} 条</span>
         <button class="btn btn-danger btn-sm prod-group-del" title="删除该产品及其全部规格" onclick="event.stopPropagation();deleteProductGroup(decodeURIComponent('${poEnc(name)}'))">🗑 删除产品</button>
@@ -7130,11 +7178,39 @@ function partnerDatalistsHtml() {
   return dl('partner_supplier_options', partnerOptions('supplier')) + dl('partner_buyer_options', partnerOptions('buyer'));
 }
 const QUICK_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '均码'];
+const FABRIC_OPTIONS = ['棉', '聚酯纤维', '羊毛', '麻', '真丝', '涤纶', '尼龙', '氨纶', '醋酸', '腈纶', '其他'];
+function getSizePresets() {
+  try {
+    const raw = localStorage.getItem('lxk_size_presets');
+    if (raw) { const a = JSON.parse(raw); if (Array.isArray(a) && a.length) return a; }
+  } catch (e) {}
+  return QUICK_SIZES.slice();
+}
+function toggleSizePresetPanel() {
+  const p = document.getElementById('size-preset-panel');
+  if (!p) return;
+  const show = p.style.display === 'none';
+  p.style.display = show ? 'block' : 'none';
+  if (show) {
+    const inp = document.getElementById('size-presets-input');
+    if (inp) inp.value = getSizePresets().join(',');
+  }
+}
+function saveSizePresets() {
+  syncVariantEditor();
+  const el = document.getElementById('size-presets-input');
+  const arr = ((el && el.value) || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  if (!arr.length) { showToast('请至少填写一个尺码'); return; }
+  safeSetItem('lxk_size_presets', JSON.stringify(arr));
+  renderVariantEditor();
+  showToast('尺码预设库已更新');
+}
 function specDatalistHtml() {
+  const sizeOpts = Array.from(new Set(getSizePresets().concat(QUICK_SIZES)));
   const products = Store.getProducts();
   return ['style', 'color', 'size'].map(k => {
     let opts = Array.from(new Set(products.map(p => ((p.values || {})[k] || '').trim()).filter(Boolean)));
-    if (k === 'size') opts = Array.from(new Set(QUICK_SIZES.concat(opts)));
+    if (k === 'size') opts = Array.from(new Set(sizeOpts.concat(opts)));
     opts = opts.slice(0, 60);
     return `<datalist id="variant_${k}_options">${opts.map(v => `<option value="${escAttr(v)}"></option>`).join('')}</datalist>`;
   }).join('');
@@ -7152,143 +7228,220 @@ function variantTreeFromProduct(p) {
   const v = (p && p.values) || {};
   return [{ style: v.style || '', colors: [{ color: v.color || '', sizes: [{ size: v.size || '', barcode: v.barcode || '' }] }] }];
 }
+// 编辑时加载同一产品名称下所有 SKU，合并为完整层级树
+function variantTreeFromGroup(id) {
+  const all = Store.getProducts();
+  const cur = all.find(x => x.id === id);
+  if (!cur) return [{ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] }];
+  const name = (cur.name || '').trim();
+  const group = all.filter(p => (p.name || '').trim() === name);
+  const style = (((cur.values || {}).style) || '').trim();
+  const colorMap = new Map();
+  group.forEach(p => {
+    const v = p.values || {};
+    const c = (v.color || '').trim() || '（未分颜色）';
+    if (!colorMap.has(c)) colorMap.set(c, []);
+    colorMap.get(c).push({ size: (v.size || '').trim(), barcode: (v.barcode || '').trim() });
+  });
+  const colors = Array.from(colorMap.entries()).map(([color, sizes]) => ({
+    color, sizes: sizes.length ? sizes : [{ size: '', barcode: '' }]
+  }));
+  if (!colors.length) colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
+  return [{ style, colors }];
+}
 function countVariantLeaves() {
-  if (!prodDraft) return 0;
-  return prodDraft.variants.reduce((n, s) => n + s.colors.reduce((m, c) =>
-    m + c.sizes.filter(z => [s.style, c.color, z.size, z.barcode].some(v => (v || '').trim())).length, 0), 0);
+  if (!prodDraft || !prodDraft.variants || !prodDraft.variants[0]) return 0;
+  return prodDraft.variants[0].colors.reduce((m, c) =>
+    m + c.sizes.filter(z => (z.size || '').trim() || (z.barcode || '').trim()).length, 0);
 }
 function renderVariantEditor() {
   const box = document.getElementById('variant-editor');
   if (!box || !prodDraft) return;
-  box.innerHTML = prodDraft.variants.map((s, si) => `
-    <div class="variant-style">
-      <div class="variant-head">
-        <span class="variant-label">款式</span>
-        <input class="input" id="vs_${si}" list="variant_style_options" value="${escAttr(s.style)}" placeholder="如：经典款" onchange="syncVariantEditor()">
-        <button type="button" class="variant-del" title="删除款式" onclick="variantRemoveStyle(${si})">×</button>
+  const s = prodDraft.variants[0] || { style: '', colors: [] };
+  const presets = getSizePresets();
+  box.innerHTML = `
+    <div class="sku-toolbar">
+      <button type="button" class="btn btn-primary btn-sm" onclick="variantAddColor()">＋ 添加颜色</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="variantCopyAllColors()">⧉ 复制整套颜色尺码</button>
+      <button type="button" class="btn btn-text btn-sm" onclick="toggleSizePresetPanel()">⚙ 配置尺码库</button>
+      <span class="sku-hint">1 个颜色 × N 个尺码 = N 条 SKU，条码全局唯一</span>
+    </div>
+    <div id="size-preset-panel" style="display:none;border:1px dashed var(--border-soft);border-radius:6px;padding:10px;margin-bottom:10px;">
+      <div style="font-size:11px;color:var(--text-light);margin-bottom:6px;">用逗号分隔备选尺码，保存后可在各颜色分组里多选导入。</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input class="input" id="size-presets-input" value="${escAttr(presets.join(','))}" placeholder="XS,S,M,L,XL,2XL...">
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveSizePresets()">保存</button>
       </div>
-      <div class="variant-colors">
-        ${s.colors.map((c, ci) => `
-          <div class="variant-color">
-            <div class="variant-color-head">
-              <span class="variant-label">颜色</span>
-              <input class="input" id="vc_${si}_${ci}" list="variant_color_options" value="${escAttr(c.color)}" placeholder="如：米白" onchange="syncVariantEditor()">
-              <button type="button" class="variant-del" title="删除颜色" onclick="variantRemoveColor(${si},${ci})">×</button>
-            </div>
-            <div class="variant-sizes">
-              ${c.sizes.map((z, zi) => `
-                <div class="variant-size-row">
-                  <input class="input" id="vz_${si}_${ci}_${zi}" list="variant_size_options" value="${escAttr(z.size)}" placeholder="尺码" onchange="syncVariantEditor()">
-                  <input class="input" id="vb_${si}_${ci}_${zi}" value="${escAttr(z.barcode)}" placeholder="69码（每尺码唯一）" onchange="syncVariantEditor()">
-                  <button type="button" class="variant-del" title="删除尺码" onclick="variantRemoveSize(${si},${ci},${zi})">×</button>
-                </div>`).join('')}
-            </div>
-            <div class="variant-quick-sizes"><span>快捷尺码</span>${QUICK_SIZES.map(q => `<button type="button" class="qs-chip" onclick="variantQuickSize(${si},${ci},'${q}')">${q}</button>`).join('')}</div>
-            <button type="button" class="btn btn-text btn-sm variant-add" onclick="variantAddSize(${si},${ci})">＋ 添加尺码</button>
-          </div>`).join('')}
-        <button type="button" class="btn btn-outline btn-sm variant-add" onclick="variantAddColor(${si})">＋ 添加颜色</button>
-      </div>
-    </div>`).join('') + `
+    </div>
+    <div class="sku-colors">
+      ${s.colors.length ? s.colors.map((c, ci) => `
+        <div class="sku-color-card">
+          <div class="sku-color-head">
+            <span class="sku-level">颜色</span>
+            <input class="input" id="vc_0_${ci}" list="variant_color_options" value="${escAttr(c.color || '')}" placeholder="如：奶白色 / 炭黑色" onchange="syncVariantEditor()">
+            <button type="button" class="btn btn-outline btn-sm" onclick="variantCopyColor(${ci})" title="复制该颜色及全部尺码">⧉ 复制</button>
+            <button type="button" class="btn btn-text btn-sm" onclick="variantClearSizes(${ci})" title="清空该颜色下全部尺码">清空尺码</button>
+            <button type="button" class="variant-del" title="删除颜色（连带删除全部尺码 SKU）" onclick="variantRemoveColor(${ci})">×</button>
+          </div>
+          <div class="sku-size-list">
+            ${c.sizes.length ? c.sizes.map((z, zi) => `
+              <div class="sku-size-row">
+                <input class="input" id="vz_0_${ci}_${zi}" list="variant_size_options" value="${escAttr(z.size || '')}" placeholder="尺码" onchange="syncVariantEditor()">
+                <input class="input" id="vb_0_${ci}_${zi}" value="${escAttr(z.barcode || '')}" placeholder="SKU 条码（唯一）" onchange="syncVariantEditor();validateBarcodes()">
+                <button type="button" class="variant-del" title="删除此尺码" onclick="variantRemoveSize(${ci},${zi})">×</button>
+              </div>`).join('') : '<div style="font-size:11px;color:var(--text-light);">暂无尺码，请在下方添加或导入</div>'}
+          </div>
+          <div class="sku-preset">
+            <span>预设尺码</span>
+            ${presets.map(q => `<label class="preset-chip"><input type="checkbox" value="${escAttr(q)}" class="preset-cb-${ci}">${escHtml(q)}</label>`).join('')}
+            <button type="button" class="btn btn-outline btn-sm" onclick="variantImportPresets(${ci})">导入选中</button>
+          </div>
+          <div class="sku-color-actions">
+            <button type="button" class="btn btn-text btn-sm" onclick="variantAddSize(${ci})">＋ 添加尺码</button>
+          </div>
+        </div>`).join('') : '<div class="empty-block">还没有颜色，点「＋ 添加颜色」开始录入 SKU</div>'}
+    </div>
     <div class="variant-count" id="variant-count"></div>
-    <button type="button" class="btn btn-outline btn-sm variant-add" onclick="variantAddStyle()">＋ 添加款式</button>`;
+  `;
   updateVariantCount();
+  validateBarcodes();
 }
 function syncVariantEditor() {
   if (!prodDraft || !document.getElementById('variant-editor')) return;
   const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-  prodDraft.variants.forEach((s, si) => {
-    s.style = val('vs_' + si);
+  const s = prodDraft.variants[0];
+  if (s) {
     s.colors.forEach((c, ci) => {
-      c.color = val(`vc_${si}_${ci}`);
+      c.color = val(`vc_0_${ci}`);
       c.sizes.forEach((z, zi) => {
-        z.size = val(`vz_${si}_${ci}_${zi}`);
-        z.barcode = val(`vb_${si}_${ci}_${zi}`);
+        z.size = val(`vz_0_${ci}_${zi}`);
+        z.barcode = val(`vb_0_${ci}_${zi}`);
       });
     });
-  });
+  }
   updateVariantCount();
 }
 function updateVariantCount() {
   const el = document.getElementById('variant-count');
   if (!el || !prodDraft) return;
   const n = countVariantLeaves();
-  el.textContent = n ? `当前 ${n} 个规格组合，保存后生成 ${n} 条产品资料（同一产品名称收纳在一起）` : '可留空；保存后生成 1 条基础资料';
+  el.textContent = n ? `当前 ${n} 条 SKU，保存后生成 ${n} 条产品资料（同一产品名称收纳在一起）` : '可在上方添加颜色与尺码，留空保存会生成 1 条基础资料';
 }
-function variantAddStyle() {
+function validateBarcodes() {
+  const seen = new Map();
+  document.querySelectorAll('[id^="vb_0_"]').forEach(el => {
+    el.classList.remove('dup');
+    const v = (el.value || '').trim();
+    if (!v) return;
+    if (seen.has(v)) { el.classList.add('dup'); seen.get(v).classList.add('dup'); }
+    else seen.set(v, el);
+  });
+}
+function variantAddColor() {
   syncVariantEditor();
-  prodDraft.variants.push({ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] });
+  if (!prodDraft.variants[0]) prodDraft.variants.push({ style: prodDraft.name || '', colors: [] });
+  prodDraft.variants[0].colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
   renderVariantEditor();
 }
-function variantAddColor(si) {
+function variantAddSize(ci) {
   syncVariantEditor();
-  if (prodDraft.variants[si]) prodDraft.variants[si].colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
-  renderVariantEditor();
-}
-function variantAddSize(si, ci) {
-  syncVariantEditor();
-  const c = prodDraft.variants[si] && prodDraft.variants[si].colors[ci];
+  const c = prodDraft.variants[0] && prodDraft.variants[0].colors[ci];
   if (c) c.sizes.push({ size: '', barcode: '' });
   renderVariantEditor();
 }
-function variantQuickSize(si, ci, size) {
+function variantImportPresets(ci) {
   syncVariantEditor();
-  const c = prodDraft.variants[si] && prodDraft.variants[si].colors[ci];
+  const c = prodDraft.variants[0] && prodDraft.variants[0].colors[ci];
   if (!c) return;
-  if (c.sizes.some(z => (z.size || '').trim() === size)) { showToast(size + ' 已添加'); return; }
-  if (c.sizes.length === 1 && !(c.sizes[0].size || '').trim() && !(c.sizes[0].barcode || '').trim()) {
-    c.sizes[0].size = size;
-  } else {
-    c.sizes.push({ size, barcode: '' });
-  }
+  const checks = document.querySelectorAll('.preset-cb-' + ci);
+  const selected = Array.from(checks).filter(x => x.checked).map(x => x.value);
+  if (!selected.length) { showToast('请先勾选要导入的尺码'); return; }
+  let added = 0;
+  selected.forEach(size => {
+    if (c.sizes.some(z => (z.size || '').trim() === size)) return;
+    if (c.sizes.length === 1 && !(c.sizes[0].size || '').trim() && !(c.sizes[0].barcode || '').trim()) {
+      c.sizes[0].size = size;
+    } else {
+      c.sizes.push({ size, barcode: '' });
+    }
+    added++;
+  });
+  renderVariantEditor();
+  showToast(added ? `已导入 ${added} 个尺码` : '所选尺码都已存在');
+}
+function variantCopyColor(ci) {
+  syncVariantEditor();
+  const s = prodDraft.variants[0];
+  const c = s && s.colors[ci];
+  if (!c) return;
+  s.colors.splice(ci + 1, 0, {
+    color: (c.color || '').trim() + ' 副本',
+    sizes: (c.sizes || []).map(z => ({ size: z.size || '', barcode: '' }))
+  });
+  renderVariantEditor();
+  showToast('已复制颜色及尺码（条码需重新填写）');
+}
+function variantCopyAllColors() {
+  syncVariantEditor();
+  const s = prodDraft.variants[0];
+  if (!s || !s.colors.length) { showToast('请先添加颜色'); return; }
+  const copies = s.colors.map(c => ({
+    color: (c.color || '').trim() + ' 副本',
+    sizes: (c.sizes || []).map(z => ({ size: z.size || '', barcode: '' }))
+  }));
+  s.colors = s.colors.concat(copies);
+  renderVariantEditor();
+  showToast('已复制整套颜色尺码（条码需重新填写）');
+}
+function variantClearSizes(ci) {
+  syncVariantEditor();
+  const c = prodDraft.variants[0] && prodDraft.variants[0].colors[ci];
+  if (!c) return;
+  c.sizes = [{ size: '', barcode: '' }];
+  renderVariantEditor();
+  showToast('已清空该颜色下的尺码');
+}
+function variantRemoveColor(ci) {
+  syncVariantEditor();
+  const s = prodDraft.variants[0];
+  const c = s && s.colors[ci];
+  if (!c) return;
+  const n = (c.sizes || []).filter(z => (z.size || '').trim() || (z.barcode || '').trim()).length;
+  if (!confirm(`确定删除颜色「${(c.color || '').trim() || '未命名'}」吗？将连带删除该颜色下 ${n} 条尺码 SKU，此操作不可撤销。`)) return;
+  s.colors.splice(ci, 1);
+  if (!s.colors.length) s.colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
   renderVariantEditor();
 }
-function variantRemoveStyle(si) {
+function variantRemoveSize(ci, zi) {
   syncVariantEditor();
-  prodDraft.variants.splice(si, 1);
-  if (!prodDraft.variants.length) prodDraft.variants.push({ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] });
-  renderVariantEditor();
-}
-function variantRemoveColor(si, ci) {
-  syncVariantEditor();
-  const s = prodDraft.variants[si];
-  if (s) {
-    s.colors.splice(ci, 1);
-    if (!s.colors.length) s.colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
-  }
-  renderVariantEditor();
-}
-function variantRemoveSize(si, ci, zi) {
-  syncVariantEditor();
-  const c = prodDraft.variants[si] && prodDraft.variants[si].colors[ci];
-  if (c) {
-    c.sizes.splice(zi, 1);
-    if (!c.sizes.length) c.sizes.push({ size: '', barcode: '' });
-  }
+  const c = prodDraft.variants[0] && prodDraft.variants[0].colors[ci];
+  if (!c) return;
+  c.sizes.splice(zi, 1);
+  if (!c.sizes.length) c.sizes.push({ size: '', barcode: '' });
   renderVariantEditor();
 }
 function collectVariantLines() {
   syncVariantEditor();
   const lines = [], combos = new Set(), barcodes = new Map();
-  for (const s of prodDraft.variants) {
-    const style = (s.style || '').trim();
-    for (const c of s.colors) {
-      const color = (c.color || '').trim();
-      for (const z of c.sizes) {
-        const size = (z.size || '').trim(), barcode = (z.barcode || '').trim();
-        if (![style, color, size, barcode].some(Boolean)) continue;
-        if (barcode && !size) { showToast('请先填写尺码，再填写对应的 69 码'); return null; }
-        const combo = JSON.stringify([style, color, size]);
-        if (combos.has(combo)) { showToast('款式/颜色/尺码组合重复：' + [style, color, size].filter(Boolean).join(' / ')); return null; }
-        combos.add(combo);
-        if (barcode) {
-          if (barcodes.has(barcode)) { showToast('69码 ' + barcode + ' 已对应另一个尺码，每个尺码只能有一个 69 码'); return null; }
-          barcodes.set(barcode, [style, color, size].filter(Boolean).join(' / '));
-        }
-        lines.push({ style, color, size, barcode });
+  const s = prodDraft.variants[0] || { style: '', colors: [] };
+  const style = (s.style || '').trim();
+  for (const c of s.colors) {
+    const color = (c.color || '').trim();
+    for (const z of c.sizes) {
+      const size = (z.size || '').trim(), barcode = (z.barcode || '').trim();
+      if (![style, color, size, barcode].some(Boolean)) continue;
+      if (barcode && !size) { showToast('请先填写尺码，再填写对应的 SKU 条码'); return null; }
+      const combo = JSON.stringify([color, size]);
+      if (combos.has(combo)) { showToast('颜色/尺码组合重复：' + [color, size].filter(Boolean).join(' / ')); return null; }
+      combos.add(combo);
+      if (barcode) {
+        if (barcodes.has(barcode)) { showToast('SKU 条码 ' + barcode + ' 重复，每个条码只能对应一个尺码'); return null; }
+        barcodes.set(barcode, [color, size].filter(Boolean).join(' / '));
       }
+      lines.push({ style, color, size, barcode });
     }
   }
-  if (!lines.length) lines.push({ style: '', color: '', size: '', barcode: '' });
+  if (!lines.length) lines.push({ style, color: '', size: '', barcode: '' });
   return lines;
 }
 function rememberPartnerValues(records) {
@@ -7306,42 +7459,92 @@ function rememberPartnerValues(records) {
 function openProductModal(id) {
   const fields = Store.getProductFields();
   const p = id ? Store.getProducts().find(x => x.id === id) : null;
+  const v0 = (p && p.values) || {};
+  const fabricVal = (v0.material || v0.fabric || '').trim();
+  const tagArr = (p && Array.isArray(p.tags)) ? p.tags.slice() :
+    String(v0.tags || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
   prodDraft = {
     id: p ? p.id : null,
     name: p ? p.name : '',
     values: {},
-    variants: variantTreeFromProduct(p),
+    variants: p ? variantTreeFromGroup(p.id) : variantTreeFromProduct(null),
     images: p && p.images ? p.images.slice() : [],
-    sizeChart: p ? (p.sizeChart || '') : ''
+    sizeChart: p ? (p.sizeChart || '') : '',
+    fabrics: fabricVal ? fabricVal.split(/[,，、/]/).map(s => s.trim()).filter(Boolean) : [],
+    tags: tagArr
   };
+  if (!prodDraft.variants.length) prodDraft.variants.push({ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] });
+  prodDraft.variants[0].style = (v0.style || '').trim();
   fields.forEach(f => { prodDraft.values[f.key] = p && p.values ? (p.values[f.key] || '') : ''; });
 
-  const specKeys = ['style', 'color', 'size', 'barcode'];
-  const fieldHtml = fields.filter(f => specKeys.indexOf(f.key) < 0).map(f => {
-    const list = f.key === 'supplier' ? 'partner_supplier_options' : (f.key === 'buyer' ? 'partner_buyer_options' : '');
-    return `
-    <div class="form-group">
-      <label>${escHtml(f.label)}${f.builtin ? '' : ' <span style="color:var(--accent-caramel);">（自定义）</span>'}</label>
-      <input type="text" class="input" id="pf_${f.key}" ${list ? `list="${list}"` : ''} value="${escAttr(prodDraft.values[f.key])}" placeholder="${list ? '可直接选择历史值，也可输入新值' : '可留空'}">
-    </div>`;
-  }).join('');
+  const specKeys = ['style', 'color', 'size', 'barcode', 'material', 'supplier', 'buyer', 'costPrice', 'salePrice'];
+  const moreFields = fields.filter(f => specKeys.indexOf(f.key) < 0);
+  const moreHtml = moreFields.length ? `
+    <div class="form-group" style="margin-top:6px;">
+      <label style="cursor:pointer;color:var(--accent-caramel);" onclick="toggleMoreFields()">更多字段（采购商 / 自定义） <span id="more-arrow">▾</span></label>
+      <div id="more-fields" style="display:none;margin-top:8px;">
+        ${moreFields.map(f => `
+          <div class="form-group">
+            <label>${escHtml(f.label)}${f.builtin ? '' : ' <span style="color:var(--accent-caramel);">（自定义）</span>'}</label>
+            <input type="text" class="input" id="pf_${f.key}" value="${escAttr(prodDraft.values[f.key] || '')}" placeholder="可留空">
+          </div>`).join('')}
+      </div>
+    </div>` : '';
 
   showModal(`
     <div class="modal-title">${p ? '✏️ 编辑产品' : '➕ 添加产品'}</div>
-    <div class="form-group">
-      <label>产品名称 <span style="color:var(--accent-caramel);">*</span></label>
-      <input type="text" class="input" id="pf_name" value="${escAttr(prodDraft.name)}" placeholder="同一产品名称会收纳到一起" autofocus>
+    <div class="prod-section">
+      <div class="prod-section-title"><span class="sec-idx">1</span> 产品基础公共信息<span class="sec-note">款式级数据，所有颜色尺码共用</span></div>
+      <div class="prod-form-grid">
+        <div class="form-group">
+          <label>产品名称 <span style="color:var(--accent-caramel);">*</span></label>
+          <input type="text" class="input" id="pf_name" value="${escAttr(prodDraft.name)}" placeholder="同一产品名称会收纳到一起">
+        </div>
+        <div class="form-group">
+          <label>款式名称 / 款号</label>
+          <input type="text" class="input" id="pf_style" value="${escAttr(prodDraft.variants[0].style || '')}" placeholder="如：经典圆领款（可留空）">
+        </div>
+        <div class="form-group">
+          <label>供应商</label>
+          <input type="text" class="input" id="pf_supplier" list="partner_supplier_options" value="${escAttr(prodDraft.values.supplier || '')}" placeholder="可选择历史值或输入新值">
+        </div>
+        <div class="form-group">
+          <label>采购商</label>
+          <input type="text" class="input" id="pf_buyer" list="partner_buyer_options" value="${escAttr(prodDraft.values.buyer || '')}" placeholder="可选择历史值或输入新值">
+        </div>
+        <div class="form-group">
+          <label>成本单价</label>
+          <input type="number" class="input" id="pf_costPrice" value="${escAttr(prodDraft.values.costPrice || '')}" placeholder="如：45">
+        </div>
+        <div class="form-group">
+          <label>销售单价</label>
+          <input type="number" class="input" id="pf_salePrice" value="${escAttr(prodDraft.values.salePrice || '')}" placeholder="如：99">
+        </div>
+        <div class="form-group wide">
+          <label>面料成分（可多选，也可自定义）</label>
+          <div class="fabric-chips" id="fabric-chips"></div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <input type="text" class="input" id="fabric-custom" placeholder="自定义面料，回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();fabricAddCustom();}">
+            <button type="button" class="btn btn-outline btn-sm" onclick="fabricAddCustom()">添加</button>
+          </div>
+        </div>
+        <div class="form-group wide">
+          <label>产品主图（可多张，拖拽排序，点击预览）</label>
+          <div id="prod-images-box"></div>
+          <button type="button" class="btn btn-outline btn-sm" onclick="prodPickImages()">🖼️ 上传主图</button>
+        </div>
+        <div class="form-group wide">
+          <label>标签（输入后回车新增）</label>
+          <div class="tag-chips" id="tag-chips"></div>
+          <input type="text" class="input" id="tag-input" style="margin-top:8px;" placeholder="如：新款 / 爆款 / 秋装，回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();tagAdd();}">
+        </div>
+      </div>
+      ${moreHtml}
     </div>
-    ${fieldHtml}
-    <div class="form-group">
-      <label>款式 / 颜色 / 尺码 / 69码</label>
-      <div class="variant-hint">一个款式可添加多个颜色，一个颜色可添加多个尺码，每个尺码对应唯一 69 码；留空也可保存。不同规格会自动生成为同一产品名称下的多条资料。</div>
+    <div class="prod-section">
+      <div class="prod-section-title"><span class="sec-idx">2</span> SKU 层级录入<span class="sec-note">款式 → 颜色 → 尺码</span></div>
+      <div class="variant-hint">一个款式下可添加多个颜色，每个颜色下可添加多个尺码；「颜色 + 尺码」为一条独立 SKU，单独设置条码（全局唯一）。</div>
       <div class="variant-editor" id="variant-editor"></div>
-    </div>
-    <div class="form-group">
-      <label>产品图（最多 3 张，可留空）</label>
-      <div id="prod-images-box"></div>
-      <button type="button" class="btn btn-outline btn-sm" onclick="prodPickImage()">🖼️ 上传产品图</button>
     </div>
     <div class="form-group">
       <label>尺码表（图片，可留空）</label>
@@ -7353,16 +7556,107 @@ function openProductModal(id) {
       <button class="btn btn-primary" onclick="saveProduct()">保存</button>
     </div>
   ` + partnerDatalistsHtml() + specDatalistHtml());
+  renderFabricChips();
+  renderTagChips();
   renderVariantEditor();
   renderProdImages();
 }
-
+function toggleMoreFields() {
+  const box = document.getElementById('more-fields');
+  const arrow = document.getElementById('more-arrow');
+  if (!box) return;
+  const show = box.style.display === 'none';
+  box.style.display = show ? 'block' : 'none';
+  if (arrow) arrow.textContent = show ? '▴' : '▾';
+}
+function renderFabricChips() {
+  const box = document.getElementById('fabric-chips');
+  if (!box || !prodDraft) return;
+  const sel = prodDraft.fabrics || [];
+  const opts = Array.from(new Set(FABRIC_OPTIONS.concat(sel)));
+  box.innerHTML = opts.map((f, i) => `<button type="button" class="fabric-chip ${sel.indexOf(f) >= 0 ? 'on' : ''}" onclick="fabricToggle(${i})">${escHtml(f)}</button>`).join('');
+}
+function fabricToggle(i) {
+  const sel = prodDraft.fabrics || (prodDraft.fabrics = []);
+  const opts = Array.from(new Set(FABRIC_OPTIONS.concat(sel)));
+  const f = opts[i];
+  if (!f) return;
+  const at = sel.indexOf(f);
+  if (at >= 0) sel.splice(at, 1); else sel.push(f);
+  renderFabricChips();
+}
+function fabricAddCustom() {
+  const el = document.getElementById('fabric-custom');
+  const v = ((el && el.value) || '').trim();
+  if (!v) return;
+  if (!prodDraft.fabrics) prodDraft.fabrics = [];
+  v.split(/[,，]/).map(s => s.trim()).filter(Boolean).forEach(x => {
+    if (prodDraft.fabrics.indexOf(x) < 0) prodDraft.fabrics.push(x);
+  });
+  if (el) el.value = '';
+  renderFabricChips();
+}
+function renderTagChips() {
+  const box = document.getElementById('tag-chips');
+  if (!box || !prodDraft) return;
+  box.innerHTML = (prodDraft.tags || []).map((t, i) => `<span class="tag-chip">${escHtml(t)}<button type="button" title="移除" onclick="tagRemove(${i})">×</button></span>`).join('') || '<span style="font-size:11px;color:var(--text-light);">暂无标签</span>';
+}
+function tagAdd() {
+  const el = document.getElementById('tag-input');
+  const v = ((el && el.value) || '').trim();
+  if (!v) return;
+  if (!prodDraft.tags) prodDraft.tags = [];
+  v.split(/[,，]/).map(s => s.trim()).filter(Boolean).forEach(x => {
+    if (prodDraft.tags.indexOf(x) < 0) prodDraft.tags.push(x);
+  });
+  if (el) el.value = '';
+  renderTagChips();
+}
+function tagRemove(i) { prodDraft.tags.splice(i, 1); renderTagChips(); }
+function pickImages(cb, maxW) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+  inp.onchange = async e => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const out = [];
+    for (const f of files) {
+      try { out.push(await shrinkImage(f, maxW || 400)); }
+      catch (err) { showToast('有图片处理失败：' + (err && err.message ? err.message : '')); }
+    }
+    if (out.length) cb(out);
+  };
+  inp.click();
+}
+function prodPickImages() {
+  pickImages(imgs => {
+    const room = 9 - (prodDraft.images || []).length;
+    if (room <= 0) { showToast('主图最多 9 张'); return; }
+    prodDraft.images = (prodDraft.images || []).concat(imgs.slice(0, room));
+    renderProdImages();
+    showToast(`已添加 ${Math.min(imgs.length, room)} 张主图，可拖拽排序`);
+  }, 400);
+}
+function prodImageDragStart(e, i) { if (e.dataTransfer) e.dataTransfer.setData('text/plain', String(i)); }
+function prodImageDrop(e, i) {
+  e.preventDefault();
+  const from = Number(e.dataTransfer && e.dataTransfer.getData('text/plain'));
+  if (isNaN(from) || from === i) return;
+  const arr = prodDraft.images;
+  if (!arr || from < 0 || from >= arr.length) return;
+  const item = arr.splice(from, 1)[0];
+  arr.splice(i, 0, item);
+  renderProdImages();
+}
 function renderProdImages() {
   const box = document.getElementById('prod-images-box');
   if (box) {
     box.innerHTML = `<div class="img-draft-list">${(prodDraft.images || []).map((src, i) => `
-      <div class="img-draft"><img src="${src}" alt="产品图"><button type="button" onclick="prodRemoveImage(${i})">×</button></div>
-    `).join('')}</div>`;
+      <div class="img-draft" draggable="true" ondragstart="prodImageDragStart(event,${i})" ondragover="event.preventDefault()" ondrop="prodImageDrop(event,${i})">
+        <img src="${src}" alt="产品主图" onclick="viewImage(this.src)">
+        <button type="button" title="移除" onclick="prodRemoveImage(${i})">×</button>
+        <span class="img-order">${i + 1}</span>
+      </div>`).join('')}</div>`;
   }
   const cb = document.getElementById('prod-sizechart-box');
   if (cb) {
@@ -7371,26 +7665,31 @@ function renderProdImages() {
       : '';
   }
 }
-function prodPickImage() {
-  if ((prodDraft.images || []).length >= 3) { showToast('产品图最多 3 张'); return; }
-  pickImage(d => { prodDraft.images.push(d); renderProdImages(); }, 400);
-}
 function prodRemoveImage(i) { prodDraft.images.splice(i, 1); renderProdImages(); }
 function prodPickSizeChart() { pickImage(d => { prodDraft.sizeChart = d; renderProdImages(); }, 600); }
 function prodRemoveSizeChart() { prodDraft.sizeChart = ''; renderProdImages(); }
 
 function saveProduct() {
-  const name = (document.getElementById('pf_name').value || '').trim();
+  const nameEl = document.getElementById('pf_name');
+  const name = ((nameEl && nameEl.value) || '').trim();
   if (!name) { showToast('请填写产品名称'); return; }
   const fields = Store.getProductFields();
   fields.forEach(f => {
     const el = document.getElementById('pf_' + f.key);
     prodDraft.values[f.key] = el ? (el.value || '').trim() : '';
   });
+  const styleEl = document.getElementById('pf_style');
+  const styleName = ((styleEl && styleEl.value) || '').trim();
+  if (prodDraft.variants[0]) prodDraft.variants[0].style = styleName;
+  prodDraft.values.style = styleName;
+  prodDraft.values.material = (prodDraft.fabrics || []).join('、');
+  prodDraft.values.tags = (prodDraft.tags || []).join(',');
+
   const lines = collectVariantLines();
   if (!lines) return;
 
   const products = Store.getProducts();
+  const oldGroup = products.filter(p => (p.name || '').trim() === name);
   for (const ln of lines) {
     if (!ln.barcode) continue;
     const key = JSON.stringify([ln.style, ln.color, ln.size]);
@@ -7398,7 +7697,7 @@ function saveProduct() {
       (((p.values || {}).barcode || '').trim() === ln.barcode) &&
       JSON.stringify([((p.values || {}).style || '').trim(), ((p.values || {}).color || '').trim(), ((p.values || {}).size || '').trim()]) !== key);
     if (conflict) {
-      showToast('69码 ' + ln.barcode + ' 已被其它尺码使用：' + productLabel(conflict));
+      showToast('SKU 条码 ' + ln.barcode + ' 已被其它尺码使用：' + productLabel(conflict));
       return;
     }
   }
@@ -7406,24 +7705,35 @@ function saveProduct() {
   prodDraft.name = name;
   const old = prodDraft.id ? products.find(x => x.id === prodDraft.id) : null;
   const base = Object.assign({}, prodDraft.values);
-  const generated = lines.map((ln, i) => ({
-    id: (i === 0 && old) ? old.id : uid(),
-    name,
-    values: Object.assign({}, base, { style: ln.style, color: ln.color, size: ln.size, barcode: ln.barcode }),
-    variants: [{ style: ln.style, colors: [{ color: ln.color, sizes: [{ size: ln.size, barcode: ln.barcode }] }] }],
-    // 图片随首条规格保存，同组资料共用，避免重复占用本地空间
-    images: i === 0 ? (prodDraft.images || []).slice() : [],
-    sizeChart: i === 0 ? (prodDraft.sizeChart || '') : '',
-    createdAt: old && i === 0 ? (old.createdAt || Store.todayKey()) : Store.todayKey()
-  }));
+  const usedIds = new Set();
+  const generated = lines.map((ln, i) => {
+    const matched = oldGroup.find(p => !usedIds.has(p.id) &&
+      (((p.values || {}).style || '').trim() === ln.style) &&
+      (((p.values || {}).color || '').trim() === ln.color) &&
+      (((p.values || {}).size || '').trim() === ln.size));
+    let id = matched ? matched.id : (i === 0 && old && !usedIds.has(old.id) ? old.id : uid());
+    usedIds.add(id);
+    return {
+      id,
+      name,
+      values: Object.assign({}, base, { style: ln.style, color: ln.color, size: ln.size, barcode: ln.barcode }),
+      variants: [{ style: ln.style, colors: [{ color: ln.color, sizes: [{ size: ln.size, barcode: ln.barcode }] }] }],
+      // 公共主图/尺码表只存首条，同组资料共用，节省本地空间
+      images: i === 0 ? (prodDraft.images || []).slice() : [],
+      sizeChart: i === 0 ? (prodDraft.sizeChart || '') : '',
+      tags: (prodDraft.tags || []).slice(),
+      fabrics: (prodDraft.fabrics || []).slice(),
+      createdAt: (matched && matched.createdAt) || (old && i === 0 ? (old.createdAt || Store.todayKey()) : Store.todayKey())
+    };
+  });
 
-  Store.saveProducts(products.filter(x => x.id !== prodDraft.id).concat(generated));
+  Store.saveProducts(products.filter(p => !oldGroup.some(g => g.id === p.id)).concat(generated));
   rememberPartnerValues(generated);
   const open = Store.getProductOpen();
   if (open.indexOf(name) < 0) { open.push(name); Store.saveProductOpen(open); }
   closeModal();
   renderPage('products');
-  showToast(generated.length > 1 ? `已保存 ${generated.length} 条规格资料～ 🏷️` : '产品资料已保存～ 🏷️');
+  showToast(generated.length > 1 ? `已保存 ${generated.length} 条 SKU～ 🏷️` : '产品资料已保存～ 🏷️');
 }
 
 function deleteProduct(id) {

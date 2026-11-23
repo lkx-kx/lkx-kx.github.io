@@ -2869,6 +2869,68 @@ body {
 ::-webkit-scrollbar-thumb { background: rgba(29, 33, 41, 0.16); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(29, 33, 41, 0.26); }
 
+/* ---------- 每日任务：任务卡片排版 ---------- */
+/* 桌面端：包装层「透明」，保持原有单行排版（标题 / 时间 / 徽标 / 操作同一行） */
+.task-meta, .task-actions { display: contents; }
+.link-badge .lb-text { display: none; }
+.derived-label { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.dl-main { font-weight: 700; }
+.dl-hint { font-weight: 500; letter-spacing: 0.5px; color: var(--text-light); }
+.dt-add-row { display: flex; gap: 10px; margin-bottom: 16px; }
+.dt-add-btn { flex-shrink: 0; white-space: nowrap; }
+
+@media (max-width: 768px) {
+  /* 手机端：任务卡片改为两行网格
+     第一行 = 勾选框 + 标题 + 操作按钮；第二行 = 时间 / 重复 / 顺延 / 来源标签 */
+  .task-item {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    column-gap: 10px;
+    row-gap: 6px;
+    align-items: start;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .task-item .task-checkbox { grid-column: 1; grid-row: 1; align-self: start; margin-top: 1px; }
+  .task-item .task-text {
+    grid-column: 2; grid-row: 1;
+    min-width: 0;
+    font-size: 15px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .task-item .task-meta {
+    grid-column: 2 / -1; grid-row: 2;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  }
+  .task-item .task-actions {
+    grid-column: 3; grid-row: 1;
+    display: flex; align-items: center; justify-self: end;
+  }
+  .task-item .task-time { min-width: 0; text-align: left; }
+  .task-item .task-edit, .task-item .task-delete { opacity: .75; font-size: 17px; padding: 3px 7px; }
+  .task-item .link-badge {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 11px; padding: 1px 6px; border-radius: 4px;
+    background: #F2F3F5; color: var(--text-sub); margin-left: 0;
+  }
+  .task-item .link-badge .lb-text { display: inline; font-style: normal; }
+  /* 自动汇入的条目：左侧橙色标识，比虚线框更清晰 */
+  .task-item.todo-derived {
+    border-style: solid;
+    border-left: 3px solid var(--accent-caramel);
+    background: #FFFAF5 !important;
+  }
+  .derived-label {
+    flex-direction: column; align-items: flex-start; gap: 2px;
+    margin: 14px 0 8px; padding-top: 10px; letter-spacing: 0;
+  }
+  .dl-main { font-size: 12.5px; }
+  .dl-hint { font-size: 11.5px; }
+  .dt-add-row { margin-bottom: 14px; }
+}
+
 /* ---------- 响应式 ---------- */
 @media (max-width: 768px) {
   .card, .board-card, .dashboard-hero, .hs-card, .recent-col { border-radius: var(--radius) !important; }
@@ -4786,9 +4848,9 @@ function renderDailyTasks(container) {
       <span class="ph-desc">每天清零，重新出发</span>
     </div>
     <div class="card">
-      <div style="display:flex;gap:10px;margin-bottom:16px;">
+      <div class="dt-add-row">
         <input type="text" class="input" id="task-input" placeholder="输入任务，回车添加..." onkeypress="if(event.key==='Enter')addTask()">
-        <button class="btn btn-primary" onclick="addTask()">添加</button>
+        <button class="btn btn-primary dt-add-btn" onclick="addTask()">添加</button>
       </div>
       ${totalCount > 0 ? `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -4809,35 +4871,45 @@ function renderDailyTasks(container) {
           <div class="task-item">
             <div class="task-checkbox ${t.done ? 'done' : ''}" onclick="toggleTask('${t.id}')"></div>
             <span class="task-text ${t.done ? 'done' : ''}">${escHtml(t.text)}</span>
-            ${t.rolled ? '<span class="roll-badge" title="前一天未完成，已顺延到今天">↪ 顺延</span>' : ''}
-            <button class="task-edit" onclick="editTask('${t.id}')" title="编辑">✎</button>
-            <button class="task-delete" onclick="deleteTask('${t.id}')">✕</button>
+            ${t.rolled ? '<span class="task-meta"><span class="roll-badge" title="前一天未完成，已顺延到今天">↪ 顺延</span></span>' : ''}
+            <span class="task-actions">
+              <button class="task-edit" onclick="editTask('${t.id}')" title="编辑">✎</button>
+              <button class="task-delete" onclick="deleteTask('${t.id}')">✕</button>
+            </span>
           </div>
           `).join('')}
           ${linkedTodos.length ? `
-            <div class="derived-label">📅 待办事项（按日期自动汇入 · ${todayKey}）</div>
+            <div class="derived-label"><span class="dl-main">📅 待办事项</span><span class="dl-hint">按日期自动汇入 · ${todayKey}</span></div>
             ${linkedTodos.map(t => `
               <div class="task-item todo-derived">
                 <div class="task-checkbox ${t.done ? 'done' : ''}" onclick="toggleTodoDone('${t.id}')"></div>
                 <span class="task-text ${t.done ? 'done' : ''}">${escHtml(t.text)}</span>
-                ${t.time ? `<span class="task-time">${escHtml(t.time)}</span>` : ''}
-                <span class="link-badge" title="来自待办事项（按日期自动汇入）">📅</span>
-                <button class="task-edit" onclick="editTodo('${t.id}')" title="编辑待办">✎</button>
+                <span class="task-meta">
+                  ${t.time ? `<span class="task-time">${escHtml(t.time)}</span>` : ''}
+                  <span class="link-badge src-todo" title="来自待办事项（按日期自动汇入）">📅<em class="lb-text">待办</em></span>
+                </span>
+                <span class="task-actions">
+                  <button class="task-edit" onclick="editTodo('${t.id}')" title="编辑待办">✎</button>
+                </span>
               </div>
             `).join('')}
           ` : ''}
           ${linkedSched.length ? `
-            <div class="derived-label">📆 日程（按时间自动汇入 · 未完成会顺延）</div>
+            <div class="derived-label"><span class="dl-main">📆 日程</span><span class="dl-hint">按时间自动汇入 · 未完成会顺延</span></div>
             ${linkedSched.map(({ s, date, count, rolled }) => `
               <div class="task-item todo-derived">
                 <div class="task-checkbox" onclick="completeSchedPending('${s.id}')" title="标记完成（含全部顺延积压）"></div>
                 <span class="task-text">${escHtml(s.title)}</span>
-                ${s.allday ? `<span class="task-time">🌞 全天</span>` : (s.time ? `<span class="task-time">${escHtml(s.time)}</span>` : '')}
-                ${s.repeat && s.repeat !== 'none' ? `<span class="sched-repeat-badge">🔁 ${repeatLabel(s.repeat)}</span>` : ''}
-                ${rolled ? `<span class="roll-badge" title="原定 ${date} 未完成，已顺延到今天">↪ 顺延 ${fmtCNDate(date)}${count > 1 ? ` · 还有 ${count} 次` : ''}</span>` : ''}
-                ${!rolled && count > 1 ? `<span class="roll-badge" title="累计 ${count} 次未完成">还有 ${count} 次</span>` : ''}
-                <span class="link-badge" title="来自日程（按时间自动汇入）">📆</span>
-                <button class="task-edit" onclick="editScheduleItem('${s.id}')" title="编辑日程">✎</button>
+                <span class="task-meta">
+                  ${s.allday ? `<span class="task-time">🌞 全天</span>` : (s.time ? `<span class="task-time">${escHtml(s.time)}</span>` : '')}
+                  ${s.repeat && s.repeat !== 'none' ? `<span class="sched-repeat-badge">🔁 ${repeatLabel(s.repeat)}</span>` : ''}
+                  ${rolled ? `<span class="roll-badge" title="原定 ${date} 未完成，已顺延到今天">↪ 顺延 ${fmtCNDate(date)}${count > 1 ? ` · 还有 ${count} 次` : ''}</span>` : ''}
+                  ${!rolled && count > 1 ? `<span class="roll-badge" title="累计 ${count} 次未完成">还有 ${count} 次</span>` : ''}
+                  <span class="link-badge src-sched" title="来自日程（按时间自动汇入）">📆<em class="lb-text">日程</em></span>
+                </span>
+                <span class="task-actions">
+                  <button class="task-edit" onclick="editScheduleItem('${s.id}')" title="编辑日程">✎</button>
+                </span>
               </div>`).join('')}
           ` : ''}
         `}

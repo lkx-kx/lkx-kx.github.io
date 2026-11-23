@@ -3067,6 +3067,46 @@ body {
   max-width: 100%; max-height: 190px; object-fit: contain;
   border: 1px solid var(--border-soft); border-radius: 6px; cursor: zoom-in; background: var(--cream-card);
 }
+/* 产品库层级收纳：产品 → 款式 → 颜色 → 尺码明细 */
+.pv-body { padding: 10px 12px; background: var(--cream-card); }
+.prod-l1 { padding: 10px 12px; }
+.pv-node { border: 1px solid var(--border-soft); border-radius: 6px; margin-bottom: 8px; overflow: hidden; }
+.pv-node:last-child { margin-bottom: 0; }
+.pv-head {
+  display: flex; align-items: center; gap: 8px; padding: 9px 11px;
+  cursor: pointer; background: var(--cream-bg); user-select: none;
+}
+.pv-head:hover { background: var(--cream-card-hover); }
+.pv-chev { color: var(--text-light); font-size: 10px; transition: transform .18s; flex: 0 0 auto; }
+.pv-node.open > .pv-head .pv-chev { transform: rotate(90deg); }
+.pv-title { font-weight: 600; font-size: 13px; color: var(--text-main); }
+.pv-badge {
+  margin-left: auto; font-size: 11px; color: var(--text-sub);
+  background: var(--cream-card); border: 1px solid var(--border-soft);
+  border-radius: 10px; padding: 2px 8px; white-space: nowrap;
+}
+.pv-node > .pv-body { border-top: 1px dashed var(--border-soft); padding-left: 22px; }
+.pv-media { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 9px; }
+.pv-media img {
+  width: 48px; height: 48px; object-fit: cover; border-radius: 5px;
+  border: 1px solid var(--border-soft); cursor: zoom-in;
+}
+.pv-media img.chart { width: auto; max-width: 120px; max-height: 48px; object-fit: contain; }
+.pv-table-wrap { overflow-x: auto; border: 1px solid var(--border-soft); border-radius: 6px; }
+.pv-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 360px; }
+.pv-table th, .pv-table td {
+  padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border-soft); white-space: nowrap;
+}
+.pv-table th { font-size: 11px; font-weight: 400; color: var(--text-light); background: var(--cream-bg); }
+.pv-table tr:last-child td { border-bottom: none; }
+.pv-table td { color: var(--text-main); }
+.pv-row-actions { display: flex; gap: 6px; }
+@media (max-width: 768px) {
+  .pv-body, .prod-l1 { padding: 8px; }
+  .pv-node > .pv-body { padding-left: 10px; }
+  .pv-head { padding: 8px; }
+  .pv-title { font-size: 12px; }
+}
 .field-row {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 10px; border: 1px solid var(--border-soft);
@@ -6920,6 +6960,35 @@ function renderProducts(container) {
   renderProductList();
 }
 
+// 层级展开状态：产品沿用纯名称（兼容旧数据），款式/颜色用带前缀的 JSON 串
+function poKey(level, parts) {
+  return level === 'product' ? parts[0] : JSON.stringify(['po', level].concat(parts));
+}
+function poEnc(v) { return encodeURIComponent(v == null ? '' : String(v)).replace(/'/g, '%27'); }
+function poOpen(openSet, level, parts, force) {
+  return force ? true : openSet.has(poKey(level, parts));
+}
+function poToggle(level, parts) {
+  const arr = Store.getProductOpen();
+  const key = poKey(level, parts);
+  const i = arr.indexOf(key);
+  if (i >= 0) arr.splice(i, 1); else arr.push(key);
+  Store.saveProductOpen(arr);
+  renderProductList();
+}
+function pval(p, key) {
+  const v = (p && p.values || {})[key];
+  if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim();
+  const s0 = (p && p.variants && p.variants[0]) || {};
+  const c0 = (s0.colors && s0.colors[0]) || {};
+  const z0 = (c0.sizes && c0.sizes[0]) || {};
+  if (key === 'style') return (s0.style || '').trim();
+  if (key === 'color') return (c0.color || '').trim();
+  if (key === 'size') return (z0.size || '').trim();
+  if (key === 'barcode') return (z0.barcode || '').trim();
+  return '';
+}
+
 function renderProductList() {
   const box = document.getElementById('prod-list');
   if (!box) return;
@@ -6928,6 +6997,7 @@ function renderProductList() {
   const products = Store.getProducts();
   const fields = Store.getProductFields();
   const openSet = new Set(Store.getProductOpen());
+  const force = !!kw;
 
   const filtered = kw ? products.filter(p => {
     const hay = [p.name, productSpec(p)].concat(fields.map(f => (p.values || {})[f.key])).join(' ').toLowerCase();
@@ -6946,58 +7016,97 @@ function renderProductList() {
     groups.get(name).push(p);
   });
   const names = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+  const extraFields = fields.filter(f => ['style', 'color', 'size', 'barcode'].indexOf(f.key) < 0);
 
   box.innerHTML = names.map(name => {
     const list = groups.get(name);
-    const isOpen = openSet.has(name) || !!kw;
+    const pOpen = poOpen(openSet, 'product', [name], force);
     const thumb = list.find(p => p.images && p.images.length);
     const thumbHtml = thumb
       ? `<img class="prod-thumb" src="${thumb.images[0]}" alt="">`
       : `<div class="prod-thumb">🏷️</div>`;
-    const specs = Array.from(new Set(list.map(productSpec).filter(Boolean))).slice(0, 4).join(' · ');
-    const entries = list.map(p => {
-      const v = p.values || {};
-      const detail = fields.filter(f => v[f.key] !== undefined && v[f.key] !== null && String(v[f.key]).trim() !== '')
-        .map(f => `<div class="prod-spec"><b>${escHtml(f.label)}</b><span>${escHtml(v[f.key])}</span></div>`).join('');
-      const imgs = (p.images || []).map(src => `<img src="${src}" alt="产品图" onclick="viewImage(this.src)">`).join('');
-      const chart = p.sizeChart
-        ? `<div class="prod-sizechart"><div class="prod-sizechart-label">尺码表</div><img src="${p.sizeChart}" alt="尺码表" onclick="viewImage(this.src)"></div>`
-        : '';
-      return `<div class="prod-card">
-        <div class="prod-card-head">
-          <div class="prod-card-title">${escHtml(productSpec(p) || '基础资料')}</div>
-          <div class="prod-card-actions">
-            <button class="btn btn-outline btn-sm" onclick="openProductModal('${p.id}')">编辑</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">删除</button>
+
+    const styleMap = new Map();
+    list.forEach(p => {
+      const s = pval(p, 'style') || '（未分款式）';
+      if (!styleMap.has(s)) styleMap.set(s, []);
+      styleMap.get(s).push(p);
+    });
+    const styleNames = Array.from(styleMap.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+
+    const styleHtml = styleNames.map(style => {
+      const sList = styleMap.get(style);
+      const sOpen = pOpen && poOpen(openSet, 'style', [name, style], force);
+      const colorMap = new Map();
+      sList.forEach(p => {
+        const c = pval(p, 'color') || '（未分颜色）';
+        if (!colorMap.has(c)) colorMap.set(c, []);
+        colorMap.get(c).push(p);
+      });
+      const colorNames = Array.from(colorMap.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+
+      const colorHtml = colorNames.map(color => {
+        const cList = colorMap.get(color);
+        const cOpen = sOpen && poOpen(openSet, 'color', [name, style, color], force);
+        const media = cList.find(p => p.images && p.images.length) || cList.find(p => p.sizeChart);
+        const imgs = (media && media.images || []).map(src => `<img src="${src}" alt="产品图" onclick="viewImage(this.src)">`).join('');
+        const chart = media && media.sizeChart
+          ? `<img class="chart" src="${media.sizeChart}" alt="尺码表" onclick="viewImage(this.src)">`
+          : '';
+        const mediaHtml = (imgs || chart) ? `<div class="pv-media">${imgs}${chart}</div>` : '';
+        const headCols = ['尺码', '69码'].concat(extraFields.map(f => escHtml(f.label))).concat(['操作']);
+        const rows = cList.map(p => {
+          const cells = [pval(p, 'size') || '—', pval(p, 'barcode') || '—'];
+          extraFields.forEach(f => {
+            const raw = (p.values || {})[f.key];
+            const txt = (raw == null ? '' : String(raw)).trim();
+            cells.push(txt ? escHtml(txt) : '—');
+          });
+          return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}
+            <td><div class="pv-row-actions">
+              <button class="btn btn-outline btn-sm" onclick="openProductModal('${p.id}')">编辑</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">删除</button>
+            </div></td></tr>`;
+        }).join('');
+        const args = `[decodeURIComponent('${poEnc(name)}'),decodeURIComponent('${poEnc(style)}'),decodeURIComponent('${poEnc(color)}')]`;
+        return `<div class="pv-node ${cOpen ? 'open' : ''}">
+          <div class="pv-head" onclick="poToggle('color',${args})">
+            <span class="pv-chev">▶</span>
+            <span class="pv-title">🎨 ${escHtml(color)}</span>
+            <span class="pv-badge">${cList.length} 个尺码</span>
           </div>
+          ${cOpen ? `<div class="pv-body">${mediaHtml}<div class="pv-table-wrap"><table class="pv-table">
+            <thead><tr>${headCols.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table></div></div>` : ''}
+        </div>`;
+      }).join('');
+
+      const args = `[decodeURIComponent('${poEnc(name)}'),decodeURIComponent('${poEnc(style)}')]`;
+      return `<div class="pv-node ${sOpen ? 'open' : ''}">
+        <div class="pv-head" onclick="poToggle('style',${args})">
+          <span class="pv-chev">▶</span>
+          <span class="pv-title">👕 ${escHtml(style)}</span>
+          <span class="pv-badge">${colorNames.length} 色 · ${sList.length} 条</span>
         </div>
-        <div class="prod-specs">${detail || '<div class="prod-spec"><span>暂无详细资料</span></div>'}</div>
-        ${imgs ? `<div class="prod-imgs">${imgs}</div>` : ''}
-        ${chart}
+        ${sOpen ? `<div class="pv-body">${colorHtml}</div>` : ''}
       </div>`;
     }).join('');
 
-    return `<div class="prod-group ${isOpen ? 'open' : ''}">
-      <div class="prod-group-head" onclick="toggleProductGroup(decodeURIComponent('${encodeURIComponent(name)}'))">
+    const pargs = `[decodeURIComponent('${poEnc(name)}')]`;
+    return `<div class="prod-group ${pOpen ? 'open' : ''}">
+      <div class="prod-group-head" onclick="poToggle('product',${pargs})">
         ${thumbHtml}
         <div style="min-width:0;">
           <div class="prod-name">📦 ${escHtml(name)}</div>
-          <div class="prod-sub">${escHtml(specs || '点击展开查看完整资料')}</div>
+          <div class="prod-sub">${escHtml(styleNames.slice(0, 4).join(' · ') || '点击展开查看规格')}</div>
         </div>
-        <span class="prod-count">${list.length} 条资料</span>
+        <span class="prod-count">${styleNames.length} 款 · ${list.length} 条</span>
         <span class="prod-chev">▶</span>
       </div>
-      ${isOpen ? `<div class="prod-group-body">${entries}</div>` : ''}
+      ${pOpen ? `<div class="pv-body prod-l1">${styleHtml}</div>` : ''}
     </div>`;
   }).join('');
-}
-
-function toggleProductGroup(name) {
-  const arr = Store.getProductOpen();
-  const i = arr.indexOf(name);
-  if (i >= 0) arr.splice(i, 1); else arr.push(name);
-  Store.saveProductOpen(arr);
-  renderProductList();
 }
 
 /* ---------------- 产品层级规格（款式 → 颜色 → 尺码 → 69码） ---------------- */

@@ -20,7 +20,7 @@
   --cream-card-hover: #F7F8FA; /* 行 hover */
   --accent-caramel: #F77234;   /* 主高亮 · 橙 */
   --accent-pink: #F53F3F;      /* 危险/打卡 */
-  --accent-green: #00A870;     /* 成功 */
+  --accent-green: #3F8A62;     /* 成功 */
   --accent-blue: #4080FF;      /* 信息 */
   --accent-purple: #722ED1;    /* 分类 */
   --accent-orange: #FF8C42;    /* 辅助橙 */
@@ -42,8 +42,18 @@
   /* 状态标签（淡彩小面积） */
   --tag-orange-bg: #FFF1E8;
   --tag-orange-text: #D9540F;
-  --tag-green-bg: #E8FFEA;
-  --tag-green-text: #009A29;
+  --tag-green-bg: #EAF1EC;
+  --tag-green-text: #3F7D57;
+  /* 绿色族（统一低饱和，后续改色只动这里） */
+  --green-strong: #3F8A62;   /* 勾选框 / 状态点 / 成功按钮 */
+  --green-text: #3F7D57;     /* 绿色文字 */
+  --green-bg: #EAF1EC;       /* 绿色标签底 */
+  --green-border: #C2D9C5;   /* 绿色描边 */
+  --green-cell: #F2F8F3;     /* 日历「已打卡」格子底 */
+  --green-cell-2: #F1F8F2;   /* 日历「补班」格子底 */
+  --green-cell-3: #F5FAF5;   /* 日历「调休补班」格子底 */
+  --green-cell-border: #C2D9C5;
+  --green-cell-border-2: #D5E8D8;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -385,7 +395,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   flex-shrink: 0;
   transition: background 0.2s ease;
 }
-.module-item .mi-dot.on { background: var(--accent-green); box-shadow: 0 0 0 3px rgba(175, 199, 175, 0.28); }
+.module-item .mi-dot.on { background: var(--green-strong); box-shadow: 0 0 0 3px rgba(175, 199, 175, 0.28); }
 
 /* 今日概览：小卡片（标题+内容区），四列同一行 */
 .overview-board-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
@@ -414,7 +424,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   flex-shrink: 0;
   transition: background 0.2s ease;
 }
-.ov-dot.on { background: var(--accent-green); box-shadow: 0 0 0 3px rgba(175, 199, 175, 0.28); }
+.ov-dot.on { background: var(--green-strong); box-shadow: 0 0 0 3px rgba(175, 199, 175, 0.28); }
 .ov-checkin-hint { font-size: 12px; color: var(--text-light); margin-top: 8px; }
 
 /* 进度条 */
@@ -615,7 +625,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   flex-shrink: 0; font-size: 12px; padding: 3px 11px; border-radius: 999px; font-weight: 600; white-space: nowrap;
 }
 .recent-pill.borrowed { background: #EFE0CC; color: #86909C; }
-.recent-pill.returned { background: #E8FFEA; color: #009A29; }
+.recent-pill.returned { background: #EAF1EC; color: #3F7D57; }
 
 @media (max-width: 768px) {
   .board-card { padding: 16px; }
@@ -1570,7 +1580,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   border: 1px solid var(--border-soft);
 }
 .cal-pill.todo { background: #E8F3FF; border-color: #BEDAFF; color: #86909C; }
-.cal-pill.task { background: #E8FFEA; border-color: #E8FFEA; color: #009A29; }
+.cal-pill.task { background: #EAF1EC; border-color: #EAF1EC; color: #3F7D57; }
 .cal-pill.sched { background: #F5E8FF; border-color: #DDC7F5; color: #86909C; }
 .cal-pill.done { opacity: .6; }
 .cal-pill .ov-dot { display: inline-block; vertical-align: middle; width: 7px; height: 7px; min-width: 7px; margin: -1px 3px 0 0; box-shadow: none; }
@@ -1791,7 +1801,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .sync-indicator {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 11px; padding: 4px 10px; border-radius: 12px;
-  background: #E8FFEA; color: var(--accent-green); margin-bottom: 10px;
+  background: #EAF1EC; color: var(--accent-green); margin-bottom: 10px;
 }
 .sync-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .sync-indicator.busy { background: #FFF7E8; color: var(--accent-caramel); }
@@ -1907,7 +1917,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   transition: all 0.2s;
 }
 .todo-done.on { background: var(--accent-green); }
-.todo-done:not(.on) { border-color: #E8FFEA; color: transparent; }
+.todo-done:not(.on) { border-color: #EAF1EC; color: transparent; }
 
 /* ============ CALENDAR ============ */
 .calendar-wrap {
@@ -2001,7 +2011,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 }
 
 .cal-cell.cal-checked {
-  background: #E8FFEA;
+  background: #EAF1EC;
   border-color: var(--accent-green);
 }
 
@@ -2036,17 +2046,17 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 }
 
 .cal-cell.cal-makeup {
-  background: #E8FFEA;
+  background: #EAF1EC;
   border-color: var(--accent-green);
 }
 
 .cal-cell.cal-makeup-auto {
-  background: #E8FFEA;
-  border-color: #C6E6C9;
+  background: #EAF1EC;
+  border-color: #C2D9C5;
 }
 
 .cal-makeup-label {
-  color: #009A29;
+  color: #3F7D57;
   font-weight: 600;
 }
 
@@ -2501,10 +2511,10 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   cursor: pointer;
   transition: all .15s;
 }
-.chip:hover { background: #FFFFFF; color: var(--text-main); border-color: #C6E6C9; }
+.chip:hover { background: #FFFFFF; color: var(--text-main); border-color: #C2D9C5; }
 .si-empty { font-size: 13px; color: var(--text-sub); padding: 8px 0; }
 .si-preview-head { font-size: 13px; color: var(--text-sub); margin: 14px 0 10px; }
-.si-preview-head b { color: #C6E6C9; }
+.si-preview-head b { color: var(--green-text); }
 .si-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
 .si-card {
   background: var(--cream-side, #F2F3F5);
@@ -2524,7 +2534,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 }
 .si-tag.qty { color: var(--text-main); font-weight: 700; }
 .si-tag.borr { color: #86909C; border-color: #F7F8FA; background: #FAFAFA; }
-.si-tag.ret { color: #009A29; border-color: #E8FFEA; background: #E8FFEA; }
+.si-tag.ret { color: #3F7D57; border-color: #EAF1EC; background: #EAF1EC; }
 .si-date { font-size: 11px; color: var(--text-sub); }
 .si-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .se-color {
@@ -2544,7 +2554,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .st-pill { border: none; background: transparent; color: var(--text-sub); font-size: 12px; padding: 3px 12px; border-radius: 999px; cursor: pointer; transition: all .15s; line-height: 1.4; white-space: nowrap; }
 .st-pill:hover { color: var(--text-main); }
 .st-pill.on { background: #EFE0CC; color: #86909C; font-weight: 700; }
-.st-pill.ret.on { background: #E8FFEA; color: #009A29; }
+.st-pill.ret.on { background: #EAF1EC; color: #3F7D57; }
 
 /* ==================================================================
    SaaS 后台 UI 风格 · 统一覆盖层
@@ -2712,7 +2722,7 @@ body {
 .btn-primary { background: var(--accent-caramel) !important; color: #FFFFFF !important; }
 .btn-primary:hover { background: #E86020 !important; }
 .btn-pink { background: var(--accent-caramel) !important; color: #FFFFFF !important; }
-.btn-green { background: var(--accent-green) !important; color: #FFFFFF !important; }
+.btn-green { background: var(--green-strong) !important; color: #FFFFFF !important; }
 .btn-blue { background: var(--accent-blue) !important; color: #FFFFFF !important; }
 .btn-purple { background: var(--accent-purple) !important; color: #FFFFFF !important; }
 .btn-outline { background: #FFFFFF !important; border: 1px solid var(--border-soft) !important; color: var(--text-sub) !important; }
@@ -2746,8 +2756,8 @@ body {
   font-weight: 500;
 }
 .recent-pill.returned, .st-pill.ret.on, .si-tag.ret {
-  background: var(--tag-green-bg) !important;
-  color: var(--tag-green-text) !important;
+  background: var(--green-bg) !important;
+  color: var(--green-text) !important;
   border: none !important;
   font-weight: 500;
 }
@@ -2766,7 +2776,7 @@ body {
 .se-status { background: #F2F3F5 !important; border: 1px solid var(--border-soft) !important; border-radius: 4px !important; padding: 2px; gap: 2px; }
 .st-pill { border-radius: 3px !important; padding: 2px 10px; font-size: 12px; }
 .cal-pill.todo { background: #E8F3FF !important; border-color: #BEDAFF !important; color: #1D5FD6 !important; }
-.cal-pill.task { background: #E8FFEA !important; border-color: #AFF0B5 !important; color: #009A29 !important; }
+.cal-pill.task { background: var(--green-bg) !important; border-color: var(--green-border) !important; color: var(--green-text) !important; }
 .cal-pill.sched { background: #F5E8FF !important; border-color: #DDC7F5 !important; color: #6A3EBF !important; }
 .roll-badge, .sched-repeat-badge { background: var(--tag-orange-bg) !important; color: var(--tag-orange-text) !important; }
 .sched-allday-badge { background: var(--tag-orange-bg) !important; color: var(--tag-orange-text) !important; }
@@ -2775,14 +2785,14 @@ body {
 
 /* ---------- 勾选 / 进度 ---------- */
 .task-checkbox { border: 1.5px solid #C9CDD4 !important; box-shadow: none !important; }
-.task-checkbox.done { background: var(--accent-caramel) !important; border-color: var(--accent-caramel) !important; }
+.task-checkbox.done { background: var(--green-strong) !important; border-color: var(--green-strong) !important; }
 .task-checkbox.done::after { color: #FFFFFF !important; }
 .today-task .dot { border: 1.5px solid var(--accent-caramel) !important; background: var(--accent-caramel) !important; }
 .today-task .dot.off { background: transparent !important; border-color: #C9CDD4 !important; }
 .sched-check { border: 2px solid var(--accent-caramel) !important; box-shadow: none !important; }
 .sched-check.on { background: var(--accent-caramel) !important; }
 .module-item .mi-dot, .ov-dot { background: #C9CDD4 !important; box-shadow: none !important; }
-.module-item .mi-dot.on, .ov-dot.on { background: var(--accent-green) !important; box-shadow: none !important; }
+.module-item .mi-dot.on, .ov-dot.on { background: var(--green-strong) !important; box-shadow: none !important; }
 .progress-wrap { background: #F2F3F5 !important; height: 8px !important; border-radius: 4px !important; }
 .progress-bar-fill { background: var(--progress-gradient) !important; background-image: none !important; border-radius: 4px !important; }
 
@@ -2797,21 +2807,21 @@ body {
 }
 .cal-cell:hover { border-color: var(--accent-caramel) !important; box-shadow: none !important; transform: none !important; }
 .cal-cell.cal-today { border: 1.5px solid var(--accent-caramel) !important; background: #FFF7ED !important; }
-.cal-cell.cal-checked { background: #F2F8F3 !important; border-color: #C9E3CE !important; }
+.cal-cell.cal-checked { background: var(--green-cell) !important; border-color: var(--green-cell-border) !important; }
 .cal-cell.cal-sick { background: #FFECE8 !important; border-color: #FFC9C0 !important; }
 .cal-cell.cal-annual { background: #E8F3FF !important; border-color: #BEDAFF !important; }
 .cal-cell.cal-comp { background: #F5E8FF !important; border-color: #DDC7F5 !important; }
 .cal-cell.cal-affair { background: #FFF1E8 !important; border-color: #FFCF8B !important; }
 .cal-cell.cal-other { background: #F7F8FA !important; border-color: #E5E6EB !important; }
 .cal-cell.cal-duty { background: #FFF7E8 !important; border-color: #FFDD9C !important; }
-.cal-cell.cal-makeup { background: #F1F8F2 !important; border-color: #C4DFC8 !important; }
-.cal-cell.cal-makeup-auto { background: #F5FAF5 !important; border-color: #D5E8D8 !important; }
+.cal-cell.cal-makeup { background: var(--green-cell-2) !important; border-color: var(--green-cell-border) !important; }
+.cal-cell.cal-makeup-auto { background: var(--green-cell-3) !important; border-color: var(--green-cell-border-2) !important; }
 .cal-cell.cal-rest { background: #FFF7E8 !important; border-color: #FFDD9C !important; }
 .cal-cell.cal-empty { background: #FCFCFD !important; }
 .cal-cell.cal-future { opacity: 0.55; }
 .cal-date { font-size: 13px; font-weight: 500; color: var(--text-main); }
 .cal-status { font-size: 10px; color: var(--text-light); }
-.cal-makeup-label { color: #009A29; }
+.cal-makeup-label { color: var(--green-text); }
 .cal-rest-label { color: #D25F00; }
 .legend-dot { box-shadow: none !important; border-radius: 3px !important; }
 .cal-nav-btn { border-radius: var(--radius-sm) !important; background: #FFFFFF !important; border: 1px solid var(--border-soft) !important; color: var(--text-sub) !important; }
@@ -3295,10 +3305,10 @@ const BDG_BOX = `<circle cx="25" cy="7" r="5.5" fill="#C4A585"/><path d="M22 5.5
 const DOG_ICONS = {
   'dashboard': dogSvg('#E8C9A8', '#BFA089', BDG_HOUSE),
   'work-checkin': dogSvg('#EBD3B4', '#B2937C', BDG_CHECK),
-  'daily-tasks': dogSvg('#F2F3F5', '#C6E6C9', BDG_CLIP),
+  'daily-tasks': dogSvg('#F2F3F5', '#C2D9C5', BDG_CLIP),
   'lunch-menu': dogSvg('#F0DCC0', '#E3C79C', BDG_BOWL),
   'todo': dogSvg('#EFE0CC', '#C8A886', BDG_PEN),
-  'sample-records': dogSvg('#EDE9E2', '#C6E6C9', BDG_BOX)
+  'sample-records': dogSvg('#EDE9E2', '#C2D9C5', BDG_BOX)
 };
 
 function initDogIcons() {
@@ -3309,14 +3319,14 @@ function initDogIcons() {
 // PERSONALIZATION (主题颜色 / 头像 / 导航图标)
 // ====================================================================
 const THEMES = {
-  caramel:  { name:'主橙', main:'#F77234', vars:{ '--accent-caramel':'#F77234','--accent-pink':'#F77234','--accent-green':'#00A870','--accent-blue':'#4080FF','--accent-purple':'#722ED1','--accent-orange':'#FF8C42' } },
-  amber:    { name:'琥珀', main:'#E8933C', vars:{ '--accent-caramel':'#E8933C','--accent-pink':'#E8933C','--accent-green':'#2BA471','--accent-blue':'#3C7FF0','--accent-purple':'#7A5AF0','--accent-orange':'#F0A050' } },
-  sunset:   { name:'落日', main:'#E8663C', vars:{ '--accent-caramel':'#E8663C','--accent-pink':'#E8663C','--accent-green':'#00A870','--accent-blue':'#4080FF','--accent-purple':'#722ED1','--accent-orange':'#FF7C4D' } },
-  copper:   { name:'铜橙', main:'#C97B3C', vars:{ '--accent-caramel':'#C97B3C','--accent-pink':'#C97B3C','--accent-green':'#1E9E6A','--accent-blue':'#3C7FF0','--accent-purple':'#6B57D6','--accent-orange':'#DD9558' } },
-  tangerine:{ name:'橘红', main:'#F0542A', vars:{ '--accent-caramel':'#F0542A','--accent-pink':'#F0542A','--accent-green':'#00A870','--accent-blue':'#4080FF','--accent-purple':'#722ED1','--accent-orange':'#FF7A50' } },
-  sand:     { name:'沙棕', main:'#B98846', vars:{ '--accent-caramel':'#B98846','--accent-pink':'#B98846','--accent-green':'#2E9E72','--accent-blue':'#4A80E8','--accent-purple':'#6F5BD2','--accent-orange':'#D3A05C' } },
-  coral:    { name:'珊瑚', main:'#F2704F', vars:{ '--accent-caramel':'#F2704F','--accent-pink':'#F2704F','--accent-green':'#00A870','--accent-blue':'#4080FF','--accent-purple':'#722ED1','--accent-orange':'#FF9068' } },
-  pumpkin:  { name:'南瓜', main:'#DE7B32', vars:{ '--accent-caramel':'#DE7B32','--accent-pink':'#DE7B32','--accent-green':'#16A06B','--accent-blue':'#3C7FF0','--accent-purple':'#6E56D8','--accent-orange':'#F59A4E' } }
+  caramel:  { name:'主橙', main:'#F77234', vars:{ '--accent-caramel':'#F77234','--accent-pink':'#F77234','--accent-green':'#3F8A62','--accent-blue':'#4080FF','--accent-purple':'#722ED1','--accent-orange':'#FF8C42' } },
+  amber:    { name:'琥珀', main:'#E8933C', vars:{ '--accent-caramel':'#E8933C','--accent-pink':'#E8933C','--accent-green':'#4A8A63','--accent-blue':'#3C7FF0','--accent-purple':'#7A5AF0','--accent-orange':'#F0A050' } },
+  sunset:   { name:'落日', main:'#E8663C', vars:{ '--accent-caramel':'#E8663C','--accent-pink':'#E8663C','--accent-green':'#3F8A62','--accent-blue':'#4080FF','--accent-purple':'#722ED1','--accent-orange':'#FF7C4D' } },
+  copper:   { name:'铜橙', main:'#C97B3C', vars:{ '--accent-caramel':'#C97B3C','--accent-pink':'#C97B3C','--accent-green':'#467C5D','--accent-blue':'#3C7FF0','--accent-purple':'#6B57D6','--accent-orange':'#DD9558' } },
+  tangerine:{ name:'橘红', main:'#F0542A', vars:{ '--accent-caramel':'#F0542A','--accent-pink':'#F0542A','--accent-green':'#3F8A62','--accent-blue':'#4080FF','--accent-purple':'#722ED1','--accent-orange':'#FF7A50' } },
+  sand:     { name:'沙棕', main:'#B98846', vars:{ '--accent-caramel':'#B98846','--accent-pink':'#B98846','--accent-green':'#548A63','--accent-blue':'#4A80E8','--accent-purple':'#6F5BD2','--accent-orange':'#D3A05C' } },
+  coral:    { name:'珊瑚', main:'#F2704F', vars:{ '--accent-caramel':'#F2704F','--accent-pink':'#F2704F','--accent-green':'#3F8A62','--accent-blue':'#4080FF','--accent-purple':'#722ED1','--accent-orange':'#FF9068' } },
+  pumpkin:  { name:'南瓜', main:'#DE7B32', vars:{ '--accent-caramel':'#DE7B32','--accent-pink':'#DE7B32','--accent-green':'#4E805F','--accent-blue':'#3C7FF0','--accent-purple':'#6E56D8','--accent-orange':'#F59A4E' } }
 };
 
 function getTheme() { return localStorage.getItem('lxk_theme') || 'caramel'; }
@@ -4348,21 +4358,21 @@ function renderWorkCheckin(container) {
         ${cells}
       </div>
       <div class="cal-legend">
-        <div class="legend-item"><span class="legend-dot" style="background:#F2F8F3;border:1px solid #C9E3CE;"></span>已打卡</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#F2F8F3;border:1px solid #C2D9C5;"></span>已打卡</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FFECE8;border:1px solid #FFE4DE;"></span>病假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FFF7E8;border:1px solid #FB8B4D;"></span>事假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#F2F3F5;border:1px solid #C9CDD4;"></span>其他请假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#E8F3FF;border:1px solid var(--accent-blue);"></span>年假</div>
         <div class="legend-item"><span class="legend-dot" style="background:#F5E8FF;border:1px solid var(--accent-purple);"></span>调休</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FFF7E8;border:1px solid var(--accent-caramel);"></span>值班</div>
-        <div class="legend-item"><span class="legend-dot" style="background:#F1F8F2;border:1px solid #C4DFC8;"></span>补班</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#F1F8F2;border:1px solid #C2D9C5;"></span>补班</div>
         <div class="legend-item"><span class="legend-dot" style="background:#F5FAF5;border:1px solid #D5E8D8;"></span>调休补班(上班日)</div>
         <div class="legend-item"><span class="legend-dot" style="background:#FAFAFA;border:1px solid var(--border-soft);"></span>未打卡(可补卡)</div>
         <div class="legend-item"><span class="legend-dot" style="background:#F6F7F6;border:1px solid #E5E6EB;"></span>休息(周末/节假日)</div>
         <div class="legend-item" style="border-top:1px dashed var(--border-soft);padding-top:4px;width:100%;">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:4px;background:#E8F3FF;border:1px solid #BEDAFF;vertical-align:middle;"></span>🔵 待办日程&nbsp;&nbsp;
-          <span style="display:inline-block;width:10px;height:10px;border-radius:4px;background:#E8FFEA;border:1px solid #E8FFEA;vertical-align:middle;"></span>🟢 每日任务&nbsp;&nbsp;
-          <span style="display:inline-block;width:10px;height:10px;border-radius:4px;background:#F5E8FF;border:1px solid #DDC7F5;vertical-align:middle;"></span>🟣 日程
+          <span class="legend-dot" style="background:#E8F3FF;border:1px solid #BEDAFF;"></span>待办日程&nbsp;&nbsp;
+          <span class="legend-dot" style="background:#EAF1EC;border:1px solid #C2D9C5;"></span>每日任务&nbsp;&nbsp;
+          <span class="legend-dot" style="background:#F5E8FF;border:1px solid #DDC7F5;"></span>日程
         </div>
       </div>
     </div>
@@ -4539,7 +4549,7 @@ function openDateModal(dayStr) {
       ${getDaySchedule(calYear, calMonth, dayStr).map(s => {
         const meta = s.kind === 'todo' ? { t: '待办', bg: '#E8F3FF', c: '#86909C' }
           : s.kind === 'sched' ? { t: '日程', bg: '#F5E8FF', c: '#86909C' }
-          : { t: '任务', bg: '#E8FFEA', c: '#009A29' };
+          : { t: '任务', bg: '#EAF1EC', c: '#3F7D57' };
         return `
         <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--border-soft);">
           <span class="ov-dot ${s.done?'on':''}" style="margin:0 1px;"></span>

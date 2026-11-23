@@ -2466,12 +2466,12 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 }
 
 .fade-in {
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.14s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0.94; }
+  to { opacity: 1; }
 }
 
 /* ============ 样品记录 ============ */
@@ -3036,6 +3036,7 @@ body {
   margin-left: auto; font-size: 11px; color: var(--text-sub);
   background: var(--cream-bg); border-radius: 10px; padding: 3px 9px; white-space: nowrap;
 }
+.prod-group-del { flex-shrink: 0; }
 .prod-chev { color: var(--text-light); font-size: 10px; transition: transform 0.2s; }
 .prod-group.open .prod-chev { transform: rotate(90deg); }
 .prod-group-body {
@@ -3101,6 +3102,13 @@ body {
 .pv-table tr:last-child td { border-bottom: none; }
 .pv-table td { color: var(--text-main); }
 .pv-row-actions { display: flex; gap: 6px; }
+.variant-quick-sizes { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin: 6px 0; }
+.variant-quick-sizes > span { font-size: 11px; color: var(--text-light); margin-right: 2px; }
+.qs-chip {
+  border: 1px solid var(--border-soft); background: var(--cream-card); color: var(--text-sub);
+  border-radius: 4px; padding: 2px 7px; font-size: 11px; cursor: pointer; line-height: 1.5;
+}
+.qs-chip:hover { border-color: var(--accent-caramel); background: var(--tag-orange-bg); color: var(--tag-orange-text); }
 @media (max-width: 768px) {
   .pv-body, .prod-l1 { padding: 8px; }
   .pv-node > .pv-body { padding-left: 10px; }
@@ -7102,6 +7110,7 @@ function renderProductList() {
           <div class="prod-sub">${escHtml(styleNames.slice(0, 4).join(' · ') || '点击展开查看规格')}</div>
         </div>
         <span class="prod-count">${styleNames.length} 款 · ${list.length} 条</span>
+        <button class="btn btn-danger btn-sm prod-group-del" title="删除该产品及其全部规格" onclick="event.stopPropagation();deleteProductGroup(decodeURIComponent('${poEnc(name)}'))">🗑 删除产品</button>
         <span class="prod-chev">▶</span>
       </div>
       ${pOpen ? `<div class="pv-body prod-l1">${styleHtml}</div>` : ''}
@@ -7120,10 +7129,13 @@ function partnerDatalistsHtml() {
   const dl = (id, opts) => `<datalist id="${id}">${opts.map(v => `<option value="${escAttr(v)}"></option>`).join('')}</datalist>`;
   return dl('partner_supplier_options', partnerOptions('supplier')) + dl('partner_buyer_options', partnerOptions('buyer'));
 }
+const QUICK_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL', '4XL', '5XL', '6XL', '7XL', '均码'];
 function specDatalistHtml() {
   const products = Store.getProducts();
   return ['style', 'color', 'size'].map(k => {
-    const opts = Array.from(new Set(products.map(p => ((p.values || {})[k] || '').trim()).filter(Boolean))).slice(0, 60);
+    let opts = Array.from(new Set(products.map(p => ((p.values || {})[k] || '').trim()).filter(Boolean)));
+    if (k === 'size') opts = Array.from(new Set(QUICK_SIZES.concat(opts)));
+    opts = opts.slice(0, 60);
     return `<datalist id="variant_${k}_options">${opts.map(v => `<option value="${escAttr(v)}"></option>`).join('')}</datalist>`;
   }).join('');
 }
@@ -7171,6 +7183,7 @@ function renderVariantEditor() {
                   <button type="button" class="variant-del" title="删除尺码" onclick="variantRemoveSize(${si},${ci},${zi})">×</button>
                 </div>`).join('')}
             </div>
+            <div class="variant-quick-sizes"><span>快捷尺码</span>${QUICK_SIZES.map(q => `<button type="button" class="qs-chip" onclick="variantQuickSize(${si},${ci},'${q}')">${q}</button>`).join('')}</div>
             <button type="button" class="btn btn-text btn-sm variant-add" onclick="variantAddSize(${si},${ci})">＋ 添加尺码</button>
           </div>`).join('')}
         <button type="button" class="btn btn-outline btn-sm variant-add" onclick="variantAddColor(${si})">＋ 添加颜色</button>
@@ -7215,6 +7228,18 @@ function variantAddSize(si, ci) {
   syncVariantEditor();
   const c = prodDraft.variants[si] && prodDraft.variants[si].colors[ci];
   if (c) c.sizes.push({ size: '', barcode: '' });
+  renderVariantEditor();
+}
+function variantQuickSize(si, ci, size) {
+  syncVariantEditor();
+  const c = prodDraft.variants[si] && prodDraft.variants[si].colors[ci];
+  if (!c) return;
+  if (c.sizes.some(z => (z.size || '').trim() === size)) { showToast(size + ' 已添加'); return; }
+  if (c.sizes.length === 1 && !(c.sizes[0].size || '').trim() && !(c.sizes[0].barcode || '').trim()) {
+    c.sizes[0].size = size;
+  } else {
+    c.sizes.push({ size, barcode: '' });
+  }
   renderVariantEditor();
 }
 function variantRemoveStyle(si) {
@@ -7402,9 +7427,21 @@ function saveProduct() {
 }
 
 function deleteProduct(id) {
-  if (!confirm('确定删除这条产品资料吗？')) return;
   Store.saveProducts(Store.getProducts().filter(x => x.id !== id));
   renderPage('products');
+}
+function deleteProductGroup(name) {
+  Store.saveProducts(Store.getProducts().filter(p => (p.name || '未命名产品').trim() !== name));
+  const open = Store.getProductOpen().filter(k => {
+    if (k === name) return false;
+    try {
+      const a = JSON.parse(k);
+      return !(Array.isArray(a) && a[0] === 'po' && a[2] === name);
+    } catch (e) { return true; }
+  });
+  Store.saveProductOpen(open);
+  renderProductList();
+  showToast('产品已删除：' + name);
 }
 
 function openProductFieldsModal() {
@@ -7440,7 +7477,6 @@ function addProductField() {
   openProductFieldsModal();
 }
 function deleteProductField(key) {
-  if (!confirm('确定删除这个自定义字段吗？已填写的数据会保留但不再显示。')) return;
   Store.saveProductFields(Store.getProductFields().filter(f => f.key !== key));
   openProductFieldsModal();
 }
@@ -7449,22 +7485,33 @@ function deleteProductField(key) {
 function statusTags(r, page) {
   page = page || 'purchases';
   const btn = (field, val, on, label, cls) =>
-    `<button class="st-pill ${cls || ''} ${on ? 'on' : ''}" title="点击切换" onclick="setBillStatus('${page}','${r.id}','${field}','${val}')">${label}</button>`;
+    `<button class="st-pill ${cls || ''} ${on ? 'on' : ''}" data-field="${field}" data-val="${val}" title="点击切换" onclick="setBillStatus('${page}','${r.id}','${field}','${val}',this)">${label}</button>`;
   return `<span class="se-status">`
     + btn('payStatus', 'unsettled', r.payStatus !== 'settled', '未结算')
-    + btn('payStatus', 'settled', r.payStatus === 'settled', '已结算')
-    + btn('makeStatus', 'unmade', r.makeStatus !== 'made', '未做单', 'ret')
+    + btn('payStatus', 'settled', r.payStatus === 'settled', '已结算', 'ret')
+    + btn('makeStatus', 'unmade', r.makeStatus !== 'made', '未做单')
     + btn('makeStatus', 'made', r.makeStatus === 'made', '已做单', 'ret')
     + `</span>`;
 }
-function setBillStatus(page, id, field, val) {
+function setBillStatus(page, id, field, val, btn) {
   if (field !== 'payStatus' && field !== 'makeStatus') return;
   const arr = page === 'sales' ? Store.getSales() : Store.getPurchases();
   const it = arr.find(x => x.id === id);
   if (!it) return;
   it[field] = val;
   if (page === 'sales') Store.saveSales(arr); else Store.savePurchases(arr);
-  renderPage(page);
+  // 只更新当前状态组，避免整页重绘造成闪烁
+  const group = btn && btn.closest ? btn.closest('.se-status') : null;
+  if (group) {
+    group.querySelectorAll('.st-pill').forEach(b => {
+      const f = b.getAttribute('data-field'), v = b.getAttribute('data-val');
+      if (!f) return;
+      const on = f === 'payStatus' ? it.payStatus === v : it.makeStatus === v;
+      b.classList.toggle('on', on);
+    });
+  } else {
+    renderPage(page);
+  }
   showToast('状态已更新');
 }
 
@@ -7632,7 +7679,6 @@ function savePurchase(id) {
 }
 
 function deletePurchase(id) {
-  if (!confirm('确定删除这条采购记录吗？')) return;
   Store.savePurchases(Store.getPurchases().filter(x => x.id !== id));
   renderPage('purchases');
 }
@@ -7940,7 +7986,6 @@ function saveSales(id) {
 }
 
 function deleteSale(id) {
-  if (!confirm('确定删除这条销售记录吗？')) return;
   Store.saveSales(Store.getSales().filter(x => x.id !== id));
   renderPage('sales');
 }
@@ -7978,6 +8023,85 @@ function readExcelTemplate(file, cb) {
     }
   };
   reader.readAsArrayBuffer(file);
+}
+// 解析 Word(.docx) 正文中的段落与表格，转为二维数组
+function docxBodyToAoa(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const body = doc.getElementsByTagNameNS('*', 'body')[0] || doc.documentElement;
+  const aoa = [];
+  const textOf = node => {
+    let t = '';
+    Array.from(node.getElementsByTagNameNS('*', 't')).forEach(x => { t += x.textContent || ''; });
+    return t.trim();
+  };
+  Array.from(body.children).forEach(el => {
+    const ln = el.localName;
+    if (ln === 'p') {
+      const t = textOf(el);
+      if (t) aoa.push([t]);
+    } else if (ln === 'tbl') {
+      Array.from(el.children).forEach(tr => {
+        if (tr.localName !== 'tr') return;
+        const row = [];
+        Array.from(tr.children).forEach(tc => {
+          if (tc.localName !== 'tc') return;
+          row.push(textOf(tc));
+        });
+        if (row.length) aoa.push(row);
+      });
+    }
+  });
+  return aoa;
+}
+async function readDocxTemplate(file, cb) {
+  try {
+    if (typeof DecompressionStream === 'undefined') { showToast('当前浏览器不支持 Word 模板解析，请改用 Excel 模板'); return; }
+    const buf = await file.arrayBuffer();
+    const dv = new DataView(buf);
+    let eocd = -1;
+    for (let i = buf.byteLength - 22; i >= 0 && i >= buf.byteLength - 65557; i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw Error('docx 文件结构无效');
+    const n = dv.getUint16(eocd + 10, true);
+    let off = dv.getUint32(eocd + 16, true);
+    let ent = null;
+    for (let i = 0; i < n; i++) {
+      if (dv.getUint32(off, true) !== 0x02014b50) break;
+      const method = dv.getUint16(off + 10, true);
+      const csize = dv.getUint32(off + 20, true);
+      const nlen = dv.getUint16(off + 28, true);
+      const elen = dv.getUint16(off + 30, true);
+      const clen = dv.getUint16(off + 32, true);
+      const loff = dv.getUint32(off + 42, true);
+      const name = new TextDecoder().decode(new Uint8Array(buf, off + 46, nlen));
+      if (name === 'word/document.xml') { ent = { method, csize, loff }; break; }
+      off += 46 + nlen + elen + clen;
+    }
+    if (!ent) throw Error('未找到 Word 正文');
+    const lnlen = dv.getUint16(ent.loff + 26, true);
+    const lelen = dv.getUint16(ent.loff + 28, true);
+    const dataOff = ent.loff + 30 + lnlen + lelen;
+    const comp = new Uint8Array(buf, dataOff, ent.csize);
+    let xml;
+    if (ent.method === 0) {
+      xml = new TextDecoder().decode(comp);
+    } else if (ent.method === 8) {
+      const ds = new DecompressionStream('deflate-raw');
+      xml = await new Response(new Blob([comp]).stream().pipeThrough(ds)).text();
+    } else {
+      throw Error('不支持的 Word 压缩方式');
+    }
+    cb({ name: file.name, aoa: docxBodyToAoa(xml), sheetName: 'Sheet1' });
+  } catch (err) {
+    showToast('Word 模板解析失败：' + (err && err.message ? err.message : '文件不正确'));
+  }
+}
+function readTemplateFile(file, cb) {
+  const name = (file.name || '').toLowerCase();
+  if (name.endsWith('.docx')) { readDocxTemplate(file, cb); return; }
+  if (name.endsWith('.doc')) { showToast('旧版 .doc 不支持，请另存为 .docx 或 Excel 后上传'); return; }
+  readExcelTemplate(file, cb);
 }
 function detectHeaderRow(aoa, aliasesList) {
   let headerIdx = 0, best = -1;
@@ -8024,10 +8148,10 @@ function renderPoOrders(container) {
       <div class="section-head">
         <div><div class="section-title">订单附件明细</div><div class="section-sub">当前导出模板：${escHtml(tpl.name)}（${tpl.headers.length} 列）· 附件明细仅产品信息不同，上传后自动识别并整理</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('po-tpl-file').click()">⬆ 上传导出模板</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('po-tpl-file').click()">⬆ 上传模板（Excel / Word）</button>
           <button class="btn btn-text btn-sm" onclick="resetPoTemplate()">恢复默认</button>
           <button class="btn btn-text btn-sm" onclick="downloadPoTemplate()">下载当前模板</button>
-          <input type="file" id="po-tpl-file" accept=".xlsx,.xls" style="display:none;" onchange="handlePoTemplateUpload(this)">
+          <input type="file" id="po-tpl-file" accept=".xlsx,.xls,.docx" style="display:none;" onchange="handlePoTemplateUpload(this)">
         </div>
       </div>
       <div class="upload-zone" onclick="document.getElementById('po-file').click()">
@@ -8174,7 +8298,7 @@ function downloadPoTemplate() {
 function handlePoTemplateUpload(input) {
   const f = input.files && input.files[0];
   if (!f) return;
-  readExcelTemplate(f, info => {
+  readTemplateFile(f, info => {
     const found = detectHeaderRow(info.aoa, Object.values(PO_FIELD_ALIASES));
     if (!found.headers.length) { showToast('没有在模板中识别到表头'); return; }
     Store.savePoTemplate({ name: f.name, headers: found.headers, preamble: info.aoa.slice(0, found.headerIdx), sheetName: info.sheetName });
@@ -8203,7 +8327,6 @@ function exportPoBatch(id) {
   downloadAoa(poAoaFromRows(b.rows), '采购订单_' + b.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
 }
 function deletePoBatch(id) {
-  if (!confirm('确定删除这条加工记录吗？')) return;
   Store.savePoOrders(Store.getPoOrders().filter(x => x.id !== id));
   renderPage('po-orders');
 }
@@ -8419,13 +8542,13 @@ function openSettleTemplatesModal() {
   const tpl = Store.getSettleTemplates();
   showModal(`
     <div class="modal-title">⚙️ 结算材料模板设置</div>
-    <div class="section-sub" style="margin-bottom:12px;">可上传现成 Excel 模板（自动识别表头与前导内容），也可直接用逗号编辑表头；修改后下次生成生效。</div>
+    <div class="section-sub" style="margin-bottom:12px;">可上传现成 Excel / Word（.docx）模板，自动识别表头与前导内容，也可直接用逗号编辑表头；修改后下次生成生效。</div>
     ${Object.keys(SETTLE_TEMPLATE_NAMES).map(k => `
       <div class="form-group">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <label style="margin:0;flex:1;">${SETTLE_TEMPLATE_NAMES[k]} <span style="color:var(--text-light);">· 当前：${escHtml(tpl[k].name || '默认表头')}</span></label>
-          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('tpl_file_${k}').click()">⬆ 上传模板</button>
-          <input type="file" id="tpl_file_${k}" accept=".xlsx,.xls" style="display:none;" onchange="handleSettleTemplateUpload(this,'${k}')">
+          <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('tpl_file_${k}').click()">⬆ 上传（Excel / Word）</button>
+          <input type="file" id="tpl_file_${k}" accept=".xlsx,.xls,.docx" style="display:none;" onchange="handleSettleTemplateUpload(this,'${k}')">
         </div>
         <input type="text" class="input" id="tpl_${k}" value="${escAttr((tpl[k].headers || []).join(','))}" placeholder="用英文逗号或中文逗号分隔表头">
       </div>`).join('')}
@@ -8435,7 +8558,7 @@ function openSettleTemplatesModal() {
 function handleSettleTemplateUpload(input, type) {
   const f = input.files && input.files[0];
   if (!f) return;
-  readExcelTemplate(f, info => {
+  readTemplateFile(f, info => {
     const aliases = Object.values(SETTLE_TEMPLATES_DEFAULT).reduce((a, row) => a.concat(row.map(h => [h])), []);
     const found = detectHeaderRow(info.aoa, aliases);
     if (!found.headers.length) { showToast('没有在模板中识别到表头'); return; }
@@ -8718,7 +8841,6 @@ function addModule() {
 }
 
 function deleteModule(id) {
-  if (!confirm('确定删除该模块吗？今日该模块的记录也会删除。')) return;
   const settings = Store.getSettings();
   settings.learningModules = settings.learningModules.filter(m => m.id !== id);
   Store.saveSettings(settings);
@@ -9008,7 +9130,6 @@ function toggleBookFinished(id) {
 }
 
 function deleteBook(id) {
-  if (!confirm('确定从书架移除这本书吗？')) return;
   let books = Store.getBooks();
   books = books.filter(x => x.id !== id);
   Store.saveBooks(books);

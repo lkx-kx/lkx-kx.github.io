@@ -1993,11 +1993,13 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* 顶部对齐：所有日期格固定高度，内容再多也不会把日期从顶部裁掉 */
+  justify-content: flex-start;
   cursor: pointer;
   transition: all 0.2s;
   background: var(--cream-card);
-  min-height: 78px;
+  /* 固定高度，保证同一个月每个日期方块尺寸完全一致（不随打卡/日程数量变化） */
+  height: 120px;
   min-width: 0;
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(122, 112, 96, 0.05);
@@ -2368,10 +2370,10 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   .cal-weekday { padding: 4px 0; font-size: 10px; }
   .cal-cell {
     aspect-ratio: auto;
-    min-height: 42px;
+    height: 56px;
     padding: 2px;
     border-radius: 4px;
-    justify-content: center;
+    justify-content: flex-start;
     box-shadow: 0 1px 2px rgba(122, 112, 96, 0.05);
   }
   .cal-date { font-size: 11px; }
@@ -2430,7 +2432,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   .cal-nav-btn { width: 22px; height: 22px; font-size: 11px; }
   .calendar-grid { gap: 8px; }
   .cal-weekday { padding: 3px 0; font-size: 9px; }
-  .cal-cell { min-height: 36px; padding: 1px; border-radius: 3px; box-shadow: 0 1px 2px rgba(122, 112, 96, 0.04); }
+  .cal-cell { height: 48px; padding: 1px; border-radius: 3px; box-shadow: 0 1px 2px rgba(122, 112, 96, 0.04); }
   .cal-date { font-size: 10px; }
   .cal-status { font-size: 8px; }
   .cal-legend { gap: 6px; font-size: 9px; }

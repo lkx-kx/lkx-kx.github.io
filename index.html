@@ -2644,6 +2644,10 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .st-pill.ret.on { background: #CDE5D5; color: #1F5C3A; font-weight: 700; box-shadow: inset 0 0 0 1px #A9D2BC; }
 
 /* 产品模糊查找 */
+.prod-sort-select {
+  width: auto; min-width: 150px; height: 34px; padding: 0 8px;
+  font-size: 12px; color: var(--text-sub); cursor: pointer;
+}
 .ps-box { margin-bottom: 8px; }
 .ps-box .input { margin-bottom: 4px; }
 .ps-hint { font-size: 11px; color: var(--text-light); min-height: 14px; }
@@ -7258,12 +7262,65 @@ function renderProducts(container) {
         <input type="text" class="input prod-search" id="prod-search" placeholder="搜索产品名称、款式、颜色、尺码…" oninput="renderProductList()">
         <button class="btn btn-primary" onclick="openProductModal()">➕ 添加产品</button>
         <button class="btn btn-outline" onclick="openProductFieldsModal()">⚙️ 自定义字段</button>
+        <select class="input prod-sort-select" id="prod-sort" title="产品排序" onchange="setProdSort(this.value)">
+          ${PROD_SORT_OPTIONS.map(o => `<option value="${o.key}" ${getProdSort() === o.key ? 'selected' : ''}>排序：${o.label}</option>`).join('')}
+        </select>
         <span style="margin-left:auto;color:var(--text-light);font-size:12px;">${new Set(products.map(p => p.name)).size} 个产品 · ${products.length} 条资料</span>
       </div>
       <div id="prod-list"></div>
     </div>
   `;
   renderProductList();
+}
+
+// ---------------- 产品库排序 ----------------
+const PROD_SORT_KEY = 'lxk_product_sort';
+const PROD_SORT_OPTIONS = [
+  { key: 'name', label: '名称（拼音）' },
+  { key: 'created_desc', label: '创建时间（新→旧）' },
+  { key: 'created_asc', label: '创建时间（旧→新）' },
+  { key: 'sku_desc', label: 'SKU 数量（多→少）' },
+  { key: 'sku_asc', label: 'SKU 数量（少→多）' },
+  { key: 'price_desc', label: '成本单价（高→低）' },
+  { key: 'price_asc', label: '成本单价（低→高）' }
+];
+function getProdSort() {
+  const v = localStorage.getItem(PROD_SORT_KEY) || 'name';
+  return PROD_SORT_OPTIONS.some(o => o.key === v) ? v : 'name';
+}
+function setProdSort(key) {
+  safeSetItem(PROD_SORT_KEY, key);
+  renderProductList();
+  const sel = document.getElementById('prod-sort');
+  if (sel) sel.value = getProdSort();
+}
+// 对产品分组排序
+function sortProductNames(groups, names) {
+  const mode = getProdSort();
+  const list = names.slice();
+  const createdOf = name => {
+    const rows = groups.get(name) || [];
+    let max = '';
+    rows.forEach(p => { if ((p.createdAt || '') > max) max = p.createdAt || ''; });
+    return max;
+  };
+  const priceOf = name => {
+    const rows = groups.get(name) || [];
+    let v = 0;
+    rows.forEach(p => { const c = Number((p.values || {}).costPrice) || 0; if (c > v) v = c; });
+    return v;
+  };
+  const skuOf = name => (groups.get(name) || []).length;
+  const byName = (a, b) => a.localeCompare(b, 'zh-CN');
+  switch (mode) {
+    case 'created_desc': return list.sort((a, b) => createdOf(b).localeCompare(createdOf(a)) || byName(a, b));
+    case 'created_asc': return list.sort((a, b) => createdOf(a).localeCompare(createdOf(b)) || byName(a, b));
+    case 'sku_desc': return list.sort((a, b) => skuOf(b) - skuOf(a) || byName(a, b));
+    case 'sku_asc': return list.sort((a, b) => skuOf(a) - skuOf(b) || byName(a, b));
+    case 'price_desc': return list.sort((a, b) => priceOf(b) - priceOf(a) || byName(a, b));
+    case 'price_asc': return list.sort((a, b) => priceOf(a) - priceOf(b) || byName(a, b));
+    default: return list.sort(byName);
+  }
 }
 
 // 层级展开状态：产品沿用纯名称（兼容旧数据），款式/颜色用带前缀的 JSON 串
@@ -7336,7 +7393,7 @@ function renderProductList() {
     if (!groups.has(name)) groups.set(name, []);
     groups.get(name).push(p);
   });
-  const names = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+  const names = sortProductNames(groups, Array.from(groups.keys()));
 
   box.innerHTML = `<div class="prod-flat-grid">${names.map(name => {
     const list = groups.get(name);
@@ -9032,12 +9089,16 @@ function poParseSpecFromName(rawName, baseName) {
   // 去掉常见后缀词（码 / 联通文创 等非规格信息）
   rest = rest.replace(/^[-_—\s·、,，]+/, '');
   const tokens = rest.split(/[-_—\s·、,，\/]+/).filter(Boolean);
+  // 款式词（如「男款」「女款」「童款」）归款式栏，不进颜色栏
+  const isStyleToken = t => /[男女童]款$/.test(t) || /^(男|女|童|情侣|亲子|情侣款|加大码)?款$/.test(t) && t.length <= 4;
   tokens.forEach(t => {
     if (res.size) return;
     let up = t.toUpperCase();
     const hadMa = /码$/.test(t);
     if (hadMa) up = up.replace(/码$/, '');
     if (!up) return;
+    // 款式 token：男款 / 女款 / 童款 / 加大码 等
+    if (!res.style && isStyleToken(t)) { res.style = t; return; }
     // 纯尺码 token（含数字码如 38 / 175 / 均码）
     if (up === '均码') { res.size = '均码'; return; }
     if (/^(XS|S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|XXXXXXL|XXXXXXL|\d{2,3})$/.test(up)) {
@@ -9047,7 +9108,7 @@ function poParseSpecFromName(rawName, baseName) {
     // 颜色与尺码连写（如「灰白XXL码」）：从尾部剥离尺码
     const m = up.match(/^(.*?)(XS|S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|XXXXXXL|XXXXXXL)$/);
     if (m && m[1]) {
-      if (m[1].length <= 8) res.color = m[1];
+      if (!res.color && m[1].length <= 8) res.color = m[1];
       res.size = m[2];
       return;
     }
@@ -9058,8 +9119,8 @@ function poParseSpecFromName(rawName, baseName) {
   return res;
 }
 
-// 在产品的全部 SKU 中找最接近的一条（按颜色/尺码匹配）
-function poFindSku(product, color, size) {
+// 在产品的全部 SKU 中找最接近的一条（按款式/颜色/尺码匹配）
+function poFindSku(product, color, size, style) {
   if (!product) return null;
   const all = Store.getProducts().filter(p => (p.name || '').trim() === (product.name || '').trim());
   const list = all.length ? all : [product];
@@ -9067,10 +9128,21 @@ function poFindSku(product, color, size) {
   list.forEach(p => {
     const v = p.values || {};
     let score = 0;
-    if (color && (v.color || '').trim() === color) score += 2;
-    else if (color && (v.color || '').trim() && (v.color || '').trim().indexOf(color) >= 0) score += 1;
-    if (size && (v.size || '').trim() === size) score += 2;
-    else if (size && (v.size || '').trim() && (v.size || '').trim().indexOf(size) >= 0) score += 1;
+    if (style) {
+      const vs = (v.style || '').trim();
+      if (vs === style) score += 3;
+      else if (vs && (vs.indexOf(style) >= 0 || style.indexOf(vs) >= 0)) score += 1;
+    }
+    if (color) {
+      const vc = (v.color || '').trim();
+      if (vc === color) score += 2;
+      else if (vc && vc.indexOf(color) >= 0) score += 1;
+    }
+    if (size) {
+      const vz = (v.size || '').trim();
+      if (vz === size) score += 2;
+      else if (vz && vz.indexOf(size) >= 0) score += 1;
+    }
     if (score > bestScore) { bestScore = score; best = p; }
   });
   return bestScore > 0 ? best : null;
@@ -9138,8 +9210,8 @@ function poAggregateRows(rows) {
     let st = (r.style || '').trim() || parsed.style;
     let co = (r.color || '').trim() || parsed.color;
     let sz = (r.size || '').trim() || parsed.size;
-    if (matched.product && (!co || !sz)) {
-      const sku = poFindSku(matched.product, co, sz);
+    if (matched.product && (!st || !co || !sz)) {
+      const sku = poFindSku(matched.product, co, sz, st);
       if (sku) {
         if (!st) st = sku.style || '';
         if (!co) co = sku.color || '';
@@ -9695,9 +9767,16 @@ function importPoToPurchases() {
     // 成本单价优先取产品库录入值；产品库没有该产品时退回附件里的价格
     const price = libCost > 0 ? libCost : (Number(a.unitPrice) || 0);
     if (!(libCost > 0)) noCost++;
+    // 款式 / 颜色 / 尺码 分开填入；生成结构化明细，便于后续按规格追踪
+    const style = a.style || '';
+    const color = a.color || '';
+    const size = a.size || '';
+    const lines = [{ style, color, size, qty, unitPrice: price }];
     arr.push({
       id: uid(), productId: p ? p.id : '', productName: a.name,
-      spec: [a.style, a.color, a.size].filter(Boolean).join(' / '),
+      spec: [style, color, size].filter(Boolean).join(' / '),
+      style, color, size,
+      lines,
       qty, unitPrice: price, total: +(qty * price).toFixed(2),
       billNo: a.billNo || '', orderDate: a.orderDate || '', deliveryDate: a.deliveryDate || '', billDate: '',
       payStatus: 'unsettled', makeStatus: 'unmade',
@@ -9739,6 +9818,7 @@ function renderSettlement(container) {
       ${docs.length ? `<div class="bill-scroll"><table class="bill-table"><thead><tr><th>销售清单</th><th>生成时间</th><th>本单数量</th><th>金额</th><th>操作</th></tr></thead><tbody>
         ${docs.map(d => `<tr><td>${escHtml(d.billNo || d.productName || '—')}</td><td>${escHtml(d.createdAt)}</td><td>${d.lines.reduce((n, l) => n + (Number(l.qty) || 0), 0)}</td><td class="bill-total">${money(d.lines.reduce((n, l) => n + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0))}</td><td><div class="bill-actions">
           ${Object.keys(SETTLE_TEMPLATE_NAMES).map(k => `<button class="btn btn-outline btn-sm" onclick="exportSettlementDoc('${d.id}','${k}')">${SETTLE_TEMPLATE_NAMES[k]}</button>`).join('')}
+          <button class="btn btn-danger btn-sm" onclick="deleteSettleDoc('${d.id}')">删除</button>
         </div></td></tr>`).join('')}
       </tbody></table></div>` : emptyState('📑', '还没有生成材料', '选择一条销售清单，设置本单数量后即可导出三份结算材料。')}
     </div>
@@ -9893,6 +9973,34 @@ function exportSettlementDoc(docId, type) {
   const doc = Store.getSettleDocs().find(x => x.id === docId);
   if (!doc) return;
   downloadAoa(settlementAoa(doc, type), SETTLE_TEMPLATE_NAMES[type] + '_' + (doc.billNo || doc.productName || '销售单') + '.xlsx', SETTLE_TEMPLATE_NAMES[type]);
+}
+
+// 删除已生成的结算材料，并把占用的「已结算数量」退回销售清单
+function deleteSettleDoc(id) {
+  const docs = Store.getSettleDocs();
+  const doc = docs.find(x => x.id === id);
+  if (!doc) return;
+  // 回退该材料占用的结算数量
+  const sales = Store.getSales();
+  const sale = sales.find(x => x.id === doc.salesId);
+  if (sale && Array.isArray(sale.settledLines) && sale.settledLines.length) {
+    const rest = [];
+    sale.settledLines.forEach(sl => {
+      let left = Number(sl.qty) || 0;
+      (doc.lines || []).forEach(dl => {
+        if (left <= 0) return;
+        if (!settledMatches(dl, sl)) return;
+        const take = Math.min(left, Number(dl.qty) || 0);
+        left -= take;
+      });
+      if (left > 0) rest.push(Object.assign({}, sl, { qty: left }));
+    });
+    sale.settledLines = rest;
+    Store.saveSales(sales);
+  }
+  Store.saveSettleDocs(docs.filter(x => x.id !== id));
+  renderPage('settlement');
+  showToast('已删除该结算材料，剩余可结算数量已回退');
 }
 
 function openSettleTemplatesModal() {

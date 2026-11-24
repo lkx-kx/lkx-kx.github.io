@@ -2643,6 +2643,13 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .st-pill.on { background: #EFE0CC; color: #86909C; font-weight: 700; }
 .st-pill.ret.on { background: #CDE5D5; color: #1F5C3A; font-weight: 700; box-shadow: inset 0 0 0 1px #A9D2BC; }
 
+/* 产品图背景统一用网站画布色（浅灰），透明底 PNG 也能融进卡片 */
+.prod-thumb,
+.pd-imgs img,
+.img-draft img,
+.draft-sizechart img {
+  background: var(--cream-bg);
+}
 /* 产品模糊查找 */
 .prod-sort-select {
   width: auto; min-width: 150px; height: 34px; padding: 0 8px;
@@ -7419,7 +7426,7 @@ function renderProductList() {
       <div class="pfc-head">
         ${thumbHtml}
         <div class="pfc-main">
-          <div class="prod-name">📦 ${escHtml(name)}</div>
+          <div class="prod-name">${escHtml(name)}</div>
           <div class="pfc-count">${list.length} 条 SKU</div>
         </div>
         <span class="pfc-more">详情 ›</span>
@@ -7470,7 +7477,7 @@ function showProductDetail(name) {
     .map(f => `<div class="pd-info-row"><span>${escHtml(f.label)}</span><b>${escHtml(fv[f.key])}</b></div>`).join('');
 
   showModal(`
-    <div class="modal-title">📦 ${escHtml(name)}</div>
+    <div class="modal-title">${escHtml(name)}</div>
     ${imgs.length ? `<div class="pd-imgs">${imgs.map(src => `<img src="${src}" alt="" onclick="viewImage(this.src)">`).join('')}</div>` : ''}
     <div class="pd-meta">
       <span class="pd-chip">${list.length} 条 SKU</span>
@@ -7488,10 +7495,18 @@ function showProductDetail(name) {
   `);
 }
 
+// 内置自带的示例供应商 / 采购商（不属于真实业务数据，不再出现在下拉候选里）
+const BUILTIN_PARTNER_SAMPLES = ['铜牛', '恒源', '客户甲', '客户乙'];
+function isBuiltinPartnerSample(v) {
+  const s = String(v || '').trim();
+  if (!s) return false;
+  return BUILTIN_PARTNER_SAMPLES.some(x => s === x);
+}
 function partnerOptions(key) {
   const p = Store.getPartners();
-  const base = key === 'supplier' ? p.suppliers : p.buyers;
-  const fromProducts = Store.getProducts().map(x => ((x.values || {})[key] || '').trim()).filter(Boolean);
+  const base = (key === 'supplier' ? p.suppliers : p.buyers).filter(v => !isBuiltinPartnerSample(v));
+  const fromProducts = Store.getProducts().map(x => ((x.values || {})[key] || '').trim())
+    .filter(v => v && !isBuiltinPartnerSample(v));
   return Array.from(new Set(base.concat(fromProducts))).slice(0, 100);
 }
 function partnerDatalistsHtml() {
@@ -7841,11 +7856,18 @@ function collectVariantLines() {
 }
 function rememberPartnerValues(records) {
   const p = Store.getPartners();
-  const add = (arr, val) => { const v = (val || '').trim(); if (v && arr.indexOf(v) < 0) arr.push(v); };
+  const add = (arr, val) => {
+    const v = (val || '').trim();
+    if (!v || isBuiltinPartnerSample(v)) return;
+    if (arr.indexOf(v) < 0) arr.push(v);
+  };
   records.forEach(r => {
     add(p.suppliers, (r.values || {}).supplier);
     add(p.buyers, (r.values || {}).buyer);
   });
+  // 清掉历史遗留的内置示例值
+  p.suppliers = p.suppliers.filter(v => !isBuiltinPartnerSample(v));
+  p.buyers = p.buyers.filter(v => !isBuiltinPartnerSample(v));
   p.suppliers = p.suppliers.slice(-200);
   p.buyers = p.buyers.slice(-200);
   Store.savePartners(p);

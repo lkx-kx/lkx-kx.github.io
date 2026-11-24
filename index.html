@@ -2643,6 +2643,11 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .st-pill.on { background: #EFE0CC; color: #86909C; font-weight: 700; }
 .st-pill.ret.on { background: #CDE5D5; color: #1F5C3A; font-weight: 700; box-shadow: inset 0 0 0 1px #A9D2BC; }
 
+/* 产品模糊查找 */
+.ps-box { margin-bottom: 8px; }
+.ps-box .input { margin-bottom: 4px; }
+.ps-hint { font-size: 11px; color: var(--text-light); min-height: 14px; }
+
 /* ==================================================================
    SaaS 后台 UI 风格 · 统一覆盖层
    橙色高亮 · 中性灰画布 · 白卡片 + 细描边 · 紧凑密度 · 无渐变
@@ -3322,6 +3327,25 @@ body {
 .bill-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
 .bill-table tr:hover td { background: #FFFCF9; }
 .bill-table .bill-actions { display: flex; gap: 6px; flex-wrap: nowrap; white-space: nowrap; align-items: center; }
+/* 多选复选框列 */
+.bill-table th.bill-cb, .bill-table td.bill-cb { width: 34px; min-width: 34px; padding-left: 10px; padding-right: 4px; text-align: center; }
+.bill-table td.bill-cb input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent-caramel); cursor: pointer; }
+/* 批量操作条 */
+.bill-batch-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 12px; margin-bottom: 10px;
+  background: var(--cream-bg); border: 1px solid var(--border-soft); border-radius: 8px;
+}
+.bill-batch-bar .bbb-count { font-size: 12.5px; color: var(--text-sub); margin-right: 2px; }
+.bill-batch-bar .bbb-count b { color: var(--accent-caramel); font-size: 14px; }
+.bill-batch-bar .bbb-label { font-size: 12px; color: var(--text-light); }
+/* 日期分组头部的批量控件 */
+.bill-date-sel { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text-sub); cursor: pointer; white-space: nowrap; }
+.bill-date-sel input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--accent-caramel); cursor: pointer; }
+.bill-date-bulk {
+  font-size: 11.5px; padding: 3px 6px; min-width: 92px; height: auto;
+  border: 1px solid var(--border-soft); border-radius: 4px; background: var(--cream-card); color: var(--text-sub); cursor: pointer;
+}
 /* 按下单日期折叠收纳 */
 .bill-date-groups { display: flex; flex-direction: column; gap: 10px; }
 .bill-date-card { border: 1px solid var(--border-soft); border-radius: 8px; overflow: hidden; background: var(--cream-card); }
@@ -3346,6 +3370,7 @@ body {
 .bill-total { font-weight: 700; color: var(--accent-caramel); white-space: nowrap; }
 .bill-name { font-weight: 600; color: var(--text-main); white-space: nowrap; }
 .bill-table td:first-child { min-width: 120px; word-break: keep-all; }
+.bill-table td.bill-cb { min-width: 34px; width: 34px; }
 .bill-sub { color: var(--text-light); font-size: 11px; margin-top: 3px; }
 .st-tag {
   display: inline-block; font-size: 11px; padding: 2px 7px; margin: 1px 3px 1px 0;
@@ -3475,6 +3500,21 @@ html[data-theme="dark"] .cal-sched { color: #1D2129 !important; }
   font-family: inherit; font-size: 10px; padding: 1px 5px; border-radius: 4px;
   border: 1px solid var(--border-soft); color: var(--text-light); background: var(--cream-bg);
 }
+.img-viewer {
+  position: fixed; inset: 0; z-index: 1500; background: rgba(29, 33, 41, .78);
+  display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.img-viewer.show { display: flex; }
+.img-viewer-box {
+  max-width: min(1000px, 100%); max-height: 92vh; display: flex; flex-direction: column;
+  align-items: center; gap: 12px;
+}
+.img-viewer-box img {
+  max-width: 100%; max-height: 78vh; object-fit: contain;
+  border-radius: 10px; background: var(--cream-card);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .32);
+}
+.img-viewer-actions { display: flex; gap: 8px; }
 .cmd-overlay {
   position: fixed; inset: 0; z-index: 1200; background: rgba(0,0,0,.5);
   display: none; align-items: flex-start; justify-content: center; padding-top: 12vh;
@@ -3604,6 +3644,16 @@ html[data-theme="dark"] .cal-sched { color: #1D2129 !important; }
   <div class="modal" id="modal-content" data-page-node-id="7ySAH670rTdKOL4mKYh4t8"></div>
 </div>
 
+<!-- ============ IMAGE VIEWER (独立于弹窗，关闭后返回原弹窗) ============ -->
+<div class="img-viewer" id="img-viewer" data-page-node-id="imgviewerlayer">
+  <div class="img-viewer-box">
+    <img id="img-viewer-img" alt="预览">
+    <div class="img-viewer-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeImageViewer()">关闭预览</button>
+    </div>
+  </div>
+</div>
+
 <!-- ============ TOAST ============ -->
 <div class="toast" id="toast" data-page-node-id="sObGPwmWaabhwQlPITJdlX"></div>
 
@@ -3650,7 +3700,7 @@ const PRODUCT_FIELDS_DEFAULT = [
 ];
 
 // 数据处理中心固定模板（采购订单导入字段 / 结算材料三类导出表头）
-const PO_TEMPLATE_HEADERS = ['产品名称', '款式', '颜色', '尺码', '数量', '成本单价', '供应商', '69码', '材质', '单据编号', '下单日期', '交货日期'];
+const PO_TEMPLATE_HEADERS = ['产品名称', '款式', '颜色', '尺码', '数量', '单位', '销售单价', '金额', '供应商', '69码', '材质', '单据编号', '下单日期', '交货日期'];
 const PO_FIELD_ALIASES = {
   name: ['产品名称', '品名', '商品名称', '货品名称', '产品', '货品名称(款式)'],
   style: ['款式', '款号', '型号', '货号'],
@@ -3658,7 +3708,7 @@ const PO_FIELD_ALIASES = {
   size: ['尺码', '尺寸', '规格', '码数'],
   qty: ['数量', '件数', '采购数量', '订购数量', '数量（件）', '数量(件)'],
   unit: ['单位', '计量单位'],
-  unitPrice: ['成本单价', '单价', '进价', '采购单价', '成本价', '单价(元)', '单价（元）'],
+  unitPrice: ['销售单价', '售价', '单价', '单价(元)', '单价（元）', '成本单价', '进价', '采购单价', '成本价'],
   amount: ['金额', '金额(元)', '金额（元）', '总金额', '合计金额', '小计'],
   supplier: ['供应商', '供货商', '厂家', '厂商'],
   barcode: ['69码', '条码', '条形码', 'EAN'],
@@ -6909,6 +6959,7 @@ function showAddSampleModal() {
     <div class="modal-title">➕ 添加样品</div>
     <div class="form-group">
       <label>关联产品库（可选）</label>
+      ${productSearchBoxHtml('sm', '输入产品名 / 款式 / 颜色 / 尺码 模糊查找')}
       <select class="input" id="sm-product" onchange="onSampleProductChange('sm')">${sampleProductOptions('')}</select>
     </div>
     <div class="form-group">
@@ -7059,6 +7110,107 @@ function deleteSample(id) {
 }
 
 // ====================================================================
+// 产品模糊查找：输入关键字过滤产品下拉（名称 / 款式 / 颜色 / 尺码 / 69码 / 供应商）
+// ====================================================================
+function productSearchText(p) {
+  const v = (p && p.values) || {};
+  return [p && p.name, v.style, v.color, v.size, v.barcode, v.supplier, v.buyer, v.material]
+    .filter(Boolean).join(' ').toLowerCase();
+}
+// 简单的模糊匹配：连续子序列命中即算匹配（支持「抓绒灰」命中「抓绒外套-灰白」）
+function fuzzyHit(text, kw) {
+  if (!kw) return true;
+  const t = String(text || '').toLowerCase();
+  const k = String(kw).toLowerCase().trim();
+  if (!k) return true;
+  if (t.indexOf(k) >= 0) return true;
+  let i = 0;
+  for (const ch of t) {
+    if (ch === k[i]) i++;
+    if (i >= k.length) return true;
+  }
+  return false;
+}
+// 按关键字过滤产品列表
+function searchProducts(kw) {
+  const products = Store.getProducts();
+  if (!kw || !kw.trim()) return products;
+  return products.filter(p => fuzzyHit(productSearchText(p), kw.trim()));
+}
+// 生成带关键字提示的搜索框（用于采购/销售/样品弹窗）
+function productSearchBoxHtml(prefix, placeholder) {
+  return `<div class="ps-box">
+    <input type="search" class="input" id="${prefix}_kw" placeholder="${escAttr(placeholder || '输入产品名 / 款式 / 颜色 / 尺码 模糊查找')}" oninput="onProductSearch('${prefix}')" autocomplete="off">
+    <div class="ps-hint" id="${prefix}_count"></div>
+  </div>`;
+}
+// 关键字变化时刷新对应下拉
+function onProductSearch(prefix) {
+  const kw = document.getElementById(prefix + '_kw');
+  const kwText = kw ? kw.value : '';
+  if (prefix === 'sm') {
+    // 样品：刷新产品下拉
+    const sel = document.getElementById('sm-product');
+    const cur = sel ? sel.value : '';
+    if (sel) {
+      const list = searchProducts(kwText);
+      sel.innerHTML = `<option value="">不关联产品库</option>` + list.map(p =>
+        `<option value="${p.id}" ${cur === p.id ? 'selected' : ''}>${escHtml(productLabel(p))}</option>`).join('');
+      const cnt = document.getElementById('sm_count');
+      if (cnt) cnt.textContent = kwText.trim() ? `匹配到 ${list.length} 个产品` : '';
+    }
+    return;
+  }
+  if (prefix === 'pu') {
+    const sel = document.getElementById('pu_product');
+    const cur = sel ? sel.value : '';
+    if (sel) {
+      const list = searchProducts(kwText);
+      sel.innerHTML = list.map(p =>
+        `<option value="${p.id}" ${cur === p.id ? 'selected' : ''}>${escHtml(productLabel(p))}</option>`).join('');
+      const cnt = document.getElementById('pu_count');
+      if (cnt) cnt.textContent = kwText.trim() ? `匹配到 ${list.length} 个产品` : '';
+      if (list.length && cur && !list.some(p => p.id === cur)) { sel.value = list[0].id; onPurchaseProductChange(); }
+      else if (list.length && !cur) { sel.value = list[0].id; onPurchaseProductChange(); }
+    }
+    return;
+  }
+  if (prefix === 'sa') {
+    // 销售：产品库部分刷新（采购清单部分按日期分组保持不变）
+    const sel = document.getElementById('sa_link');
+    if (!sel) return;
+    const cur = sel.value;
+    const purchases = Store.getPurchases();
+    const purGroups = new Map();
+    purchases.forEach(b => {
+      const d = (b.orderDate || '').trim() || '未填写日期';
+      if (!purGroups.has(d)) purGroups.set(d, []);
+      purGroups.get(d).push(b);
+    });
+    const purDates = Array.from(purGroups.keys()).sort((a, b) => {
+      if (a === '未填写日期') return 1;
+      if (b === '未填写日期') return -1;
+      return b.localeCompare(a);
+    });
+    const purOpts = purDates.map(d => {
+      const rows = purGroups.get(d);
+      const amt = rows.reduce((n, x) => n + (Number(x.total) || 0), 0);
+      return `<optgroup label="📅 ${escHtml(fmtDateFull(d) || d)} · ${rows.length} 条 · ${money(amt)}">
+        <option value="bd:${d}">📦 整批选择该日期全部 ${rows.length} 条</option>
+        ${rows.map(b => `<option value="b:${b.id}">采购清单 · ${escHtml(b.productName || '未命名')}${b.billNo ? ' · ' + escHtml(b.billNo) : ''}</option>`).join('')}
+      </optgroup>`;
+    }).join('');
+    const list = searchProducts(kwText);
+    sel.innerHTML = `<option value="">请选择…</option>
+      <optgroup label="产品库">${list.map(p => `<option value="p:${p.id}">产品库 · ${escHtml(productLabel(p))}</option>`).join('')}</optgroup>
+      ${purOpts}`;
+    const cnt = document.getElementById('sa_count');
+    if (cnt) cnt.textContent = kwText.trim() ? `匹配到 ${list.length} 个产品` : '';
+    if (cur) sel.value = cur;
+  }
+}
+
+// ====================================================================
 // 产品库 / 采购清单 / 销售清单
 // ====================================================================
 function money(n) {
@@ -7066,14 +7218,17 @@ function money(n) {
   return '¥' + v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// 图片预览使用独立遮罩层：关闭后自动回到原页面（弹窗不会被销毁）
 function viewImage(src) {
-  showModal(`
-    <div class="modal-title">图片预览</div>
-    <div style="text-align:center;">
-      <img src="${src}" alt="预览" style="max-width:100%;max-height:68vh;object-fit:contain;border-radius:8px;border:1px solid var(--border-soft);">
-    </div>
-    <div class="modal-actions"><button class="btn btn-outline" onclick="closeModal()">关闭</button></div>
-  `);
+  const layer = document.getElementById('img-viewer');
+  const img = document.getElementById('img-viewer-img');
+  if (!layer || !img) return;
+  img.src = src;
+  layer.classList.add('show');
+}
+function closeImageViewer() {
+  const layer = document.getElementById('img-viewer');
+  if (layer) layer.classList.remove('show');
 }
 
 /* ---------------- 产品库 ---------------- */
@@ -7649,6 +7804,7 @@ function openProductModal(id) {
   prodDraft = {
     id: p ? p.id : null,
     name: p ? p.name : '',
+    origName: p ? (p.name || '').trim() : '',   // 编辑时的原产品名（用于定位整组旧记录）
     values: {},
     variants: p ? variantTreeFromGroup(p.id) : variantTreeFromProduct(null),
     images: p && p.images ? p.images.slice() : [],
@@ -7867,11 +8023,16 @@ function saveProduct() {
   if (!lines) return;
 
   const products = Store.getProducts();
-  const oldGroup = products.filter(p => (p.name || '').trim() === name);
+  const isEdit = !!prodDraft.id;
+  // 本次保存会整体替换的旧记录（编辑时=原产品名下的全部 SKU；新增时不替换任何记录）
+  const replaceName = isEdit ? (prodDraft.origName || name) : '';
+  const oldGroup = isEdit ? products.filter(p => (p.name || '').trim() === replaceName) : [];
+  const replacedIds = new Set(oldGroup.map(p => p.id));
   for (const ln of lines) {
     if (!ln.barcode) continue;
     const key = JSON.stringify([ln.style, ln.color, ln.size]);
-    const conflict = products.find(p => p.id !== prodDraft.id &&
+    // 只与"不会被本次保存替换"的记录比较，避免编辑款式时误报条码占用
+    const conflict = products.find(p => !replacedIds.has(p.id) &&
       (((p.values || {}).barcode || '').trim() === ln.barcode) &&
       JSON.stringify([((p.values || {}).style || '').trim(), ((p.values || {}).color || '').trim(), ((p.values || {}).size || '').trim()]) !== key);
     if (conflict) {
@@ -7905,7 +8066,8 @@ function saveProduct() {
     };
   });
 
-  Store.saveProducts(products.filter(p => !oldGroup.some(g => g.id === p.id)).concat(generated));
+  const kept = isEdit ? products.filter(p => !replacedIds.has(p.id)) : products;
+  Store.saveProducts(kept.concat(generated));
   rememberPartnerValues(generated);
   const open = Store.getProductOpen();
   if (open.indexOf(name) < 0) { open.push(name); Store.saveProductOpen(open); }
@@ -8106,6 +8268,7 @@ function openPurchaseModal(id) {
   showModal(`
     <div class="modal-title">${r ? '✏️ 编辑采购' : '➕ 新增采购'}</div>
     <div class="form-group"><label>选择产品</label>
+      ${productSearchBoxHtml('pu', '输入产品名 / 款式 / 颜色 / 尺码 模糊查找')}
       <select class="input" id="pu_product" onchange="onPurchaseProductChange()">${opts}</select>
     </div>
     <div class="form-group"><label>单据编号</label><input type="text" class="input" id="pu_billno" value="${escAttr(r ? r.billNo : '')}" placeholder="可留空"></div>
@@ -8368,12 +8531,32 @@ function openSalesModal(id) {
   const purchases = Store.getPurchases();
   const r = id ? Store.getSales().find(x => x.id === id) : null;
   const prodOpts = products.map(p => `<option value="p:${p.id}">产品库 · ${escHtml(productLabel(p))}</option>`).join('');
-  const purOpts = purchases.map(b => `<option value="b:${b.id}">采购清单 · ${escHtml(b.productName || '未命名')}${b.billNo ? ' · ' + escHtml(b.billNo) : ''}</option>`).join('');
+  // 采购清单按「下单日期」分组，每组提供「整批选择」选项
+  const purGroups = new Map();
+  purchases.forEach(b => {
+    const d = (b.orderDate || '').trim() || '未填写日期';
+    if (!purGroups.has(d)) purGroups.set(d, []);
+    purGroups.get(d).push(b);
+  });
+  const purDates = Array.from(purGroups.keys()).sort((a, b) => {
+    if (a === '未填写日期') return 1;
+    if (b === '未填写日期') return -1;
+    return b.localeCompare(a);
+  });
+  const purOpts = purDates.map(d => {
+    const rows = purGroups.get(d);
+    const amt = rows.reduce((n, x) => n + (Number(x.total) || 0), 0);
+    return `<optgroup label="📅 ${escHtml(fmtDateFull(d) || d)} · ${rows.length} 条 · ${money(amt)}">
+      <option value="bd:${d}">📦 整批选择该日期全部 ${rows.length} 条</option>
+      ${rows.map(b => `<option value="b:${b.id}">采购清单 · ${escHtml(b.productName || '未命名')}${b.billNo ? ' · ' + escHtml(b.billNo) : ''}</option>`).join('')}
+    </optgroup>`;
+  }).join('');
   const linkVal = r ? r.link : '';
   const price = r ? r.unitPrice : '';
   showModal(`
     <div class="modal-title">${r ? '✏️ 编辑销售' : '➕ 新增销售'}</div>
     <div class="form-group"><label>选择产品或关联采购清单</label>
+      ${productSearchBoxHtml('sa', '输入产品名 / 款式 / 颜色 / 尺码 模糊查找（采购清单按日期分组）')}
       <select class="input" id="sa_link" onchange="onSalesLinkChange()">
         <option value="">请选择…</option>
         <optgroup label="产品库">${prodOpts}</optgroup>
@@ -8414,6 +8597,12 @@ function onSalesLinkChange() {
   else if (v.indexOf('b:') === 0) {
     const b = Store.getPurchases().find(x => x.id === v.slice(2));
     if (b) p = Store.getProducts().find(x => x.id === b.productId);
+  } else if (v.indexOf('bd:') === 0) {
+    // 整批选择：按采购清单日期一次带入该日期全部记录
+    const date = v.slice(3);
+    const rows = Store.getPurchases().filter(b => ((b.orderDate || '').trim() || '未填写日期') === date);
+    applySalesBatch(rows);
+    return;
   }
   if (!p) return;
   const price = (p.values && p.values.salePrice) || '';
@@ -8424,6 +8613,51 @@ function onSalesLinkChange() {
     syncBillLines('sa');
   }
   calcBillTotal('sa');
+}
+
+// 销售清单按采购日期整批生成：把该日期下的采购记录逐条转为销售记录
+function applySalesBatch(rows) {
+  if (!rows.length) { showToast('该日期下没有采购记录'); return; }
+  const sales = Store.getSales();
+  const products = Store.getProducts();
+  let added = 0;
+  rows.forEach(b => {
+    const p = products.find(x => x.id === b.productId);
+    const price = (p && p.values && p.values.salePrice) ? Number(p.values.salePrice) : (Number(b.unitPrice) || 0);
+    const qty = Number(b.qty) || 0;
+    if (!(qty > 0)) return;
+    const lines = (b.lines && b.lines.length)
+      ? b.lines.map(l => ({ style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: price }))
+      : [{ style: '', color: '', size: b.spec || '', qty: qty, unitPrice: price }];
+    sales.push({
+      id: uid(),
+      link: 'b:' + b.id,
+      source: 'purchase',
+      productId: b.productId || '',
+      purchaseId: b.id,
+      productName: b.productName || (p ? p.name : ''),
+      spec: b.spec || '',
+      linkLabel: '采购清单 · ' + (b.billNo || b.productName || ''),
+      lines,
+      settledLines: [],
+      total: +(lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0)).toFixed(2),
+      qty: lines.reduce((s, l) => s + (Number(l.qty) || 0), 0),
+      unitPrice: price,
+      billNo: b.billNo || '',
+      orderDate: b.orderDate || '',
+      deliveryDate: b.deliveryDate || '',
+      billDate: b.billDate || '',
+      payStatus: 'unsettled',
+      makeStatus: 'unmade',
+      note: b.note || '',
+      createdAt: Store.todayKey()
+    });
+    added++;
+  });
+  Store.saveSales(sales);
+  closeModal();
+  renderPage('sales');
+  showToast('已按日期生成 ' + added + ' 条销售记录～ 💰');
 }
 
 function rLines(id) {
@@ -8440,6 +8674,12 @@ function saveSales(id) {
   else if (link.indexOf('b:') === 0) {
     b = purchases.find(x => x.id === link.slice(2));
     if (b) p = products.find(x => x.id === b.productId);
+  } else if (link.indexOf('bd:') === 0) {
+    // 整批选择：直接按该日期生成全部销售记录
+    const date = link.slice(3);
+    const rows = purchases.filter(x => ((x.orderDate || '').trim() || '未填写日期') === date);
+    applySalesBatch(rows);
+    return;
   }
   if (!link) { showToast('请选择产品或关联采购清单'); return; }
   const common = readBillCommon('sa');
@@ -8486,7 +8726,7 @@ function deleteSale(id) {
 // ====================================================================
 const PO_HEADER_KEYS = ['name','style','color','size','qty','unit','unitPrice','amount','supplier','barcode','material','billNo','orderDate','deliveryDate'];
 const PO_FIELD_LABELS = {
-  name:'产品名称', style:'款式', color:'颜色', size:'尺码', qty:'数量', unit:'单位', unitPrice:'成本单价',
+  name:'产品名称', style:'款式', color:'颜色', size:'尺码', qty:'数量', unit:'单位', unitPrice:'销售单价',
   amount:'金额', supplier:'供应商', barcode:'69码', material:'材质', billNo:'单据编号',
   orderDate:'下单日期', deliveryDate:'交货日期'
 };
@@ -8782,18 +9022,106 @@ function poAutoMapping(headers) {
 //  3) 按导出模板的表头与前导内容填入模板，导出 Excel / Word
 // ====================================================================
 
+// 从产品名后缀中拆出款式 / 颜色 / 尺码
+// 例：「营业员定制抓绒外套-灰白XXL码_联通文创_灰白」→「灰白」/「XXL」
+function poParseSpecFromName(rawName, baseName) {
+  const res = { style: '', color: '', size: '' };
+  let rest = String(rawName || '').trim();
+  const base = String(baseName || '').trim();
+  if (base && rest.indexOf(base) === 0) rest = rest.slice(base.length);
+  // 去掉常见后缀词（码 / 联通文创 等非规格信息）
+  rest = rest.replace(/^[-_—\s·、,，]+/, '');
+  const tokens = rest.split(/[-_—\s·、,，\/]+/).filter(Boolean);
+  tokens.forEach(t => {
+    if (res.size) return;
+    let up = t.toUpperCase();
+    const hadMa = /码$/.test(t);
+    if (hadMa) up = up.replace(/码$/, '');
+    if (!up) return;
+    // 纯尺码 token（含数字码如 38 / 175 / 均码）
+    if (up === '均码') { res.size = '均码'; return; }
+    if (/^(XS|S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|XXXXXXL|XXXXXXL|\d{2,3})$/.test(up)) {
+      res.size = up;
+      return;
+    }
+    // 颜色与尺码连写（如「灰白XXL码」）：从尾部剥离尺码
+    const m = up.match(/^(.*?)(XS|S|M|L|XL|XXL|XXXL|XXXXL|XXXXXL|XXXXXXL|XXXXXXL)$/);
+    if (m && m[1]) {
+      if (m[1].length <= 8) res.color = m[1];
+      res.size = m[2];
+      return;
+    }
+    if (!res.color && t.length <= 8 && !/^\d+$/.test(t)) {
+      res.color = hadMa ? up : t;
+    }
+  });
+  return res;
+}
+
+// 在产品的全部 SKU 中找最接近的一条（按颜色/尺码匹配）
+function poFindSku(product, color, size) {
+  if (!product) return null;
+  const all = Store.getProducts().filter(p => (p.name || '').trim() === (product.name || '').trim());
+  const list = all.length ? all : [product];
+  let best = null, bestScore = -1;
+  list.forEach(p => {
+    const v = p.values || {};
+    let score = 0;
+    if (color && (v.color || '').trim() === color) score += 2;
+    else if (color && (v.color || '').trim() && (v.color || '').trim().indexOf(color) >= 0) score += 1;
+    if (size && (v.size || '').trim() === size) score += 2;
+    else if (size && (v.size || '').trim() && (v.size || '').trim().indexOf(size) >= 0) score += 1;
+    if (score > bestScore) { bestScore = score; best = p; }
+  });
+  return bestScore > 0 ? best : null;
+}
+
+// 把附件明细里的产品名称匹配到产品库录入的原始产品名
+// 附件里的名称常带款式/颜色后缀（如「抓绒外套-灰白XXL码_联通文创_灰白」），
+// 统计时需要按产品原本名称归并，因此取"最长可匹配的产品库名称"。
+function poMatchProductName(rawName) {
+  const name = String(rawName || '').trim();
+  if (!name) return { name: '', product: null };
+  const products = Store.getProducts();
+  if (!products.length) return { name, product: null };
+  // 1) 完全相等
+  const exact = products.find(p => (p.name || '').trim() === name);
+  if (exact) return { name: exact.name, product: exact };
+  // 2) 产品库名称是附件名称的前缀（最常见：产品名 + 款式颜色后缀）
+  const byPrefix = products
+    .filter(p => {
+      const pn = (p.name || '').trim();
+      return pn && name.indexOf(pn) === 0;
+    })
+    .sort((a, b) => (b.name || '').length - (a.name || '').length);
+  if (byPrefix.length) return { name: byPrefix[0].name, product: byPrefix[0] };
+  // 3) 产品库名称包含在附件名称中
+  const byContain = products
+    .filter(p => {
+      const pn = (p.name || '').trim();
+      return pn && name.indexOf(pn) >= 0;
+    })
+    .sort((a, b) => (b.name || '').length - (a.name || '').length);
+  if (byContain.length) return { name: byContain[0].name, product: byContain[0] };
+  return { name, product: null };
+}
+
 // 按产品名称汇总明细行（同一产品的款式/颜色/尺码合并，累计数量与金额）
 function poAggregateRows(rows) {
   const map = new Map();
   rows.forEach(r => {
-    const name = (r.name || '').trim();
-    if (!name) return;
+    const raw = (r.name || '').trim();
+    if (!raw) return;
+    // 按产品库原始名称归并（附件名带款式颜色后缀时也能正确合并）
+    const matched = poMatchProductName(raw);
+    const name = matched.name || raw;
     const qty = Number(r.qty) || 0;
     const price = Number(r.unitPrice) || 0;
     const amt = r.amount !== undefined && r.amount !== '' ? (Number(r.amount) || 0) : qty * price;
     if (!map.has(name)) {
       map.set(name, {
-        name: name, qty: 0, amount: 0, unit: (r.unit || '').trim() || '件',
+        name: name, rawName: raw, productId: matched.product ? matched.product.id : '',
+        qty: 0, amount: 0, unit: (r.unit || '').trim() || '件',
         unitPrice: price, style: r.style || '', color: r.color || '', size: r.size || '',
         supplier: r.supplier || '', material: r.material || '', barcode: r.barcode || '',
         billNo: r.billNo || '', orderDate: r.orderDate || '', deliveryDate: r.deliveryDate || '',
@@ -8804,9 +9132,35 @@ function poAggregateRows(rows) {
     g.qty += qty;
     g.amount += amt;
     if (!g.unitPrice && price) g.unitPrice = price;
+    if (!g.productId && matched.product) g.productId = matched.product.id;
+    // 规格信息：优先取附件独立列 → 产品库 SKU 匹配 → 产品名后缀解析
+    const parsed = poParseSpecFromName(raw, matched.name);
+    let st = (r.style || '').trim() || parsed.style;
+    let co = (r.color || '').trim() || parsed.color;
+    let sz = (r.size || '').trim() || parsed.size;
+    if (matched.product && (!co || !sz)) {
+      const sku = poFindSku(matched.product, co, sz);
+      if (sku) {
+        if (!st) st = sku.style || '';
+        if (!co) co = sku.color || '';
+        if (!sz) sz = sku.size || '';
+      }
+    }
+    g.styles = g.styles || [];
+    g.colors = g.colors || [];
+    g.sizes = g.sizes || [];
+    if (st && g.styles.indexOf(st) < 0) g.styles.push(st);
+    if (co && g.colors.indexOf(co) < 0) g.colors.push(co);
+    if (sz && g.sizes.indexOf(sz) < 0) g.sizes.push(sz);
     g.details.push(r);
   });
-  return Array.from(map.values());
+  return Array.from(map.values()).map(g => {
+    // 汇总后的规格用「、」连接；仅一种规格时保持原样
+    g.style = (g.styles || []).join('、');
+    g.color = (g.colors || []).join('、');
+    g.size = (g.sizes || []).join('、');
+    return g;
+  });
 }
 
 // 模板表头 → 内部字段（按用户上传模板的列名映射）
@@ -8841,6 +9195,20 @@ function poRowForTemplate(tplHeaders, agg) {
     if (f === 'amount') return (Math.round(Number(v) * 100) / 100);
     return v;
   });
+}
+
+// 单行导出数据（与 PO_EXPORT_HEADERS 一一对应）
+function poExportRow(a) {
+  return [
+    a.name || '', a.style || '', a.color || '', a.size || '',
+    Number(a.qty) || 0, a.unit || '件', Number(a.unitPrice) || 0, Number(a.amount) || 0,
+    a.supplier || '', a.barcode || '', a.material || '', a.billNo || '', a.orderDate || '', a.deliveryDate || ''
+  ];
+}
+// 固定的 Excel 导出内容（表头 + 汇总数据行）
+const PO_EXPORT_HEADERS = ['产品名称', '款式', '颜色', '尺码', '数量', '单位', '销售单价', '金额', '供应商', '69码', '材质', '单据编号', '下单日期', '交货日期'];
+function poExportAoa(aggRows) {
+  return [PO_EXPORT_HEADERS].concat(aggRows.map(poExportRow));
 }
 
 // 完整表格内容（用于 Excel 导出）
@@ -8992,28 +9360,20 @@ let poDraft = null;
 
 function renderPoOrders(container) {
   const batches = Store.getPoOrders();
-  const tpl = Store.getPoTemplate();
-  const tplDoc = Store.getPoTemplateDocx();
   container.innerHTML = `
     <div class="page-header">
       <span class="ph-icon">${DOG_ICONS['po-orders']}</span>
       <span class="ph-title">采购订单</span>
-      <span class="ph-desc">上传导出文件模板与订单附件明细 · 按产品名称汇总后填入模板导出</span>
+      <span class="ph-desc">上传订单附件明细 · 自动匹配产品库并统一汇总 · 可导入采购清单或导出 Excel</span>
     </div>
     <div class="card">
       <div class="section-head">
-        <div><div class="section-title">导出文件模板</div><div class="section-sub">当前模板：${escHtml(tpl.name)}（${tpl.headers.length} 列${tplDoc ? '，Word 原件已保存' : ''}）· 上传 Word 模板后，导出会把汇总结果原位填入该模板</div></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('po-tpl-file').click()">⬆ 上传导出文件模板（Word / Excel）</button>
-          <button class="btn btn-text btn-sm" onclick="resetPoTemplate()">恢复默认</button>
-          <button class="btn btn-text btn-sm" onclick="downloadPoTemplate()">下载当前模板</button>
-          <input type="file" id="po-tpl-file" accept=".xlsx,.xls,.docx" style="display:none;" onchange="handlePoTemplateUpload(this)">
-        </div>
+        <div><div class="section-title">订单附件明细</div><div class="section-sub">可分多次上传多个明细文件，系统会统一汇总整理；产品名称自动匹配产品库，附件中的价格按销售单价识别</div></div>
       </div>
       <div class="upload-zone" onclick="document.getElementById('po-file').click()">
         <div class="uz-icon">⬆</div>
-        <div class="uz-title">上传订单附件明细（.xlsx / .xls，可多选）</div>
-        <div class="uz-sub">可一次选择多个明细文件，统一按「产品名称」汇总数量与金额后填入导出文件模板 · 也可将文件拖到此处</div>
+        <div class="uz-title">上传订单附件明细（.xlsx / .xls，可多选、可多次上传）</div>
+        <div class="uz-sub">每次上传的文件会与已有明细合并，按「产品名称」统一汇总数量与金额 · 也可将文件拖到此处</div>
         <input type="file" id="po-file" accept=".xlsx,.xls" multiple style="display:none;" onchange="handlePoUpload(this)">
       </div>
       <div id="po-preview"></div>
@@ -9022,7 +9382,6 @@ function renderPoOrders(container) {
       <div class="section-head"><div class="section-title">历史加工记录</div></div>
       ${batches.length ? `<div class="bill-scroll"><table class="bill-table"><thead><tr><th>文件名</th><th>处理时间</th><th>产品行数</th><th>操作</th></tr></thead><tbody>
         ${batches.map(b => `<tr><td>${escHtml(b.fileName)}</td><td>${escHtml(b.createdAt)}</td><td>${b.rows.length}</td><td><div class="bill-actions">
-          <button class="btn btn-outline btn-sm" onclick="exportPoBatchDocx('${b.id}')">导出 Word</button>
           <button class="btn btn-outline btn-sm" onclick="exportPoBatch('${b.id}')">导出 Excel</button>
           <button class="btn btn-text btn-sm" onclick="deletePoBatch('${b.id}')">删除</button>
         </div></td></tr>`).join('')}
@@ -9092,10 +9451,16 @@ function readPoFiles(files) {
 function finishPoFiles(parsed, total) {
   const okFiles = parsed.filter(p => p.rawRows.length);
   if (!okFiles.length) { showToast('所选文件里没有读取到数据行'); return; }
+  // 多次上传：与已有草稿合并（同名文件覆盖，避免重复累加）
+  const prevFiles = (poDraft && poDraft.files) ? poDraft.files.slice() : [];
+  const merged = prevFiles.concat(okFiles.map(p => ({ fileName: p.fileName, headers: p.headers, rawRows: p.rawRows })));
+  // 同一文件名的重复上传视为替换
+  const byName = new Map();
+  merged.forEach(f => byName.set(f.fileName, f));
+  const files = Array.from(byName.values());
   // 多文件表头可能不同：按「列名」统一映射 —— 每个文件用同一列名去自身表头里定位
   const allHeaders = [];
-  okFiles.forEach(p => p.headers.forEach(h => { if (h && allHeaders.indexOf(h) < 0) allHeaders.push(h); }));
-  // mapping：内部字段 → 列名（多文件时存列名；单文件时存列索引以兼容原逻辑）
+  files.forEach(p => p.headers.forEach(h => { if (h && allHeaders.indexOf(h) < 0) allHeaders.push(h); }));
   const nameMapping = {};
   PO_HEADER_KEYS.forEach(key => {
     let hit = '';
@@ -9105,15 +9470,14 @@ function finishPoFiles(parsed, total) {
     }
     nameMapping[key] = hit;
   });
-  const files = okFiles.map(p => ({ fileName: p.fileName, headers: p.headers, rawRows: p.rawRows }));
   poDraft = {
-    fileName: okFiles.length === 1 ? okFiles[0].fileName : (okFiles.length + ' 个明细文件'),
-    fileNames: okFiles.map(p => p.fileName),
+    fileName: files.length === 1 ? files[0].fileName : (files.length + ' 个明细文件'),
+    fileNames: files.map(p => p.fileName),
     headers: allHeaders, rawRows: [], mapping: nameMapping, rows: [], files: files, multi: true
   };
   applyPoMapping();
   const totalRows = poDraft.rows.length;
-  showToast('已解析 ' + okFiles.length + ' 个文件共 ' + totalRows + ' 行，将按产品名称统一汇总');
+  showToast('已解析 ' + files.length + ' 个文件共 ' + totalRows + ' 行，将按产品名称统一汇总');
 }
 function readPoFile(file) {
   readPoFiles([file]);
@@ -9178,11 +9542,10 @@ function renderPoPreview() {
   const srcHint = poDraft.multi
     ? `<div class="section-sub">来源文件：${poDraft.fileNames.map(n => escHtml(n)).join('、')}</div>`
     : '';
-  // 按模板汇总预览（按产品名称合并数量与金额）
-  const tpl = Store.getPoTemplate();
-  const tplHeaders = tpl.headers && tpl.headers.length ? tpl.headers : PO_TEMPLATE_HEADERS;
+  // 按产品名称汇总预览（名称已自动匹配产品库）
+  const tplHeaders = PO_EXPORT_HEADERS;
   const agg = poAggregateRows(poDraft.rows);
-  const aggRows = agg.slice(0, 40).map(a => `<tr>${poRowForTemplate(tplHeaders, a).map(v =>
+  const aggRows = agg.slice(0, 40).map(a => `<tr>${poExportRow(a).map(v =>
     `<td>${escHtml(v === '' ? '—' : v)}</td>`).join('')}</tr>`).join('');
   const aggTotal = agg.reduce((n, a) => n + (Number(a.amount) || 0), 0);
   const aggQty = agg.reduce((n, a) => n + (Number(a.qty) || 0), 0);
@@ -9192,14 +9555,13 @@ function renderPoPreview() {
       <div class="map-grid">${mappingHtml}</div>
       <div class="section-head" style="margin-top:8px;"><div><div class="section-title">明细预览${poDraft.rows.length > 40 ? '（前 40 行）' : ''}</div><div class="section-sub">以下为附件原始明细</div></div></div>
       <div class="bill-scroll"><table class="bill-table po-table"><thead><tr>${PO_HEADER_KEYS.map(k => `<th>${PO_FIELD_LABELS[k]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
-      <div class="section-head" style="margin-top:14px;"><div><div class="section-title">按产品名称汇总（将填入导出模板）</div><div class="section-sub">共 ${agg.length} 个产品 · 合计数量 ${aggQty} · 合计金额 ¥${aggTotal.toFixed(2)}</div></div></div>
+      <div class="section-head" style="margin-top:14px;"><div><div class="section-title">按产品名称汇总</div><div class="section-sub">共 ${agg.length} 个产品 · 合计数量 ${aggQty} · 合计金额 ¥${aggTotal.toFixed(2)} · 已自动匹配产品库名称</div></div></div>
       <div class="bill-scroll"><table class="bill-table po-table"><thead><tr>${tplHeaders.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${aggRows}</tbody></table></div>
       <div class="form-actions">
         <button class="btn btn-text btn-sm" onclick="clearPoDraft()">清空</button>
         <button class="btn btn-outline btn-sm" onclick="savePoBatch()">保存加工记录</button>
-        <button class="btn btn-outline btn-sm" onclick="importPoToPurchases()">导入采购清单</button>
-        <button class="btn btn-outline btn-sm" onclick="exportPoDraftDocx()">导出 Word（填入模板）</button>
-        <button class="btn btn-primary btn-sm" onclick="exportPoDraft()">导出 Excel（按模板）</button>
+        <button class="btn btn-primary btn-sm" onclick="importPoToPurchases()">导入采购清单</button>
+        <button class="btn btn-outline btn-sm" onclick="exportPoDraft()">导出 Excel</button>
       </div>
     </div>`;
 }
@@ -9228,10 +9590,9 @@ function poDraftAgg() { return poAggregateRows(poDraft ? poDraft.rows : []); }
 // 按模板导出 Excel
 function exportPoDraft() {
   if (!poDraft || !poDraft.rows.length) { showToast('没有可导出的数据'); return; }
-  const tpl = Store.getPoTemplate();
   const agg = poDraftAgg();
-  downloadAoa(poTemplateAoa(agg), '采购订单_' + poDraft.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
-  showToast('已按模板导出 ' + agg.length + ' 个产品（数量与金额已汇总）');
+  downloadAoa(poExportAoa(agg), '采购订单_' + poDraft.fileName.replace(/\.[^.]+$/, '') + '.xlsx', '采购订单');
+  showToast('已导出 ' + agg.length + ' 个产品（数量与金额已汇总）');
 }
 // 按 Word 模板导出：把汇总数据原位填入上传的 docx 再下载
 async function exportPoDraftDocx() {
@@ -9299,9 +9660,8 @@ function savePoBatch() {
 function exportPoBatch(id) {
   const b = Store.getPoOrders().find(x => x.id === id);
   if (!b) return;
-  const tpl = Store.getPoTemplate();
   const agg = poAggregateRows(b.rows || []);
-  downloadAoa(poTemplateAoa(agg), '采购订单_' + b.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
+  downloadAoa(poExportAoa(agg), '采购订单_' + b.fileName.replace(/\.[^.]+$/, '') + '.xlsx', '采购订单');
 }
 async function exportPoBatchDocx(id) {
   const b = Store.getPoOrders().find(x => x.id === id);
@@ -9324,26 +9684,31 @@ function deletePoBatch(id) {
 }
 function importPoToPurchases() {
   if (!poDraft || !poDraft.rows.length) { showToast('没有可导入的数据'); return; }
-  const products = Store.getProducts();
   const arr = Store.getPurchases();
-  let added = 0;
-  poDraft.rows.forEach(r => {
-    if (!r.name) return;
-    const p = products.find(x => x.name === r.name);
-    const qty = Number(r.qty) || 0;
+  let added = 0, noCost = 0;
+  // 按产品名汇总后导入：数量/金额按产品归并，成本单价取产品库录入的成本单价
+  poAggregateRows(poDraft.rows).forEach(a => {
+    const qty = Number(a.qty) || 0;
     if (!(qty > 0)) return;
-    const price = Number(r.unitPrice) || (p && Number(p.values.costPrice)) || 0;
+    const p = a.productId ? Store.getProducts().find(x => x.id === a.productId) : null;
+    const libCost = p ? Number((p.values || {}).costPrice) : 0;
+    // 成本单价优先取产品库录入值；产品库没有该产品时退回附件里的价格
+    const price = libCost > 0 ? libCost : (Number(a.unitPrice) || 0);
+    if (!(libCost > 0)) noCost++;
     arr.push({
-      id: uid(), productId: p ? p.id : '', productName: r.name,
-      spec: [r.style, r.color, r.size].filter(Boolean).join(' / '),
+      id: uid(), productId: p ? p.id : '', productName: a.name,
+      spec: [a.style, a.color, a.size].filter(Boolean).join(' / '),
       qty, unitPrice: price, total: +(qty * price).toFixed(2),
-      billNo: r.billNo || '', orderDate: r.orderDate || '', deliveryDate: r.deliveryDate || '', billDate: '',
-      payStatus: 'unsettled', makeStatus: 'unmade', note: r.supplier ? '供应商：' + r.supplier : '', createdAt: Store.todayKey()
+      billNo: a.billNo || '', orderDate: a.orderDate || '', deliveryDate: a.deliveryDate || '', billDate: '',
+      payStatus: 'unsettled', makeStatus: 'unmade',
+      note: a.supplier ? '供应商：' + a.supplier : '', createdAt: Store.todayKey()
     });
     added++;
   });
   Store.savePurchases(arr);
-  showToast('已导入 ' + added + ' 条到采购清单');
+  showToast(noCost
+    ? '已导入 ' + added + ' 条到采购清单（' + noCost + ' 条未匹配产品库，成本价沿用附件价格）'
+    : '已导入 ' + added + ' 条到采购清单，成本单价取自产品库');
 }
 
 /* ---- 结算材料 ---- */
@@ -9648,13 +10013,114 @@ function billCell(page, key, r) {
   </div>`;
   return '';
 }
-function billTable(page, list) {
+function billTable(page, list, date) {
   const cols = getBillCols(page);
   const defs = BILL_COLUMNS[page];
+  const sel = billSel(page);
+  const allOn = list.length > 0 && list.every(r => sel.has(r.id));
+  const dAttr = date === undefined ? '' : escAttr(date);
   return `<div class="bill-scroll"><table class="bill-table">
-    <thead><tr>${cols.map(k => `<th>${(defs.find(c => c.key === k) || {}).label || k}</th>`).join('')}</tr></thead>
-    <tbody>${list.map(r => `<tr>${cols.map(k => `<td>${billCell(page, k, r)}</td>`).join('')}</tr>`).join('')}</tbody>
+    <thead><tr><th class="bill-cb"><input type="checkbox" ${allOn ? 'checked' : ''} onchange="toggleBillSelGroup('${page}','${dAttr}',this.checked)" title="全选该日期下的记录"></th>${cols.map(k => `<th>${(defs.find(c => c.key === k) || {}).label || k}</th>`).join('')}</tr></thead>
+    <tbody>${list.map(r => `<tr><td class="bill-cb"><input type="checkbox" ${sel.has(r.id) ? 'checked' : ''} onchange="toggleBillSel('${page}','${r.id}',this.checked)"></td>${cols.map(k => `<td>${billCell(page, k, r)}</td>`).join('')}</tr>`).join('')}</tbody>
   </table></div>`;
+}
+
+// ---------------- 清单多选与批量操作 ----------------
+const _billSel = { purchases: new Set(), sales: new Set() };
+function billSel(page) {
+  if (!_billSel[page]) _billSel[page] = new Set();
+  return _billSel[page];
+}
+function billListOf(page) {
+  return page === 'sales' ? Store.getSales() : Store.getPurchases();
+}
+function saveBillList(page, arr) {
+  if (page === 'sales') Store.saveSales(arr); else Store.savePurchases(arr);
+}
+// 局部重绘日期分组区域（保持滚动位置，避免整页闪烁）
+function refreshBillGroups(page) {
+  const host = document.getElementById('bill-date-groups-' + page);
+  if (!host) { renderPage(page); return; }
+  host.innerHTML = billDateGroupsInner(page, billListOf(page));
+}
+function toggleBillSel(page, id, checked) {
+  const sel = billSel(page);
+  if (checked) sel.add(id); else sel.delete(id);
+  refreshBillGroups(page);
+}
+function toggleBillSelGroup(page, date, checked) {
+  const sel = billSel(page);
+  billListOf(page)
+    .filter(r => ((r.orderDate || '').trim() || '未填写日期') === date)
+    .forEach(r => { if (checked) sel.add(r.id); else sel.delete(r.id); });
+  refreshBillGroups(page);
+}
+function clearBillSel(page) {
+  billSel(page).clear();
+  refreshBillGroups(page);
+}
+// 批量设置状态
+function applyBillSelStatus(page, field, val) {
+  const sel = billSel(page);
+  if (!sel.size) { showToast('请先勾选要操作的记录'); return; }
+  const arr = billListOf(page);
+  let n = 0;
+  arr.forEach(r => { if (sel.has(r.id)) { r[field] = val; n++; } });
+  saveBillList(page, arr);
+  refreshBillGroups(page);
+  const label = field === 'payStatus' ? (val === 'settled' ? '已结算' : '未结算') : (val === 'made' ? '已做单' : '未做单');
+  showToast('已把 ' + n + ' 条记录设为「' + label + '」');
+}
+// 批量编辑信息
+function openBillSelEdit(page) {
+  const sel = billSel(page);
+  if (!sel.size) { showToast('请先勾选要编辑的记录'); return; }
+  const rows = billListOf(page).filter(r => sel.has(r.id));
+  const first = rows[0] || {};
+  showModal(`
+    <div class="modal-title">✏️ 批量编辑信息（${rows.length} 条）</div>
+    <div class="field-hint" style="margin-bottom:12px;">只填写需要修改的字段，留空的字段保持原样。</div>
+    <div class="form-group"><label>单据编号</label>
+      <input type="text" class="input" id="be_billno" placeholder="留空则不修改">
+    </div>
+    <div class="calc-line">
+      <label>下单日期</label><input type="date" class="input" id="be_order" value="">
+      <label>交货日期</label><input type="date" class="input" id="be_delivery" value="">
+      <label>系统单据日期</label><input type="date" class="input" id="be_bill" value="">
+    </div>
+    <div class="form-group"><label>备注</label>
+      <textarea class="input" id="be_note" rows="2" placeholder="留空则不修改">${escHtml(first.note || '')}</textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="applyBillSelEdit('${page}')">保存修改</button>
+    </div>
+  `);
+}
+function applyBillSelEdit(page) {
+  const sel = billSel(page);
+  const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const billNo = val('be_billno').trim();
+  const order = val('be_order');
+  const delivery = val('be_delivery');
+  const bill = val('be_bill');
+  const note = val('be_note');
+  if (!billNo && !order && !delivery && !bill && !note) { showToast('请至少填写一个要修改的字段'); return; }
+  const arr = billListOf(page);
+  let n = 0;
+  arr.forEach(r => {
+    if (!sel.has(r.id)) return;
+    if (billNo) r.billNo = billNo;
+    if (order) r.orderDate = order;
+    if (delivery) r.deliveryDate = delivery;
+    if (bill) r.billDate = bill;
+    if (note) r.note = note;
+    n++;
+  });
+  saveBillList(page, arr);
+  closeModal();
+  refreshBillGroups(page);
+  showToast('已更新 ' + n + ' 条记录的信息');
 }
 
 // 按「下单日期」把清单折叠收纳：日期倒序，每个日期一张可展开的卡片
@@ -9681,23 +10147,46 @@ function billDateGroupsInner(page, list) {
   }
   const openSet = _billDateOpen[page];
 
-  return `${dates.map(d => {
+  const barHtml = billBatchBar(page);
+
+  return `${barHtml}${dates.map((d, di) => {
     const rows = groups.get(d);
     const amt = rows.reduce((n, r) => n + (Number(r.total) || 0), 0);
     const open = openSet.has(d);
+    const sel = billSel(page);
+    const groupOn = rows.length > 0 && rows.every(r => sel.has(r.id));
     return `
-      <div class="bill-date-card ${open ? 'open' : ''}">
+      <div class="bill-date-card ${open ? 'open' : ''}" data-date-idx="${di}">
         <div class="bill-date-head" role="button" tabindex="0" title="点击展开/收起"
              onclick="toggleBillDateGroup('${page}','${d}')"
              onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleBillDateGroup('${page}','${d}');}">
           <span class="bill-date-chev chev-line"></span>
+          <label class="bill-date-sel" onclick="event.stopPropagation()" title="全选该日期下的记录">
+            <input type="checkbox" ${groupOn ? 'checked' : ''} onchange="toggleBillSelGroup('${page}','${d}',this.checked)">
+          </label>
           <span class="bill-date-label">${escHtml(fmtDateFull(d) || d)}</span>
           <span class="bill-date-count">${rows.length} 条</span>
           <span class="bill-date-amount">${money(amt)}</span>
         </div>
-        ${open ? billTable(page, rows) : ''}
+        ${open ? billTable(page, rows, d) : ''}
       </div>`;
   }).join('')}`;
+}
+
+// 批量操作条：有勾选时显示
+function billBatchBar(page) {
+  const sel = billSel(page);
+  if (!sel.size) return '';
+  return `<div class="bill-batch-bar">
+    <span class="bbb-count">已选 <b>${sel.size}</b> 条</span>
+    <span class="bbb-label">批量设为：</span>
+    <button class="btn btn-outline btn-sm" onclick="applyBillSelStatus('${page}','makeStatus','made')">已做单</button>
+    <button class="btn btn-outline btn-sm" onclick="applyBillSelStatus('${page}','makeStatus','unmade')">未做单</button>
+    <button class="btn btn-outline btn-sm" onclick="applyBillSelStatus('${page}','payStatus','settled')">已结算</button>
+    <button class="btn btn-outline btn-sm" onclick="applyBillSelStatus('${page}','payStatus','unsettled')">未结算</button>
+    <button class="btn btn-primary btn-sm" onclick="openBillSelEdit('${page}')">✏️ 批量编辑信息</button>
+    <button class="btn btn-text btn-sm" onclick="clearBillSel('${page}')">取消选择</button>
+  </div>`;
 }
 function toggleBillDateGroup(page, date) {
   if (!_billDateOpen[page]) _billDateOpen[page] = new Set();
@@ -11190,6 +11679,16 @@ function closePicker() {
 
 document.getElementById('modal-overlay').addEventListener('click', (e) => {
   if (e.target.id === 'modal-overlay') closeModal();
+});
+// 图片查看层：点击遮罩空白处或按 Esc 关闭，返回原来的页面
+document.getElementById('img-viewer').addEventListener('click', (e) => {
+  if (e.target.id === 'img-viewer') closeImageViewer();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const layer = document.getElementById('img-viewer');
+    if (layer && layer.classList.contains('show')) { closeImageViewer(); return; }
+  }
 });
 
 function showToast(msg) {

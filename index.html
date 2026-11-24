@@ -424,7 +424,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .module-item .mi-dot.on { background: var(--green-strong); box-shadow: 0 0 0 3px rgba(175, 199, 175, 0.28); }
 
 /* 今日概览：小卡片（标题+内容区），四列同一行 */
-.overview-board-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.overview-board-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .overview-item {
   display: flex;
   flex-direction: column;
@@ -1845,6 +1845,11 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .punch-hint { font-size: 12px; color: var(--text-sub); margin-top: 10px; line-height: 1.6; }
 /* 打卡卡片嵌入桌面「今日概览」后的紧凑样式 */
 .punch-card-inner { text-align: center; }
+.punch-card-inner.punch-card-rest { display: flex; flex-direction: column; justify-content: center; height: 100%; }
+.punch-time-lg { font-size: 26px !important; line-height: 1.2; }
+.punch-full-btn { width: 100%; margin-top: 6px; }
+/* 概览卡内：上下班标题行的小圆点 */
+.overview-item .bi-icon .punch-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .punch-card-inner .punch-grid { gap: 8px; }
 .punch-card-inner .punch-item {
   background: var(--cream-bg);
@@ -1992,9 +1997,10 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 24px;
   box-shadow: var(--glass-shadow);
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .calendar-header {
@@ -2034,7 +2040,8 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 12px;
+  gap: 14px;
+  align-items: stretch;
 }
 
 .cal-weekday {
@@ -2061,7 +2068,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   transition: all 0.2s;
   background: var(--cream-card);
   /* 固定高度，保证同一个月每个日期方块尺寸完全一致（不随打卡/日程数量变化） */
-  height: 120px;
+  height: 150px;
   min-width: 0;
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(122, 112, 96, 0.05);
@@ -2154,15 +2161,15 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 }
 
 .cal-date {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text-main);
 }
 
 .cal-status {
-  font-size: 10px;
+  font-size: 11px;
   color: var(--text-sub);
-  margin-top: 2px;
+  margin-top: 3px;
   text-align: center;
   line-height: 1.2;
   max-width: 100%;
@@ -2177,13 +2184,18 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 /* ============ LEAVE BALANCE ============ */
 .leave-balance {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
   margin-bottom: 20px;
 }
 .work-leave-tray { margin-bottom: 20px; }
 .work-leave-tray .leave-balance { margin-bottom: 0; }
-.work-leave-tray .leave-card { padding: 14px 12px; }
+.work-leave-tray .leave-card { padding: 10px 8px; }
+/* 假期五卡缩小：并排一行，字体与内边距收紧 */
+.leave-card { padding: 12px 10px; }
+.leave-card .lc-value { font-size: 20px; }
+.leave-card .lc-label { font-size: 11.5px; margin-top: 1px; }
+.leave-card .lc-sub { font-size: 10.5px; margin-top: 2px; line-height: 1.45; }
 
 .leave-card {
   background: var(--glass-bg);
@@ -2402,7 +2414,12 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   /* 主内容变窄：多列网格降为单列，避免溢出 */
   .stats-grid { grid-template-columns: 1fr; gap: 12px; }
   .learning-modules { grid-template-columns: 1fr; gap: 12px; }
-  .leave-balance { gap: 6px; }
+  .leave-balance { gap: 5px; }
+  /* 移动端：五张假期卡仍保持一行，字号收紧避免折行 */
+  .leave-card { padding: 8px 5px; }
+  .leave-card .lc-value { font-size: 17px; }
+  .leave-card .lc-label { font-size: 10.5px; }
+  .leave-card .lc-sub { font-size: 9.5px; }
 
   /* 午饭菜单 5 列：横向滑动 */
   .lunch-grid {
@@ -2432,7 +2449,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   .cal-weekday { padding: 4px 0; font-size: 10px; }
   .cal-cell {
     aspect-ratio: auto;
-    height: 56px;
+    height: 64px;
     padding: 2px;
     border-radius: 4px;
     justify-content: flex-start;
@@ -2494,7 +2511,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   .cal-nav-btn { width: 22px; height: 22px; font-size: 11px; }
   .calendar-grid { gap: 8px; }
   .cal-weekday { padding: 3px 0; font-size: 9px; }
-  .cal-cell { height: 48px; padding: 1px; border-radius: 3px; box-shadow: 0 1px 2px rgba(122, 112, 96, 0.04); }
+  .cal-cell { height: 52px; padding: 1px; border-radius: 3px; box-shadow: 0 1px 2px rgba(122, 112, 96, 0.04); }
   .cal-date { font-size: 10px; }
   .cal-status { font-size: 8px; }
   .cal-legend { gap: 6px; font-size: 9px; }
@@ -2624,7 +2641,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .st-pill { border: none; background: transparent; color: var(--text-sub); font-size: 12px; padding: 3px 12px; border-radius: 999px; cursor: pointer; transition: all .15s; line-height: 1.4; white-space: nowrap; }
 .st-pill:hover { color: var(--text-main); }
 .st-pill.on { background: #EFE0CC; color: #86909C; font-weight: 700; }
-.st-pill.ret.on { background: #EAF1EC; color: #3F7D57; }
+.st-pill.ret.on { background: #CDE5D5; color: #1F5C3A; font-weight: 700; box-shadow: inset 0 0 0 1px #A9D2BC; }
 
 /* ==================================================================
    SaaS 后台 UI 风格 · 统一覆盖层
@@ -3077,6 +3094,25 @@ body {
 .prod-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
 .prod-group-del { flex-shrink: 0; }
 /* 产品库扁平卡片 */
+/* 产品详情弹窗 */
+.pd-imgs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.pd-imgs img { width: 74px; height: 74px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border-soft); cursor: zoom-in; }
+.pd-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.pd-chip { font-size: 11.5px; padding: 2px 9px; border-radius: 12px; background: var(--cream-bg); border: 1px solid var(--border-soft); color: var(--text-sub); }
+.pd-info { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin-bottom: 14px; }
+.pd-info-row { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; min-width: 0; }
+.pd-info-row span { color: var(--text-light); flex: 0 0 auto; }
+.pd-info-row b { color: var(--text-main); font-weight: 600; overflow-wrap: anywhere; }
+.pd-section-title { font-size: 12.5px; font-weight: 700; color: var(--text-sub); margin: 4px 0 8px; }
+.pd-tree { display: grid; gap: 10px; max-height: 320px; overflow-y: auto; }
+.pd-style { border: 1px solid var(--border-soft); border-left: 3px solid var(--accent-caramel); border-radius: 8px; padding: 10px 12px; background: var(--cream-card); }
+.pd-style-name { font-size: 13.5px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+.pd-color { border-left: 2px dashed var(--border-soft); padding-left: 10px; margin-left: 4px; margin-bottom: 8px; }
+.pd-color-name { font-size: 12.5px; color: var(--text-sub); font-weight: 600; margin-bottom: 6px; }
+.pd-sizes { display: flex; flex-wrap: wrap; gap: 6px; }
+.pd-size { font-size: 11.5px; padding: 2px 8px; border-radius: 10px; background: var(--green-cell); border: 1px solid var(--green-border); color: var(--green-text); display: inline-flex; align-items: center; gap: 5px; }
+.pd-size em { font-style: normal; color: var(--text-light); font-size: 10.5px; }
+.pd-chart img { max-width: 100%; max-height: 200px; object-fit: contain; border: 1px solid var(--border-soft); border-radius: 8px; }
 .prod-flat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(276px, 1fr)); gap: 12px; }
 .prod-flat-card {
   display: flex; flex-direction: column; gap: 9px; min-width: 0;
@@ -3084,6 +3120,9 @@ body {
   padding: 13px; background: var(--cream-card);
 }
 .prod-flat-card:hover { border-color: var(--accent-caramel); }
+.prod-flat-card { cursor: pointer; }
+.prod-flat-card .pfc-more { margin-left: auto; font-size: 11.5px; color: var(--text-light); white-space: nowrap; }
+.prod-flat-card:hover .pfc-more { color: var(--accent-caramel); }
 .pfc-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .pfc-main { min-width: 0; flex: 1; }
 .pfc-count {
@@ -3234,6 +3273,20 @@ body {
 .img-draft img { cursor: zoom-in; }
 .sku-toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .sku-toolbar .sku-hint { font-size: 11px; color: var(--text-light); margin-left: auto; }
+/* 款式层：款式 → 颜色 → 尺码 三级 */
+.sku-styles { display: grid; gap: 12px; }
+.sku-style-card {
+  border: 1px solid var(--border-soft);
+  border-left: 3px solid var(--accent-caramel);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--cream-card);
+}
+.sku-style-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.sku-style-head .sku-style-input { flex: 1 1 180px; min-width: 0; font-weight: 600; }
+.sku-level-style { color: var(--accent-caramel); font-size: 12px; }
+.sku-style-card .sku-colors { padding-left: 10px; border-left: 2px dashed var(--border-soft); }
+.sku-style-card .sku-color-card { background: var(--green-cell); }
 .sku-colors { display: grid; gap: 10px; }
 .sku-color-card { border: 1px solid var(--green-border); border-radius: 6px; padding: 10px 12px; background: var(--green-cell); }
 .sku-color-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -3276,7 +3329,10 @@ body {
   display: flex; align-items: center; gap: 10px; cursor: pointer;
   padding: 10px 14px; background: var(--cream-bg);
   border-bottom: 1px solid transparent; transition: background .15s;
+  user-select: none;
 }
+.bill-date-head:active { background: #FFF3EC; }
+.bill-date-head .bill-date-label { font-variant-numeric: tabular-nums; }
 .bill-date-card.open .bill-date-head { border-bottom-color: var(--border-soft); }
 .bill-date-head:hover { background: #FFFAF6; }
 .bill-date-chev { color: var(--text-light); transform: rotate(-45deg); transition: transform .2s; flex: 0 0 auto; }
@@ -4415,8 +4471,8 @@ function renderDashboard(container) {
       <div class="progress-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
   }
 
-  // 今日打卡（快捷打卡卡片，移入今日概览）
-  const punchHtml = punchCardHtml();
+  // 今日打卡（上班 / 下班 两张独立卡片）
+  const punch = punchCardHtml();
 
   const lunchKey = getTodayLunchKey();
   let lunchHtml;
@@ -4443,11 +4499,16 @@ function renderDashboard(container) {
 
       <div class="dash-section">
         <div class="dash-section-title">📌 今日概览<span class="ds-desc">打卡 · 任务 · 午饭，一眼掌握今天</span></div>
+        ${punch.hint || ''}
         <div class="board-card">
           <div class="board-grid overview-board-grid">
             <div class="board-item overview-item">
-              <div class="bi-header"><span class="bi-icon">✅</span><div class="bi-title">今日打卡</div></div>
-              <div class="bi-body">${punchHtml}</div>
+              <div class="bi-header"><span class="bi-icon"><span class="punch-dot in"></span></span><div class="bi-title">上班</div></div>
+              <div class="bi-body">${punch.inHtml}</div>
+            </div>
+            <div class="board-item overview-item">
+              <div class="bi-header"><span class="bi-icon"><span class="punch-dot out"></span></span><div class="bi-title">下班</div></div>
+              <div class="bi-body">${punch.outHtml}</div>
             </div>
             <div class="board-item overview-item">
               <div class="bi-header"><span class="bi-icon">📋</span><div class="bi-title">每日任务完成情况</div></div>
@@ -4903,32 +4964,29 @@ function punchCardHtml() {
   const cum = Store.getCumulative();
   const isRest = isRestDay(y, m, d);
   const isMakeupDay = getDayKind(y, m, d) === 'makeup';
+  const ci = (todayRec && todayRec.checkin) || null;
+  const co = (todayRec && todayRec.checkout) || null;
+  const onLeave = todayRec && todayRec.type && todayRec.type !== 'checkin' && todayRec.type !== 'makeup' && todayRec.type !== 'duty';
 
-  let inner;
-  if (isRest) {
-    inner = '<div class="punch-rest">🌿 今天休息，不用打卡～</div>';
-  } else if (todayRec && todayRec.type && todayRec.type !== 'checkin' && todayRec.type !== 'makeup' && todayRec.type !== 'duty') {
-    inner = leaveStatusText(todayRec);
-  } else {
-    const ci = (todayRec && todayRec.checkin) || null;
-    const co = (todayRec && todayRec.checkout) || null;
-    inner = `
-      <div class="punch-grid">
-        <div class="punch-item">
-          <div class="punch-label"><span class="punch-dot in"></span>上班</div>
-          <div class="punch-time">${ci ? escHtml(ci) : '<span class="punch-empty">未打卡</span>'}</div>
-          <button class="btn btn-pink btn-sm" onclick="quickCheckin()">${ci ? '重新上班打卡' : '上班打卡'}</button>
-        </div>
-        <div class="punch-item">
-          <div class="punch-label"><span class="punch-dot out"></span>下班</div>
-          <div class="punch-time">${co ? escHtml(co) : '<span class="punch-empty">未打卡</span>'}</div>
-          <button class="btn btn-pink btn-sm" onclick="quickCheckout()">${co ? '重新下班打卡' : '下班打卡'}</button>
-        </div>
-      </div>
-      ${isMakeupDay ? '<div class="punch-hint">🛠 今天是调休补班日，记得打上下班卡</div>' : ''}
-    `;
+  // 休息 / 请假：不提供打卡，仅展示状态
+  if (isRest || onLeave) {
+    const tip = isRest ? '<div class="punch-rest">🌿 今天休息，不用打卡～</div>' : leaveStatusText(todayRec);
+    const same = `<div class="punch-card-inner punch-card-rest">${tip}<div class="work-streak">🔥 累计打卡 ${cum.totalCheckins} 次</div></div>`;
+    return { inHtml: same, outHtml: same, hint: '' };
   }
-  return `<div class="punch-card-inner">${inner}<div class="work-streak">🔥 累计打卡 ${cum.totalCheckins} 次</div></div>`;
+
+  const inHtml = `
+    <div class="punch-card-inner">
+      <div class="punch-time punch-time-lg">${ci ? escHtml(ci) : '<span class="punch-empty">未打卡</span>'}</div>
+      <button class="btn btn-pink btn-sm punch-full-btn" onclick="quickCheckin()">${ci ? '重新上班打卡' : '上班打卡'}</button>
+    </div>`;
+  const outHtml = `
+    <div class="punch-card-inner">
+      <div class="punch-time punch-time-lg">${co ? escHtml(co) : '<span class="punch-empty">未打卡</span>'}</div>
+      <button class="btn btn-pink btn-sm punch-full-btn" onclick="quickCheckout()">${co ? '重新下班打卡' : '下班打卡'}</button>
+    </div>`;
+  const hint = isMakeupDay ? '<div class="punch-hint">🛠 今天是调休补班日，记得打上下班卡</div>' : '';
+  return { inHtml, outHtml, hint };
 }
 
 function workCheckinBodyHtml() {
@@ -7144,13 +7202,15 @@ function renderProductList() {
     const styles = Array.from(new Set(list.map(p => pval(p, 'style')).filter(Boolean)));
     const colors = Array.from(new Set(list.map(p => pval(p, 'color')).filter(Boolean)));
     const short = arr => arr.length > 5 ? arr.slice(0, 5).join('、') + ' 等' : arr.join('、');
-    return `<div class="prod-flat-card">
+    const enc = poEnc(name);
+    return `<div class="prod-flat-card" onclick="showProductDetail(decodeURIComponent('${enc}'))" title="点击查看详细信息">
       <div class="pfc-head">
         ${thumbHtml}
         <div class="pfc-main">
           <div class="prod-name">📦 ${escHtml(name)}</div>
           <div class="pfc-count">${list.length} 条 SKU</div>
         </div>
+        <span class="pfc-more">详情 ›</span>
       </div>
       <div class="pfc-lines">
         <div class="pfc-line"><span>款式</span><b>${escHtml(short(styles) || '—')}</b></div>
@@ -7159,12 +7219,61 @@ function renderProductList() {
       </div>
       ${common ? `<div class="pfc-common">${escHtml(common)}</div>` : ''}
       ${tags.length ? `<div class="prod-tags">${tags.map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('')}</div>` : ''}
-      <div class="pfc-actions">
+      <div class="pfc-actions" onclick="event.stopPropagation();">
         <button class="btn btn-outline btn-sm" onclick="openProductModal('${first.id}')">✏️ 编辑</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteProductGroup(decodeURIComponent('${poEnc(name)}'))">🗑 删除</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProductGroup(decodeURIComponent('${enc}'))">🗑 删除</button>
       </div>
     </div>`;
   }).join('')}</div>`;
+}
+
+// 产品详情弹窗：点击卡片查看完整 SKU 明细
+function showProductDetail(name) {
+  const list = Store.getProducts().filter(p => (p.name || '').trim() === name);
+  if (!list.length) { showToast('没有找到该产品'); return; }
+  const first = list[0] || {};
+  const fv = first.values || {};
+  const fields = Store.getProductFields();
+  const tags = Array.isArray(first.tags) ? first.tags : String(fv.tags || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
+  const imgs = [];
+  list.forEach(p => (p.images || []).forEach(src => { if (imgs.indexOf(src) < 0) imgs.push(src); }));
+  const chart = (list.find(p => p.sizeChart) || {}).sizeChart || '';
+
+  // SKU 明细：款式 → 颜色 → 尺码
+  const tree = variantTreeFromGroup(first.id);
+  const styleHtml = tree.map(v => `
+    <div class="pd-style">
+      <div class="pd-style-name">👕 ${escHtml(v.style || '未命名款式')}</div>
+      ${(v.colors || []).map(c => `
+        <div class="pd-color">
+          <div class="pd-color-name">🎨 ${escHtml(c.color || '未分颜色')}</div>
+          <div class="pd-sizes">${(c.sizes || []).map(z =>
+            `<span class="pd-size">${escHtml(z.size || '—')}${z.barcode ? '<em>' + escHtml(z.barcode) + '</em>' : ''}</span>`
+          ).join('')}</div>
+        </div>`).join('')}
+    </div>`).join('');
+
+  const infoRows = fields.filter(f => f.key !== 'style' && f.key !== 'color' && f.key !== 'size' && f.key !== 'barcode')
+    .filter(f => String((fv[f.key] || '')).trim() !== '')
+    .map(f => `<div class="pd-info-row"><span>${escHtml(f.label)}</span><b>${escHtml(fv[f.key])}</b></div>`).join('');
+
+  showModal(`
+    <div class="modal-title">📦 ${escHtml(name)}</div>
+    ${imgs.length ? `<div class="pd-imgs">${imgs.map(src => `<img src="${src}" alt="" onclick="viewImage(this.src)">`).join('')}</div>` : ''}
+    <div class="pd-meta">
+      <span class="pd-chip">${list.length} 条 SKU</span>
+      ${(fv.costPrice || fv.salePrice) ? `<span class="pd-chip">成本 ¥${escHtml(fv.costPrice || '—')}</span><span class="pd-chip">售价 ¥${escHtml(fv.salePrice || '—')}</span>` : ''}
+      ${tags.map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('')}
+    </div>
+    ${infoRows ? `<div class="pd-info">${infoRows}</div>` : ''}
+    <div class="pd-section-title">SKU 明细（款式 → 颜色 → 尺码）</div>
+    <div class="pd-tree">${styleHtml || '<div class="empty-block">暂无 SKU 明细</div>'}</div>
+    ${chart ? `<div class="pd-section-title">尺码表</div><div class="pd-chart"><img src="${chart}" alt="尺码表" onclick="viewImage(this.src)"></div>` : ''}
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">关闭</button>
+      <button class="btn btn-primary" onclick="closeModal();openProductModal('${first.id}')">✏️ 编辑该产品</button>
+    </div>
+  `);
 }
 
 function partnerOptions(key) {
@@ -7235,36 +7344,44 @@ function variantTreeFromGroup(id) {
   if (!cur) return [{ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] }];
   const name = (cur.name || '').trim();
   const group = all.filter(p => (p.name || '').trim() === name);
-  const style = (((cur.values || {}).style) || '').trim();
-  const colorMap = new Map();
+  // 先按款式分组，再在款式内按颜色分组
+  const styleMap = new Map();
   group.forEach(p => {
     const v = p.values || {};
+    const style = (v.style || '').trim();
+    if (!styleMap.has(style)) styleMap.set(style, new Map());
+    const colorMap = styleMap.get(style);
     const c = (v.color || '').trim() || '（未分颜色）';
     if (!colorMap.has(c)) colorMap.set(c, []);
     colorMap.get(c).push({ size: (v.size || '').trim(), barcode: (v.barcode || '').trim() });
   });
-  const colors = Array.from(colorMap.entries()).map(([color, sizes]) => ({
-    color, sizes: sizes.length ? sizes : [{ size: '', barcode: '' }]
-  }));
-  if (!colors.length) colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
-  return [{ style, colors }];
+  const variants = Array.from(styleMap.entries()).map(([style, colorMap]) => {
+    const colors = Array.from(colorMap.entries()).map(([color, sizes]) => ({
+      color, sizes: sizes.length ? sizes : [{ size: '', barcode: '' }]
+    }));
+    if (!colors.length) colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
+    return { style, colors };
+  });
+  if (!variants.length) variants.push({ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] });
+  return variants;
 }
 function countVariantLeaves() {
-  if (!prodDraft || !prodDraft.variants || !prodDraft.variants[0]) return 0;
-  return prodDraft.variants[0].colors.reduce((m, c) =>
-    m + c.sizes.filter(z => (z.size || '').trim() || (z.barcode || '').trim()).length, 0);
+  if (!prodDraft || !prodDraft.variants) return 0;
+  return prodDraft.variants.reduce((m, v) => m + (v.colors || []).reduce((n, c) =>
+    n + (c.sizes || []).filter(z => (z.size || '').trim() || (z.barcode || '').trim()).length, 0), 0);
 }
 function renderVariantEditor() {
   const box = document.getElementById('variant-editor');
   if (!box || !prodDraft) return;
-  const s = prodDraft.variants[0] || { style: '', colors: [] };
   const presets = getSizePresets();
+  const vs = prodDraft.variants || [];
+
   box.innerHTML = `
     <div class="sku-toolbar">
-      <button type="button" class="btn btn-primary btn-sm" onclick="variantAddColor()">＋ 添加颜色</button>
-      <button type="button" class="btn btn-outline btn-sm" onclick="variantCopyAllColors()">⧉ 复制整套颜色尺码</button>
+      <button type="button" class="btn btn-primary btn-sm" onclick="variantAddStyle()">＋ 添加款式</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="variantCopyAllStyles()">⧉ 复制全部款式</button>
       <button type="button" class="btn btn-text btn-sm" onclick="toggleSizePresetPanel()">⚙ 配置尺码库</button>
-      <span class="sku-hint">1 个颜色 × N 个尺码 = N 条 SKU，条码全局唯一</span>
+      <span class="sku-hint">款式 → 颜色 → 尺码：每个「颜色 + 尺码」是一条独立 SKU，条码全局唯一</span>
     </div>
     <div id="size-preset-panel" style="display:none;border:1px dashed var(--border-soft);border-radius:6px;padding:10px;margin-bottom:10px;">
       <div style="font-size:11px;color:var(--text-light);margin-bottom:6px;">用逗号分隔备选尺码，保存后可在各颜色分组里多选导入。</div>
@@ -7273,33 +7390,48 @@ function renderVariantEditor() {
         <button type="button" class="btn btn-primary btn-sm" onclick="saveSizePresets()">保存</button>
       </div>
     </div>
-    <div class="sku-colors">
-      ${s.colors.length ? s.colors.map((c, ci) => `
-        <div class="sku-color-card">
-          <div class="sku-color-head">
-            <span class="sku-level">颜色</span>
-            <input class="input" id="vc_0_${ci}" list="variant_color_options" value="${escAttr(c.color || '')}" placeholder="如：奶白色 / 炭黑色" onchange="syncVariantEditor()">
-            <button type="button" class="btn btn-outline btn-sm" onclick="variantCopyColor(${ci})" title="复制该颜色及全部尺码">⧉ 复制</button>
-            <button type="button" class="btn btn-text btn-sm" onclick="variantClearSizes(${ci})" title="清空该颜色下全部尺码">清空尺码</button>
-            <button type="button" class="variant-del" title="删除颜色（连带删除全部尺码 SKU）" onclick="variantRemoveColor(${ci})">×</button>
+    <div class="sku-styles">
+      ${vs.length ? vs.map((v, vi) => `
+        <div class="sku-style-card">
+          <div class="sku-style-head">
+            <span class="sku-level sku-level-style">款式</span>
+            <input class="input sku-style-input" id="vstyle_${vi}" list="variant_style_options" value="${escAttr(v.style || '')}" placeholder="如：经典圆领 / 修身V领" onchange="syncVariantEditor()">
+            <button type="button" class="btn btn-outline btn-sm" onclick="variantCopyStyle(${vi})" title="复制该款式（含全部颜色尺码）">⧉ 复制</button>
+            <button type="button" class="btn btn-text btn-sm" onclick="variantClearStyle(${vi})" title="清空该款式下的全部颜色">清空颜色</button>
+            <button type="button" class="variant-del" title="删除款式（连带删除其下全部颜色尺码）" onclick="variantRemoveStyle(${vi})">×</button>
           </div>
-          <div class="sku-size-list">
-            ${c.sizes.length ? c.sizes.map((z, zi) => `
-              <div class="sku-size-row">
-                <input class="input" id="vz_0_${ci}_${zi}" list="variant_size_options" value="${escAttr(z.size || '')}" placeholder="尺码" onchange="syncVariantEditor()">
-                <input class="input" id="vb_0_${ci}_${zi}" value="${escAttr(z.barcode || '')}" placeholder="SKU 条码（唯一）" onchange="syncVariantEditor();validateBarcodes()">
-                <button type="button" class="variant-del" title="删除此尺码" onclick="variantRemoveSize(${ci},${zi})">×</button>
-              </div>`).join('') : '<div style="font-size:11px;color:var(--text-light);">暂无尺码，请在下方添加或导入</div>'}
-          </div>
-          <div class="sku-preset">
-            <span>预设尺码</span>
-            ${presets.map(q => `<label class="preset-chip"><input type="checkbox" value="${escAttr(q)}" class="preset-cb-${ci}">${escHtml(q)}</label>`).join('')}
-            <button type="button" class="btn btn-outline btn-sm" onclick="variantImportPresets(${ci})">导入选中</button>
+          <div class="sku-colors">
+            ${(v.colors || []).length ? (v.colors || []).map((c, ci) => `
+              <div class="sku-color-card">
+                <div class="sku-color-head">
+                  <span class="sku-level">颜色</span>
+                  <input class="input" id="vc_${vi}_${ci}" list="variant_color_options" value="${escAttr(c.color || '')}" placeholder="如：奶白色 / 炭黑色" onchange="syncVariantEditor()">
+                  <button type="button" class="btn btn-outline btn-sm" onclick="variantCopyColor(${vi},${ci})" title="复制该颜色及全部尺码">⧉ 复制</button>
+                  <button type="button" class="btn btn-text btn-sm" onclick="variantClearSizes(${vi},${ci})" title="清空该颜色下全部尺码">清空尺码</button>
+                  <button type="button" class="variant-del" title="删除颜色（连带删除全部尺码 SKU）" onclick="variantRemoveColor(${vi},${ci})">×</button>
+                </div>
+                <div class="sku-size-list">
+                  ${(c.sizes || []).length ? (c.sizes || []).map((z, zi) => `
+                    <div class="sku-size-row">
+                      <input class="input" id="vz_${vi}_${ci}_${zi}" list="variant_size_options" value="${escAttr(z.size || '')}" placeholder="尺码" onchange="syncVariantEditor()">
+                      <input class="input" id="vb_${vi}_${ci}_${zi}" value="${escAttr(z.barcode || '')}" placeholder="SKU 条码（唯一）" onchange="syncVariantEditor();validateBarcodes()">
+                      <button type="button" class="variant-del" title="删除此尺码" onclick="variantRemoveSize(${vi},${ci},${zi})">×</button>
+                    </div>`).join('') : '<div style="font-size:11px;color:var(--text-light);">暂无尺码，请在下方添加或导入</div>'}
+                </div>
+                <div class="sku-preset">
+                  <span>预设尺码</span>
+                  ${presets.map(q => `<label class="preset-chip"><input type="checkbox" value="${escAttr(q)}" class="preset-cb-${vi}-${ci}">${escHtml(q)}</label>`).join('')}
+                  <button type="button" class="btn btn-outline btn-sm" onclick="variantImportPresets(${vi},${ci})">导入选中</button>
+                </div>
+                <div class="sku-color-actions">
+                  <button type="button" class="btn btn-text btn-sm" onclick="variantAddSize(${vi},${ci})">＋ 添加尺码</button>
+                </div>
+              </div>`).join('') : '<div class="empty-block">该款式下还没有颜色，点「＋ 添加颜色」开始录入</div>'}
           </div>
           <div class="sku-color-actions">
-            <button type="button" class="btn btn-text btn-sm" onclick="variantAddSize(${ci})">＋ 添加尺码</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="variantAddColor(${vi})">＋ 添加颜色</button>
           </div>
-        </div>`).join('') : '<div class="empty-block">还没有颜色，点「＋ 添加颜色」开始录入 SKU</div>'}
+        </div>`).join('') : '<div class="empty-block">还没有款式，点「＋ 添加款式」开始录入</div>'}
     </div>
     <div class="variant-count" id="variant-count"></div>
   `;
@@ -7309,27 +7441,30 @@ function renderVariantEditor() {
 function syncVariantEditor() {
   if (!prodDraft || !document.getElementById('variant-editor')) return;
   const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-  const s = prodDraft.variants[0];
-  if (s) {
-    s.colors.forEach((c, ci) => {
-      c.color = val(`vc_0_${ci}`);
-      c.sizes.forEach((z, zi) => {
-        z.size = val(`vz_0_${ci}_${zi}`);
-        z.barcode = val(`vb_0_${ci}_${zi}`);
+  (prodDraft.variants || []).forEach((v, vi) => {
+    v.style = val(`vstyle_${vi}`);
+    (v.colors || []).forEach((c, ci) => {
+      c.color = val(`vc_${vi}_${ci}`);
+      (c.sizes || []).forEach((z, zi) => {
+        z.size = val(`vz_${vi}_${ci}_${zi}`);
+        z.barcode = val(`vb_${vi}_${ci}_${zi}`);
       });
     });
-  }
+  });
   updateVariantCount();
 }
 function updateVariantCount() {
   const el = document.getElementById('variant-count');
   if (!el || !prodDraft) return;
   const n = countVariantLeaves();
-  el.textContent = n ? `当前 ${n} 条 SKU，保存后生成 ${n} 条产品资料（同一产品名称收纳在一起）` : '可在上方添加颜色与尺码，留空保存会生成 1 条基础资料';
+  const sn = (prodDraft.variants || []).length;
+  el.textContent = n
+    ? `当前 ${sn} 个款式 · ${n} 条 SKU，保存后生成 ${n} 条产品资料（同一产品名称收纳在一起）`
+    : '可在上方添加款式、颜色与尺码，留空保存会生成 1 条基础资料';
 }
 function validateBarcodes() {
   const seen = new Map();
-  document.querySelectorAll('[id^="vb_0_"]').forEach(el => {
+  document.querySelectorAll('input[id^="vb_"]').forEach(el => {
     el.classList.remove('dup');
     const v = (el.value || '').trim();
     if (!v) return;
@@ -7337,23 +7472,80 @@ function validateBarcodes() {
     else seen.set(v, el);
   });
 }
-function variantAddColor() {
+// ---- 款式级操作 ----
+function variantAddStyle() {
   syncVariantEditor();
-  if (!prodDraft.variants[0]) prodDraft.variants.push({ style: prodDraft.name || '', colors: [] });
-  prodDraft.variants[0].colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
+  if (!prodDraft.variants) prodDraft.variants = [];
+  prodDraft.variants.push({ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] });
   renderVariantEditor();
 }
-function variantAddSize(ci) {
+function variantRemoveStyle(vi) {
   syncVariantEditor();
-  const c = prodDraft.variants[0] && prodDraft.variants[0].colors[ci];
+  const v = prodDraft.variants[vi];
+  if (!v) return;
+  const n = (v.colors || []).reduce((m, c) => m + (c.sizes || []).filter(z => (z.size || '').trim() || (z.barcode || '').trim()).length, 0);
+  if (!confirm(`确定删除款式「${(v.style || '').trim() || '未命名'}」吗？将连带删除其下 ${n} 条尺码 SKU，此操作不可撤销。`)) return;
+  prodDraft.variants.splice(vi, 1);
+  if (!prodDraft.variants.length) prodDraft.variants.push({ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] });
+  renderVariantEditor();
+}
+function variantCopyStyle(vi) {
+  syncVariantEditor();
+  const v = prodDraft.variants[vi];
+  if (!v) return;
+  prodDraft.variants.splice(vi + 1, 0, {
+    style: (v.style || '').trim() + ' 副本',
+    colors: (v.colors || []).map(c => ({
+      color: (c.color || '').trim(),
+      sizes: (c.sizes || []).map(z => ({ size: z.size || '', barcode: '' }))
+    }))
+  });
+  renderVariantEditor();
+  showToast('已复制该款式（条码需重新填写）');
+}
+function variantCopyAllStyles() {
+  syncVariantEditor();
+  const vs = prodDraft.variants || [];
+  if (!vs.length) { showToast('请先添加款式'); return; }
+  const copies = vs.map(v => ({
+    style: (v.style || '').trim() + ' 副本',
+    colors: (v.colors || []).map(c => ({
+      color: (c.color || '').trim(),
+      sizes: (c.sizes || []).map(z => ({ size: z.size || '', barcode: '' }))
+    }))
+  }));
+  prodDraft.variants = vs.concat(copies);
+  renderVariantEditor();
+  showToast('已复制全部款式（条码需重新填写）');
+}
+function variantClearStyle(vi) {
+  syncVariantEditor();
+  const v = prodDraft.variants[vi];
+  if (!v) return;
+  v.colors = [{ color: '', sizes: [{ size: '', barcode: '' }] }];
+  renderVariantEditor();
+  showToast('已清空该款式下的颜色');
+}
+// ---- 颜色级操作 ----
+function variantAddColor(vi) {
+  syncVariantEditor();
+  const v = prodDraft.variants[vi];
+  if (!v) return;
+  if (!v.colors) v.colors = [];
+  v.colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
+  renderVariantEditor();
+}
+function variantAddSize(vi, ci) {
+  syncVariantEditor();
+  const c = prodDraft.variants[vi] && prodDraft.variants[vi].colors[ci];
   if (c) c.sizes.push({ size: '', barcode: '' });
   renderVariantEditor();
 }
-function variantImportPresets(ci) {
+function variantImportPresets(vi, ci) {
   syncVariantEditor();
-  const c = prodDraft.variants[0] && prodDraft.variants[0].colors[ci];
+  const c = prodDraft.variants[vi] && prodDraft.variants[vi].colors[ci];
   if (!c) return;
-  const checks = document.querySelectorAll('.preset-cb-' + ci);
+  const checks = document.querySelectorAll('.preset-cb-' + vi + '-' + ci);
   const selected = Array.from(checks).filter(x => x.checked).map(x => x.value);
   if (!selected.length) { showToast('请先勾选要导入的尺码'); return; }
   let added = 0;
@@ -7369,79 +7561,70 @@ function variantImportPresets(ci) {
   renderVariantEditor();
   showToast(added ? `已导入 ${added} 个尺码` : '所选尺码都已存在');
 }
-function variantCopyColor(ci) {
+function variantCopyColor(vi, ci) {
   syncVariantEditor();
-  const s = prodDraft.variants[0];
-  const c = s && s.colors[ci];
+  const v = prodDraft.variants[vi];
+  const c = v && v.colors[ci];
   if (!c) return;
-  s.colors.splice(ci + 1, 0, {
+  v.colors.splice(ci + 1, 0, {
     color: (c.color || '').trim() + ' 副本',
     sizes: (c.sizes || []).map(z => ({ size: z.size || '', barcode: '' }))
   });
   renderVariantEditor();
   showToast('已复制颜色及尺码（条码需重新填写）');
 }
-function variantCopyAllColors() {
+function variantClearSizes(vi, ci) {
   syncVariantEditor();
-  const s = prodDraft.variants[0];
-  if (!s || !s.colors.length) { showToast('请先添加颜色'); return; }
-  const copies = s.colors.map(c => ({
-    color: (c.color || '').trim() + ' 副本',
-    sizes: (c.sizes || []).map(z => ({ size: z.size || '', barcode: '' }))
-  }));
-  s.colors = s.colors.concat(copies);
-  renderVariantEditor();
-  showToast('已复制整套颜色尺码（条码需重新填写）');
-}
-function variantClearSizes(ci) {
-  syncVariantEditor();
-  const c = prodDraft.variants[0] && prodDraft.variants[0].colors[ci];
+  const c = prodDraft.variants[vi] && prodDraft.variants[vi].colors[ci];
   if (!c) return;
   c.sizes = [{ size: '', barcode: '' }];
   renderVariantEditor();
   showToast('已清空该颜色下的尺码');
 }
-function variantRemoveColor(ci) {
+function variantRemoveColor(vi, ci) {
   syncVariantEditor();
-  const s = prodDraft.variants[0];
-  const c = s && s.colors[ci];
+  const v = prodDraft.variants[vi];
+  const c = v && v.colors[ci];
   if (!c) return;
   const n = (c.sizes || []).filter(z => (z.size || '').trim() || (z.barcode || '').trim()).length;
   if (!confirm(`确定删除颜色「${(c.color || '').trim() || '未命名'}」吗？将连带删除该颜色下 ${n} 条尺码 SKU，此操作不可撤销。`)) return;
-  s.colors.splice(ci, 1);
-  if (!s.colors.length) s.colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
+  v.colors.splice(ci, 1);
+  if (!v.colors.length) v.colors.push({ color: '', sizes: [{ size: '', barcode: '' }] });
   renderVariantEditor();
 }
-function variantRemoveSize(ci, zi) {
+function variantRemoveSize(vi, ci, zi) {
   syncVariantEditor();
-  const c = prodDraft.variants[0] && prodDraft.variants[0].colors[ci];
+  const c = prodDraft.variants[vi] && prodDraft.variants[vi].colors[ci];
   if (!c) return;
   c.sizes.splice(zi, 1);
   if (!c.sizes.length) c.sizes.push({ size: '', barcode: '' });
   renderVariantEditor();
 }
+// 收集所有款式下的 SKU 行；颜色/尺码组合需在「同一款式内」唯一
 function collectVariantLines() {
   syncVariantEditor();
   const lines = [], combos = new Set(), barcodes = new Map();
-  const s = prodDraft.variants[0] || { style: '', colors: [] };
-  const style = (s.style || '').trim();
-  for (const c of s.colors) {
-    const color = (c.color || '').trim();
-    for (const z of c.sizes) {
-      const size = (z.size || '').trim(), barcode = (z.barcode || '').trim();
-      if (![style, color, size, barcode].some(Boolean)) continue;
-      if (barcode && !size) { showToast('请先填写尺码，再填写对应的 SKU 条码'); return null; }
-      const combo = JSON.stringify([color, size]);
-      if (combos.has(combo)) { showToast('颜色/尺码组合重复：' + [color, size].filter(Boolean).join(' / ')); return null; }
-      combos.add(combo);
-      if (barcode) {
-        if (barcodes.has(barcode)) { showToast('SKU 条码 ' + barcode + ' 重复，每个条码只能对应一个尺码'); return null; }
-        barcodes.set(barcode, [color, size].filter(Boolean).join(' / '));
+  const vs = prodDraft.variants || [];
+  for (const v of vs) {
+    const style = (v.style || '').trim();
+    for (const c of (v.colors || [])) {
+      const color = (c.color || '').trim();
+      for (const z of (c.sizes || [])) {
+        const size = (z.size || '').trim(), barcode = (z.barcode || '').trim();
+        if (![style, color, size, barcode].some(Boolean)) continue;
+        if (barcode && !size) { showToast('请先填写尺码，再填写对应的 SKU 条码'); return null; }
+        const combo = JSON.stringify([style, color, size]);
+        if (combos.has(combo)) { showToast('款式/颜色/尺码组合重复：' + [style, color, size].filter(Boolean).join(' / ')); return null; }
+        combos.add(combo);
+        if (barcode) {
+          if (barcodes.has(barcode)) { showToast('SKU 条码 ' + barcode + ' 重复，每个条码只能对应一个尺码'); return null; }
+          barcodes.set(barcode, [style, color, size].filter(Boolean).join(' / '));
+        }
+        lines.push({ style, color, size, barcode });
       }
-      lines.push({ style, color, size, barcode });
     }
   }
-  if (!lines.length) lines.push({ style, color: '', size: '', barcode: '' });
+  if (!lines.length) lines.push({ style: '', color: '', size: '', barcode: '' });
   return lines;
 }
 function rememberPartnerValues(records) {
@@ -7474,7 +7657,8 @@ function openProductModal(id) {
     tags: tagArr
   };
   if (!prodDraft.variants.length) prodDraft.variants.push({ style: '', colors: [{ color: '', sizes: [{ size: '', barcode: '' }] }] });
-  prodDraft.variants[0].style = (v0.style || '').trim();
+  // 兼容旧数据：首条记录的款式回填到第一个款式分组
+  if (!prodDraft.variants[0].style) prodDraft.variants[0].style = (v0.style || '').trim();
   fields.forEach(f => { prodDraft.values[f.key] = p && p.values ? (p.values[f.key] || '') : ''; });
 
   const specKeys = ['style', 'color', 'size', 'barcode', 'material', 'supplier', 'buyer', 'costPrice', 'salePrice'];
@@ -7539,11 +7723,7 @@ function openProductModal(id) {
     </div>
     <div class="prod-section">
       <div class="prod-section-title"><span class="sec-idx">2</span> SKU 层级录入<span class="sec-note">款式 → 颜色 → 尺码</span></div>
-      <div class="form-group" style="margin-bottom:10px;">
-        <label>款式名称 / 款号</label>
-        <input type="text" class="input" id="pf_style" value="${escAttr(prodDraft.variants[0].style || '')}" placeholder="如：经典圆领款（可留空）">
-      </div>
-      <div class="variant-hint">一个款式下可添加多个颜色，每个颜色下可添加多个尺码；「颜色 + 尺码」为一条独立 SKU，单独设置条码（全局唯一）。</div>
+      <div class="variant-hint">可添加多个款式；每个款式下可添加多个颜色，每个颜色下可添加多个尺码。「款式 + 颜色 + 尺码」为一条独立 SKU，单独设置条码（全局唯一）。</div>
       <div class="variant-editor" id="variant-editor"></div>
     </div>
     <div class="form-group">
@@ -7675,13 +7855,11 @@ function saveProduct() {
   if (!name) { showToast('请填写产品名称'); return; }
   const fields = Store.getProductFields();
   fields.forEach(f => {
+    if (f.key === 'style') return;   // 款式在 SKU 层级区按款式组单独维护
     const el = document.getElementById('pf_' + f.key);
     prodDraft.values[f.key] = el ? (el.value || '').trim() : '';
   });
-  const styleEl = document.getElementById('pf_style');
-  const styleName = ((styleEl && styleEl.value) || '').trim();
-  if (prodDraft.variants[0]) prodDraft.variants[0].style = styleName;
-  prodDraft.values.style = styleName;
+  prodDraft.values.style = '';   // 款式由各款式组决定，每条 SKU 单独写入
   prodDraft.values.material = (prodDraft.fabrics || []).join('、');
   prodDraft.values.tags = (prodDraft.tags || []).join(',');
 
@@ -8682,20 +8860,24 @@ function wTextOf(node) {
   return t.trim();
 }
 // 找到模板里“表头行”所在的表格
+// 注意：真实 Word 模板的表头行不一定是第 1 行（前面可能有合并的标题行），
+// 因此逐行扫描，取匹配度最高的一行作为表头行。
 function docxFindTable(doc, tplHeaders) {
   const tbls = Array.from(doc.getElementsByTagNameNS(W_NS, 'tbl'));
-  let best = null, bestScore = -1;
+  let best = null, bestScore = 0;
   tbls.forEach(tbl => {
     const rows = Array.from(tbl.getElementsByTagNameNS(W_NS, 'tr'));
-    if (!rows.length) return;
-    const headCells = Array.from(rows[0].getElementsByTagNameNS(W_NS, 'tc')).map(wTextOf);
-    let score = 0;
-    tplHeaders.forEach(h => {
-      const f = poTemplateFieldOf(h);
-      if (!f) return;
-      if (headCells.some(c => poTemplateFieldOf(c) === f)) score++;
+    rows.forEach((tr, ri) => {
+      const headCells = Array.from(tr.getElementsByTagNameNS(W_NS, 'tc')).map(wTextOf);
+      if (!headCells.length) return;
+      let score = 0;
+      tplHeaders.forEach(h => {
+        const f = poTemplateFieldOf(h);
+        if (!f) return;
+        if (headCells.some(c => poTemplateFieldOf(c) === f)) score++;
+      });
+      if (score > bestScore) { bestScore = score; best = { tbl, rows, headIdx: ri, headCells }; }
     });
-    if (score > bestScore) { bestScore = score; best = { tbl, rows, headCells }; }
   });
   return bestScore > 0 ? best : null;
 }
@@ -8763,29 +8945,37 @@ async function docxFillTemplate(docxBytes, aggRows) {
   const found = docxFindTable(doc, tplHeaders);
   if (!found) throw Error('模板中找不到与表头匹配的表格');
 
-  const { tbl, rows, headCells } = found;
+  const { tbl, rows, headIdx, headCells } = found;
   const cellCount = Math.max(headCells.length, tplHeaders.length);
   // 找到“数据行样板”：表头行之后第一行非空行（作为格式样板）
   let protoRow = null;
   let insertBefore = null;
-  for (let i = 1; i < rows.length; i++) {
+  for (let i = headIdx + 1; i < rows.length; i++) {
     const txt = wTextOf(rows[i]);
     if (txt) { protoRow = rows[i]; insertBefore = rows[i + 1] || null; break; }
   }
-  // 删除模板中原有的数据行
-  for (let i = rows.length - 1; i >= 1; i--) {
+  // 删除表头行之后原有的数据行（保留表头行本身）
+  for (let i = rows.length - 1; i > headIdx; i--) {
     if (rows[i] === protoRow) continue;
     if (wTextOf(rows[i])) rows[i].parentNode.removeChild(rows[i]);
   }
   if (protoRow && protoRow.parentNode) protoRow.parentNode.removeChild(protoRow);
 
   // 逐行插入汇总数据
-  aggRows.forEach(agg => {
-    const vals = poRowForTemplate(tplHeaders, agg);
-    const tr = docxMakeRow(protoRow, vals, cellCount);
-    if (insertBefore && insertBefore.parentNode) insertBefore.parentNode.insertBefore(tr, insertBefore);
-    else tbl.appendChild(tr);
-  });
+  if (insertBefore && insertBefore.parentNode) {
+    aggRows.forEach(agg => {
+      const vals = poRowForTemplate(tplHeaders, agg);
+      const tr = docxMakeRow(protoRow, vals, cellCount);
+      insertBefore.parentNode.insertBefore(tr, insertBefore);
+    });
+  } else {
+    // 末尾追加：需要插到表格的最后，而不是 body 末尾
+    aggRows.forEach(agg => {
+      const vals = poRowForTemplate(tplHeaders, agg);
+      const tr = docxMakeRow(protoRow, vals, cellCount);
+      tbl.appendChild(tr);
+    });
+  }
 
   const outXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
     new XMLSerializer().serializeToString(doc.documentElement);
@@ -8822,9 +9012,9 @@ function renderPoOrders(container) {
       </div>
       <div class="upload-zone" onclick="document.getElementById('po-file').click()">
         <div class="uz-icon">⬆</div>
-        <div class="uz-title">上传订单附件明细（.xlsx / .xls）</div>
-        <div class="uz-sub">上传后按「产品名称」汇总数量与金额，再填入导出文件模板 · 也可将文件拖到此处</div>
-        <input type="file" id="po-file" accept=".xlsx,.xls" style="display:none;" onchange="handlePoUpload(this)">
+        <div class="uz-title">上传订单附件明细（.xlsx / .xls，可多选）</div>
+        <div class="uz-sub">可一次选择多个明细文件，统一按「产品名称」汇总数量与金额后填入导出文件模板 · 也可将文件拖到此处</div>
+        <input type="file" id="po-file" accept=".xlsx,.xls" multiple style="display:none;" onchange="handlePoUpload(this)">
       </div>
       <div id="po-preview"></div>
     </div>
@@ -8845,18 +9035,20 @@ function renderPoOrders(container) {
     zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
     zone.addEventListener('drop', e => {
       e.preventDefault(); zone.classList.remove('dragover');
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) readPoFile(e.dataTransfer.files[0]);
+      if (e.dataTransfer.files && e.dataTransfer.files.length) readPoFiles(e.dataTransfer.files);
     });
   }
   if (poDraft) renderPoPreview();
 }
 
 function handlePoUpload(input) {
-  const f = input.files && input.files[0];
-  if (f) readPoFile(f);
+  const files = input.files;
+  if (files && files.length) readPoFiles(files);
+  input.value = '';
 }
 
-function readPoFile(file) {
+// 解析单个 Excel 订单附件明细，返回 { headers, rawRows } 或 null
+function parsePoFile(file, cb) {
   if (typeof XLSX === 'undefined') { showToast('Excel 组件未加载，请刷新页面重试'); return; }
   const reader = new FileReader();
   reader.onload = e => {
@@ -8875,43 +9067,117 @@ function readPoFile(file) {
       if (best < 2) headerIdx = 0;
       const headers = (aoa[headerIdx] || []).map(h => String(h || '').trim());
       const rawRows = aoa.slice(headerIdx + 1).filter(r => r.some(c => String(c || '').trim() !== ''));
-      if (!rawRows.length) { showToast('文件里没有读取到数据行'); return; }
-      poDraft = { fileName: file.name, headers, rawRows, mapping: poAutoMapping(headers), rows: [] };
-      applyPoMapping();
-      showToast('已解析 ' + rawRows.length + ' 行，请核对字段映射');
+      cb({ headers, rawRows });
     } catch (err) {
-      showToast('Excel 解析失败：' + (err && err.message ? err.message : '文件格式不正确'));
+      showToast('「' + file.name + '」解析失败：' + (err && err.message ? err.message : '文件格式不正确'));
+      cb(null);
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+// 读取一个或多个订单附件明细，合并为统一的草稿（可多选文件）
+function readPoFiles(files) {
+  const list = Array.from(files || []).filter(f => /\.xlsx?$/i.test(f.name || ''));
+  if (!list.length) { showToast('请选择 Excel 文件（.xlsx / .xls）'); return; }
+  const parsed = [];
+  let pending = list.length;
+  list.forEach(file => {
+    parsePoFile(file, res => {
+      if (res) parsed.push({ fileName: file.name, headers: res.headers, rawRows: res.rawRows });
+      if (--pending === 0) finishPoFiles(parsed, list.length);
+    });
+  });
+}
+function finishPoFiles(parsed, total) {
+  const okFiles = parsed.filter(p => p.rawRows.length);
+  if (!okFiles.length) { showToast('所选文件里没有读取到数据行'); return; }
+  // 多文件表头可能不同：按「列名」统一映射 —— 每个文件用同一列名去自身表头里定位
+  const allHeaders = [];
+  okFiles.forEach(p => p.headers.forEach(h => { if (h && allHeaders.indexOf(h) < 0) allHeaders.push(h); }));
+  // mapping：内部字段 → 列名（多文件时存列名；单文件时存列索引以兼容原逻辑）
+  const nameMapping = {};
+  PO_HEADER_KEYS.forEach(key => {
+    let hit = '';
+    for (const h of allHeaders) {
+      const aliases = PO_FIELD_ALIASES[key] || [];
+      if (aliases.some(a => h === a || h.indexOf(a) >= 0)) { hit = h; break; }
+    }
+    nameMapping[key] = hit;
+  });
+  const files = okFiles.map(p => ({ fileName: p.fileName, headers: p.headers, rawRows: p.rawRows }));
+  poDraft = {
+    fileName: okFiles.length === 1 ? okFiles[0].fileName : (okFiles.length + ' 个明细文件'),
+    fileNames: okFiles.map(p => p.fileName),
+    headers: allHeaders, rawRows: [], mapping: nameMapping, rows: [], files: files, multi: true
+  };
+  applyPoMapping();
+  const totalRows = poDraft.rows.length;
+  showToast('已解析 ' + okFiles.length + ' 个文件共 ' + totalRows + ' 行，将按产品名称统一汇总');
+}
+function readPoFile(file) {
+  readPoFiles([file]);
 }
 
 function applyPoMapping() {
   if (!poDraft) return;
   PO_HEADER_KEYS.forEach(key => {
     const el = document.getElementById('pom_' + key);
-    if (el) poDraft.mapping[key] = parseInt(el.value, 10);
+    if (!el) return;
+    poDraft.mapping[key] = poDraft.multi ? el.value : parseInt(el.value, 10);
   });
-  poDraft.rows = poDraft.rawRows.map(row => {
-    const obj = {};
-    PO_HEADER_KEYS.forEach(key => {
-      const i = poDraft.mapping[key];
-      obj[key] = i >= 0 && i < row.length ? String(row[i] == null ? '' : row[i]).trim() : '';
+  // 多文件：按「列名」在各文件自身表头里定位
+  if (poDraft.multi && poDraft.files) {
+    const map = poDraft.mapping;
+    const merged = [];
+    poDraft.files.forEach(f => {
+      f.rawRows.forEach(row => {
+        const obj = {};
+        PO_HEADER_KEYS.forEach(key => {
+          const colName = map[key];
+          let val = '';
+          if (colName) {
+            const ci = f.headers.indexOf(colName);
+            if (ci >= 0 && ci < row.length) val = String(row[ci] == null ? '' : row[ci]).trim();
+          }
+          obj[key] = val;
+        });
+        obj.__src = f.fileName;
+        merged.push(obj);
+      });
     });
-    return obj;
-  }).filter(r => PO_HEADER_KEYS.some(k => r[k] !== ''));
+    poDraft.rows = merged.filter(r => PO_HEADER_KEYS.some(k => r[k] !== ''));
+  } else {
+    poDraft.rows = poDraft.rawRows.map(row => {
+      const obj = {};
+      PO_HEADER_KEYS.forEach(key => {
+        const i = poDraft.mapping[key];
+        obj[key] = i >= 0 && i < row.length ? String(row[i] == null ? '' : row[i]).trim() : '';
+      });
+      return obj;
+    }).filter(r => PO_HEADER_KEYS.some(k => r[k] !== ''));
+  }
   renderPoPreview();
 }
 
 function renderPoPreview() {
   const box = document.getElementById('po-preview');
   if (!box || !poDraft) return;
-  const mapOpts = selected => `<option value="-1">不导入</option>` + poDraft.headers.map((h, i) =>
-    `<option value="${i}" ${i === selected ? 'selected' : ''}>${escHtml(h || '第' + (i + 1) + '列')}</option>`).join('');
+  const mapOpts = selected => {
+    if (poDraft.multi) {
+      return `<option value="">不导入</option>` + poDraft.headers.map(h =>
+        `<option value="${escAttr(h)}" ${h === selected ? 'selected' : ''}>${escHtml(h || '未命名列')}</option>`).join('');
+    }
+    return `<option value="-1">不导入</option>` + poDraft.headers.map((h, i) =>
+      `<option value="${i}" ${i === selected ? 'selected' : ''}>${escHtml(h || '第' + (i + 1) + '列')}</option>`).join('');
+  };
   const mappingHtml = PO_HEADER_KEYS.map(key => `
     <div class="map-item"><label>${PO_FIELD_LABELS[key]}</label><select class="input" id="pom_${key}" onchange="applyPoMapping()">${mapOpts(poDraft.mapping[key])}</select></div>
   `).join('');
   const rows = poDraft.rows.slice(0, 40).map(r => `<tr>${PO_HEADER_KEYS.map(k => `<td>${escHtml(r[k] || '—')}</td>`).join('')}</tr>`).join('');
+  const srcHint = poDraft.multi
+    ? `<div class="section-sub">来源文件：${poDraft.fileNames.map(n => escHtml(n)).join('、')}</div>`
+    : '';
   // 按模板汇总预览（按产品名称合并数量与金额）
   const tpl = Store.getPoTemplate();
   const tplHeaders = tpl.headers && tpl.headers.length ? tpl.headers : PO_TEMPLATE_HEADERS;
@@ -8922,7 +9188,7 @@ function renderPoPreview() {
   const aggQty = agg.reduce((n, a) => n + (Number(a.qty) || 0), 0);
   box.innerHTML = `
     <div class="po-result">
-      <div class="section-head"><div><div class="section-title">字段映射</div><div class="section-sub">来源：${escHtml(poDraft.fileName)} · 共 ${poDraft.rows.length} 行</div></div></div>
+      <div class="section-head"><div><div class="section-title">字段映射</div><div class="section-sub">来源：${escHtml(poDraft.fileName)} · 共 ${poDraft.rows.length} 行</div>${srcHint}</div></div>
       <div class="map-grid">${mappingHtml}</div>
       <div class="section-head" style="margin-top:8px;"><div><div class="section-title">明细预览${poDraft.rows.length > 40 ? '（前 40 行）' : ''}</div><div class="section-sub">以下为附件原始明细</div></div></div>
       <div class="bill-scroll"><table class="bill-table po-table"><thead><tr>${PO_HEADER_KEYS.map(k => `<th>${PO_FIELD_LABELS[k]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
@@ -9394,6 +9660,9 @@ function billTable(page, list) {
 // 按「下单日期」把清单折叠收纳：日期倒序，每个日期一张可展开的卡片
 const _billDateOpen = {};
 function billDateGroups(page, list) {
+  return `<div class="bill-date-groups" id="bill-date-groups-${page}">${billDateGroupsInner(page, list)}</div>`;
+}
+function billDateGroupsInner(page, list) {
   const groups = new Map();
   list.forEach(r => {
     const d = (r.orderDate || '').trim() || '未填写日期';
@@ -9405,31 +9674,42 @@ function billDateGroups(page, list) {
     if (b === '未填写日期') return -1;
     return b.localeCompare(a);
   });
-  if (_billDateOpen[page] === undefined) _billDateOpen[page] = new Set();
+  if (_billDateOpen[page] === undefined) {
+    _billDateOpen[page] = new Set();
+    // 首次渲染默认展开第一个（最新）日期；之后不再自动展开，否则用户全部收起后会被强制弹开
+    if (dates.length) _billDateOpen[page].add(dates[0]);
+  }
   const openSet = _billDateOpen[page];
-  // 首次渲染默认展开第一个（最新）日期
-  if (!openSet.size && dates.length) openSet.add(dates[0]);
 
-  return `<div class="bill-date-groups">${dates.map(d => {
+  return `${dates.map(d => {
     const rows = groups.get(d);
     const amt = rows.reduce((n, r) => n + (Number(r.total) || 0), 0);
     const open = openSet.has(d);
     return `
       <div class="bill-date-card ${open ? 'open' : ''}">
-        <div class="bill-date-head" onclick="toggleBillDateGroup('${page}','${d}')">
+        <div class="bill-date-head" role="button" tabindex="0" title="点击展开/收起"
+             onclick="toggleBillDateGroup('${page}','${d}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleBillDateGroup('${page}','${d}');}">
           <span class="bill-date-chev chev-line"></span>
-          <span class="bill-date-label">${escHtml(fmtCNDate(d) || d)}</span>
+          <span class="bill-date-label">${escHtml(fmtDateFull(d) || d)}</span>
           <span class="bill-date-count">${rows.length} 条</span>
           <span class="bill-date-amount">${money(amt)}</span>
         </div>
         ${open ? billTable(page, rows) : ''}
       </div>`;
-  }).join('')}</div>`;
+  }).join('')}`;
 }
 function toggleBillDateGroup(page, date) {
   if (!_billDateOpen[page]) _billDateOpen[page] = new Set();
   const set = _billDateOpen[page];
   if (set.has(date)) set.delete(date); else set.add(date);
+  // 局部重绘：只替换日期分组区域，避免整页重绘导致点击「无反应」的错觉与滚动跳动
+  const host = document.getElementById('bill-date-groups-' + page);
+  if (host) {
+    const list = page === 'sales' ? Store.getSales() : Store.getPurchases();
+    host.innerHTML = billDateGroupsInner(page, list);
+    return;
+  }
   renderPage(page);
 }
 
@@ -10736,6 +11016,13 @@ function fmtCNDate(v) {
   const y = +p[0], m = +p[1], d = +p[2];
   const curY = new Date().getFullYear();
   return (y !== curY ? y + '年' : '') + m + '月' + d + '日';
+}
+// 始终带年份的日期格式（下单日期等需要明确年份的场景）
+function fmtDateFull(v) {
+  if (!v) return '';
+  const p = String(v).split('-');
+  if (p.length < 3) return v;
+  return p[0] + '年' + (+p[1]) + '月' + (+p[2]) + '日';
 }
 
 function datePickerHtml(inputId, val, ph) {

@@ -424,7 +424,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .module-item .mi-dot.on { background: var(--green-strong); box-shadow: 0 0 0 3px rgba(175, 199, 175, 0.28); }
 
 /* 今日概览：小卡片（标题+内容区），四列同一行 */
-.overview-board-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.overview-board-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .overview-item {
   display: flex;
   flex-direction: column;
@@ -595,7 +595,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 /* 桌面顶部独立卡片（原单一 hero 卡拆成多张，避免空旷） */
 .hero-stats {
   display: grid;
-  grid-template-columns: 1.6fr 1.3fr 1fr 1fr;
+  grid-template-columns: 1.3fr 1fr 1fr;
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -723,9 +723,17 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 }
 .journal-title-toggle:hover { color: var(--accent-pink); }
 .journal-title-toggle .toggle-hint {
-  font-size: 13px;
   color: var(--text-sub);
-  transition: transform 0.15s ease;
+  transform: rotate(-45deg);
+  margin-left: 4px;
+}
+
+/* 统一线条收缩箭头 */
+.chev-line {
+  display: inline-block; width: 7px; height: 7px; flex: 0 0 auto;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg); transition: transform .2s ease;
+  vertical-align: middle;
 }
 
 /* ============ FORMS ============ */
@@ -1047,11 +1055,11 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .month-card-title { font-size: 15px; font-weight: 700; color: var(--text-main); }
 .month-card-count { font-size: 12px; color: var(--text-sub); margin-left: 8px; }
 .month-arrow {
-  font-size: 13px;
   color: var(--text-light);
-  transition: transform 0.2s ease;
+  transform: rotate(-45deg);
+  margin-left: 4px;
 }
-.month-card.open .month-arrow { transform: rotate(90deg); }
+.month-card.open .month-arrow { transform: rotate(45deg); }
 .month-card-body { display: none; padding: 0 16px 14px; }
 .month-card.open .month-card-body { display: block; }
 
@@ -2672,6 +2680,8 @@ body {
 .page-header .ph-title { font-size: 18px; font-weight: 600; color: var(--text-main); }
 .page-header .ph-desc { font-size: 12px; color: var(--text-light); }
 .dash-section { margin-bottom: 16px; }
+.dash-checkin-section .calendar-wrap { margin-top: 12px; }
+.dash-checkin-section .work-leave-tray { margin-bottom: 12px; }
 .dash-section-title { font-size: 15px; font-weight: 600; color: var(--text-main); margin-bottom: 10px; }
 .dash-section-title .ds-desc { font-size: 12px; color: var(--text-light); }
 
@@ -2993,7 +3003,7 @@ body {
 .nav-group-head .icon { font-size: 18px; width: 24px; text-align: center; }
 .nav-group-head .grp-label { flex: 1; min-width: 0; }
 .nav-group-head .chev { font-size: 10px; color: var(--text-light); transition: transform 0.2s ease; }
-.nav-group.collapsed .nav-group-head .chev { transform: rotate(-90deg); }
+.nav-group.collapsed .nav-group-head .chev { transform: rotate(-45deg); }
 .nav-group.collapsed .nav-children { display: none; }
 .nav-group.has-active > .nav-group-head {
   color: var(--accent-caramel); font-weight: 600;
@@ -3038,6 +3048,27 @@ body {
 }
 .prod-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
 .prod-group-del { flex-shrink: 0; }
+/* 产品库扁平卡片 */
+.prod-flat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(276px, 1fr)); gap: 12px; }
+.prod-flat-card {
+  display: flex; flex-direction: column; gap: 9px; min-width: 0;
+  border: 1px solid var(--border-soft); border-radius: 8px;
+  padding: 13px; background: var(--cream-card);
+}
+.prod-flat-card:hover { border-color: var(--accent-caramel); }
+.pfc-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pfc-main { min-width: 0; flex: 1; }
+.pfc-count {
+  display: inline-block; margin-top: 4px; font-size: 11px; color: var(--text-sub);
+  background: var(--cream-bg); border-radius: 10px; padding: 2px 8px;
+}
+.pfc-lines { display: grid; gap: 5px; padding: 8px 10px; background: var(--cream-bg); border-radius: 6px; }
+.pfc-line { display: flex; gap: 8px; font-size: 12px; line-height: 1.45; min-width: 0; }
+.pfc-line > span { flex: 0 0 30px; color: var(--text-light); }
+.pfc-line > b { font-weight: 500; color: var(--text-main); overflow-wrap: anywhere; }
+.pfc-common { font-size: 11px; color: var(--text-sub); line-height: 1.6; overflow-wrap: anywhere; }
+.pfc-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 2px; }
+.pfc-actions .btn { flex: 1; }
 .prod-chev { color: var(--text-light); font-size: 10px; transition: transform 0.2s; }
 .prod-group.open .prod-chev { transform: rotate(90deg); }
 .prod-group-body {
@@ -3396,12 +3427,9 @@ html[data-theme="dark"] .cal-sched { color: #1D2129 !important; }
 
     <div class="nav-group" id="nav-group-work" data-group="work">
       <div class="nav-group-head" onclick="toggleNavGroup('work')">
-        <span class="icon">🗂️</span><span class="grp-label">工作台</span><span class="chev">▼</span>
+        <span class="icon">🗂️</span><span class="grp-label">工作台</span><span class="chev chev-line"></span>
       </div>
       <div class="nav-children">
-        <div class="nav-item" data-page="work-checkin" onclick="navigate('work-checkin')">
-          <span class="icon">✅</span><span>工作台历</span>
-        </div>
         <div class="nav-item" data-page="products" onclick="navigate('products')">
           <span class="icon">🏷️</span><span>产品库</span>
         </div>
@@ -3419,7 +3447,7 @@ html[data-theme="dark"] .cal-sched { color: #1D2129 !important; }
 
     <div class="nav-group" id="nav-group-data" data-group="data">
       <div class="nav-group-head" onclick="toggleNavGroup('data')">
-        <span class="icon">🗄️</span><span class="grp-label">数据处理中心</span><span class="chev">▼</span>
+        <span class="icon">🗄️</span><span class="grp-label">数据处理中心</span><span class="chev chev-line"></span>
       </div>
       <div class="nav-children">
         <div class="nav-item" data-page="po-orders" onclick="navigate('po-orders')">
@@ -3433,7 +3461,7 @@ html[data-theme="dark"] .cal-sched { color: #1D2129 !important; }
 
     <div class="nav-group" id="nav-group-notes" data-group="notes">
       <div class="nav-group-head" onclick="toggleNavGroup('notes')">
-        <span class="icon">📔</span><span class="grp-label">记事簿</span><span class="chev">▼</span>
+        <span class="icon">📔</span><span class="grp-label">记事簿</span><span class="chev chev-line"></span>
       </div>
       <div class="nav-children">
         <div class="nav-item" data-page="todo" onclick="navigate('todo')">
@@ -4098,8 +4126,7 @@ function pickImage(cb, maxW) {
 }
 
 const ICON_PAGES = [
-  ['dashboard','桌面'],
-  ['work-checkin','工作台历'], ['products','产品库'], ['purchases','采购清单'],
+  ['dashboard','桌面'], ['products','产品库'], ['purchases','采购清单'],
   ['sales','销售清单'], ['po-orders','采购订单'], ['settlement','结算材料'], ['sample-records','样品清单'],
   ['todo','待办事项'], ['daily-tasks','每日任务'], ['lunch-menu','午饭菜单']
 ];
@@ -4218,7 +4245,7 @@ let currentPage = 'dashboard';
 
 // 一级板块 → 二级板块映射
 const NAV_GROUP_OF = {
-  'work-checkin':'work', 'products':'work', 'purchases':'work', 'sales':'work', 'sample-records':'work',
+  'products':'work', 'purchases':'work', 'sales':'work', 'sample-records':'work',
   'todo':'notes', 'daily-tasks':'notes', 'lunch-menu':'notes',
   'po-orders':'data', 'settlement':'data'
 };
@@ -4276,7 +4303,7 @@ function renderPage(page) {
 
   switch(page) {
     case 'dashboard': renderDashboard(pageDiv); break;
-    case 'work-checkin': renderWorkCheckin(pageDiv); break;
+    case 'work-checkin': renderDashboard(pageDiv); break;
     case 'products': renderProducts(pageDiv); break;
     case 'purchases': renderPurchases(pageDiv); break;
     case 'sales': renderSales(pageDiv); break;
@@ -4305,39 +4332,15 @@ function renderPage(page) {
 // ====================================================================
 function renderDashboard(container) {
   const data = Store.getDaily();
-  const cum = Store.getCumulative();
-  const quote = getTodayQuote();
   const now = new Date();
   const weekdays = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
   const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${weekdays[now.getDay()]}`;
 
-  // ===== 首页「当日概览」三大板块数据 =====
-  const monthKey = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-  const todayDayKey = String(now.getDate()).padStart(2, '0');
-  const att = Store.getAttendance(monthKey);
-  const todayRec = att[todayDayKey] || null;
+  const leaveSettings = Store.getLeaveSettings();
+  const leaveUsed = Store.getLeaveUsed();
+  const annualLeft = Math.max(0, (Number(leaveSettings.annualTotal) || 0) - leaveUsed.annual);
+  const compLeft = Math.max(0, (Number(leaveSettings.compTotal) || 0) - leaveUsed.comp);
 
-  // 1) 工作打卡（上班 / 下班同行的圆点状态）
-  const typeLabel = { sick: '🤒 病假', annual: '🏖 年假', comp: '💤 调休', duty: '🔆 值班', makeup: '🛠 补班' };
-  let checkinHtml;
-  if (todayRec && todayRec.type === 'checkin') {
-    checkinHtml = `<div class="ov-checkin-row">
-        <span class="ov-checkin-item">上班 <span class="ov-dot ${todayRec.checkin ? 'on' : ''}" title="${escHtml(todayRec.checkin || '未打卡')}"></span></span>
-        <span class="ov-checkin-item">下班 <span class="ov-dot ${todayRec.checkout ? 'on' : ''}" title="${escHtml(todayRec.checkout || '未打卡')}"></span></span>
-      </div>`;
-  } else if (todayRec && typeLabel[todayRec.type]) {
-    checkinHtml = `<div class="today-pills"><span class="today-pill">${typeLabel[todayRec.type]}</span></div>`;
-  } else {
-    const rest = isRestDay(now.getFullYear(), now.getMonth(), now.getDate());
-    checkinHtml = rest
-      ? '<div class="today-empty">🌿 今天休息，无需打卡</div>'
-      : `<div class="ov-checkin-row">
-           <span class="ov-checkin-item">上班 <span class="ov-dot"></span></span>
-           <span class="ov-checkin-item">下班 <span class="ov-dot"></span></span>
-         </div><div class="ov-checkin-hint">今天还没打卡</div>`;
-  }
-
-  // 2) 当日任务完成情况（含待办事项按日期自动汇入）
   const tasks = data.tasks || [];
   const linkedTodos = Store.getTodos().filter(t => t.date === Store.todayKey());
   const allTasks = tasks.concat(linkedTodos.map(t => ({ text: t.text, done: t.done, fromTodo: true })));
@@ -4351,7 +4354,6 @@ function renderDashboard(container) {
       <div class="progress-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
   }
 
-  // 3) 当日午饭菜单
   const lunchKey = getTodayLunchKey();
   let lunchHtml;
   if (!lunchKey) {
@@ -4366,90 +4368,12 @@ function renderDashboard(container) {
     }
   }
 
-
-  // 4) 样品借用概览
-  const samples = Store.getSamples();
-  const sampleBorrowed = samples.filter(s => s.status !== 'returned').length;
-  const sampleReturned = samples.length - sampleBorrowed;
-
-  const todayOverviewHtml = `
-    <div class="dash-section">
-      <div class="dash-section-title">📌 今日概览<span class="ds-desc">一眼掌握今天的状态</span></div>
-      <div class="board-card">
-        <div class="board-grid overview-board-grid">
-          <div class="board-item overview-item">
-            <div class="bi-header"><span class="bi-icon">✅</span><div class="bi-title">工作打卡</div></div>
-            <div class="bi-body">${checkinHtml}</div>
-          </div>
-          <div class="board-item overview-item">
-            <div class="bi-header"><span class="bi-icon">📋</span><div class="bi-title">任务完成情况</div></div>
-            <div class="bi-body">${taskHtml}</div>
-          </div>
-          <div class="board-item overview-item">
-            <div class="bi-header"><span class="bi-icon">🍱</span><div class="bi-title">当日午饭菜单</div></div>
-            <div class="bi-body">${lunchHtml}</div>
-          </div>
-          <div class="board-item overview-item">
-            <div class="bi-header"><span class="bi-icon">📦</span><div class="bi-title">样品借用</div></div>
-            <div class="bi-body">
-              <div class="ov-sample-row">
-                <span class="ov-sample-num">${sampleBorrowed}</span><span class="ov-sample-label">未归还</span>
-                <span class="ov-sample-sep">·</span>
-                <span class="ov-sample-num">${sampleReturned}</span><span class="ov-sample-label">已归还</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
-
-  // 5) 本月打卡天数
-  const monthCheckins = Object.values(att).filter(v => v && v.type === 'checkin').length;
-
-  // 5.5) 剩余年假 / 剩余调休
-  const leaveSettings = Store.getLeaveSettings();
-  const leaveUsed = Store.getLeaveUsed();
-  const annualLeft = Math.max(0, (Number(leaveSettings.annualTotal) || 0) - leaveUsed.annual);
-  const compLeft = Math.max(0, (Number(leaveSettings.compTotal) || 0) - leaveUsed.comp);
-
-  // 6) 最近样品（按录入日期倒序，取前 6）
-  const recentSamples = samples.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 6);
-  const recentSampleHtml = recentSamples.length === 0
-    ? '<div class="today-empty">还没有样品记录，去「样品清单」添加吧</div>'
-    : recentSamples.map(s => `
-        <div class="recent-row" onclick="navigate('sample-records')">
-          <div class="recent-main">
-            <div class="recent-title">${escHtml(s.name || '未命名样品')}</div>
-            <div class="recent-sub">${escHtml([s.color, s.size].filter(Boolean).join(' · '))}${s.qty ? ' · ' + s.qty + ' 件' : ''}</div>
-          </div>
-          <span class="recent-pill ${s.status === 'returned' ? 'returned' : 'borrowed'}">${s.status === 'returned' ? '已归还' : '未归还'}</span>
-        </div>`).join('');
-
-  // 7) 近期日程（未完成、日期≥今天，按日期+时间升序，取前 5）
-  const tk = Store.todayKey();
-  const upcoming = Store.getSchedule().filter(s => !s.done && s.date >= tk)
-    .sort((a, b) => (a.date + (a.time || '99:99')).localeCompare(b.date + (b.time || '99:99'))).slice(0, 5);
-  const recentSchedHtml = upcoming.length === 0
-    ? '<div class="today-empty">近期没有待办日程～</div>'
-    : upcoming.map(s => `
-        <div class="recent-row" onclick="navigate('todo')">
-          <div class="recent-main">
-            <div class="recent-title">${escHtml(s.title || s.text || '日程')}</div>
-            <div class="recent-sub">📅 ${escHtml(s.date)}${s.allday ? ' 全天' : (s.time ? ' ' + escHtml(s.time) : '')}${s.repeat && s.repeat !== 'none' ? ' · 🔁' + repeatLabel(s.repeat) : ''}</div>
-          </div>
-        </div>`).join('');
-
   container.innerHTML = `
     <div class="dashboard">
-
       <div class="hero-stats">
         <div class="hs-card hs-clock">
           <div class="clock" id="dash-clock">--:--:--</div>
           <div class="date-display">${dateStr}</div>
-        </div>
-        <div class="hs-card hs-weather" id="dash-weather" onclick="setWeatherCity()" title="点击切换城市">
-          🌤 天气加载中…
         </div>
         <div class="hs-card hs-leave hs-annual">
           <div class="hs-label">🏖 剩余年假</div>
@@ -4461,31 +4385,29 @@ function renderDashboard(container) {
         </div>
       </div>
 
-      <div class="quote-card">
-        <div class="quote-label">🌸 每日一句 · Daily Quote</div>
-        <div class="quote-cn">${quote.cn}</div>
-        <div class="quote-en">${quote.en}</div>
-      </div>
-
-      ${todayOverviewHtml}
-
       <div class="dash-section">
-        <div class="dash-section-title">📎 最近动态<span class="ds-desc">样品与日程一览</span></div>
-        <div class="recent-grid">
-          <div class="recent-col">
-            <div class="recent-col-title">📦 最近样品</div>
-            ${recentSampleHtml}
-          </div>
-          <div class="recent-col">
-            <div class="recent-col-title">📆 近期日程</div>
-            ${recentSchedHtml}
+        <div class="dash-section-title">📌 今日概览<span class="ds-desc">任务与午饭，一眼掌握今天</span></div>
+        <div class="board-card">
+          <div class="board-grid overview-board-grid">
+            <div class="board-item overview-item">
+              <div class="bi-header"><span class="bi-icon">📋</span><div class="bi-title">每日任务完成情况</div></div>
+              <div class="bi-body">${taskHtml}</div>
+            </div>
+            <div class="board-item overview-item">
+              <div class="bi-header"><span class="bi-icon">🍱</span><div class="bi-title">午饭菜单</div></div>
+              <div class="bi-body">${lunchHtml}</div>
+            </div>
           </div>
         </div>
+      </div>
+
+      <div class="dash-section dash-checkin-section">
+        <div class="dash-section-title">✅ 工作台历<span class="ds-desc">打卡 · 假期 · 日程</span></div>
+        ${workCheckinBodyHtml()}
       </div>
     </div>
   `;
   startClock();
-  loadWeather();
 }
 
 function editStatEmoji(id) {
@@ -4746,7 +4668,7 @@ function refreshHolidays(year) {
       } catch (e) {}
       _holidaySets[year] = new Set(hol);
       _makeupSets[year] = new Set(mk);
-      if (typeof currentPage !== 'undefined' && currentPage === 'work-checkin' && calYear === year) renderPage(currentPage);
+      if (typeof currentPage !== 'undefined' && (currentPage === 'work-checkin' || currentPage === 'dashboard') && calYear === year) renderPage(currentPage);
       _holidayFetched[year] = true;
       _holidayRefreshing[year] = false;
     }).catch(() => attempt());
@@ -4912,7 +4834,7 @@ function schedPills(sched) {
   return html;
 }
 
-function renderWorkCheckin(container) {
+function workCheckinBodyHtml() {
   const now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
 
@@ -5011,13 +4933,7 @@ function renderWorkCheckin(container) {
     `;
   }
 
-  container.innerHTML = `
-    <div class="page-header">
-      <span class="ph-icon">${DOG_ICONS['work-checkin']}</span>
-      <span class="ph-title">工作台历</span>
-      <span class="ph-desc">日历视图 · 支持补卡和假期管理</span>
-    </div>
-
+  return `
     <div class="card" style="text-align:center;padding:20px;">
       <div style="font-size:14px;color:var(--text-sub);margin-bottom:14px;">今日快捷打卡</div>
       ${punchCardInner}
@@ -6172,7 +6088,7 @@ function historySectionHtml(items, sectionKey, title, icon, emptyText, renderIte
       <div class="month-card ${openSet.has(m) ? 'open' : ''}" id="mc-${sectionKey}-${m}">
         <div class="month-card-header" onclick="toggleMonthCard('${sectionKey}','${m}')">
           <div><span class="month-card-title">${fmtMonthLabel(m)}</span><span class="month-card-count">${byMonth[m].length} 条</span></div>
-          <span class="month-arrow">▸</span>
+          <span class="month-arrow chev-line"></span>
         </div>
         <div class="month-card-body">
           <div class="history-list">
@@ -7033,6 +6949,23 @@ function pval(p, key) {
   return '';
 }
 
+const SIZE_ORDER = ['XS','S','M','L','XL','2XL','3XL','4XL','5XL','6XL','7XL','均码'];
+function sizeRank(x) {
+  const s = String(x || '').trim();
+  const up = s.toUpperCase();
+  const i = SIZE_ORDER.indexOf(s === '均码' ? '均码' : up);
+  if (i >= 0) return i;
+  const m = s.match(/^(\d+(?:\.\d+)?)/);
+  if (m) return 100 + parseFloat(m[1]);
+  return 500;
+}
+function sizeRangeText(list) {
+  const sizes = Array.from(new Set(list.map(p => pval(p, 'size')).filter(Boolean)));
+  if (!sizes.length) return '—';
+  if (sizes.length === 1) return sizes[0];
+  const sorted = sizes.slice().sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b, 'zh-CN'));
+  return sorted[0] + '-' + sorted[sorted.length - 1];
+}
 function renderProductList() {
   const box = document.getElementById('prod-list');
   if (!box) return;
@@ -7040,8 +6973,6 @@ function renderProductList() {
   const kw = ((inp && inp.value) || '').trim().toLowerCase();
   const products = Store.getProducts();
   const fields = Store.getProductFields();
-  const openSet = new Set(Store.getProductOpen());
-  const force = !!kw;
 
   const filtered = kw ? products.filter(p => {
     const hay = [p.name, productSpec(p)].concat(fields.map(f => (p.values || {})[f.key])).join(' ').toLowerCase();
@@ -7060,10 +6991,8 @@ function renderProductList() {
     groups.get(name).push(p);
   });
   const names = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
-  const commonKeys = ['style', 'color', 'size', 'barcode', 'material', 'supplier', 'buyer', 'costPrice', 'salePrice'];
-  const extraFields = fields.filter(f => commonKeys.indexOf(f.key) < 0);
 
-  box.innerHTML = names.map(name => {
+  box.innerHTML = `<div class="prod-flat-grid">${names.map(name => {
     const list = groups.get(name);
     const first = list[0] || {};
     const fv = first.values || {};
@@ -7075,98 +7004,36 @@ function renderProductList() {
       ((fv.material || '').trim() && '面料：' + fv.material.trim())
     ].filter(Boolean).join(' · ');
     const tags = Array.isArray(first.tags) ? first.tags : String(fv.tags || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
-    const pOpen = poOpen(openSet, 'product', [name], force);
     const thumb = list.find(p => p.images && p.images.length);
     const thumbHtml = thumb
       ? `<img class="prod-thumb" src="${thumb.images[0]}" alt="">`
       : `<div class="prod-thumb">🏷️</div>`;
-
-    const styleMap = new Map();
-    list.forEach(p => {
-      const s = pval(p, 'style') || '（未分款式）';
-      if (!styleMap.has(s)) styleMap.set(s, []);
-      styleMap.get(s).push(p);
-    });
-    const styleNames = Array.from(styleMap.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
-
-    const styleHtml = styleNames.map(style => {
-      const sList = styleMap.get(style);
-      const sOpen = pOpen && poOpen(openSet, 'style', [name, style], force);
-      const colorMap = new Map();
-      sList.forEach(p => {
-        const c = pval(p, 'color') || '（未分颜色）';
-        if (!colorMap.has(c)) colorMap.set(c, []);
-        colorMap.get(c).push(p);
-      });
-      const colorNames = Array.from(colorMap.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
-
-      const colorHtml = colorNames.map(color => {
-        const cList = colorMap.get(color);
-        const cOpen = sOpen && poOpen(openSet, 'color', [name, style, color], force);
-        const media = cList.find(p => p.images && p.images.length) || cList.find(p => p.sizeChart);
-        const imgs = (media && media.images || []).map(src => `<img src="${src}" alt="产品图" onclick="viewImage(this.src)">`).join('');
-        const chart = media && media.sizeChart
-          ? `<img class="chart" src="${media.sizeChart}" alt="尺码表" onclick="viewImage(this.src)">`
-          : '';
-        const mediaHtml = (imgs || chart) ? `<div class="pv-media">${imgs}${chart}</div>` : '';
-        const headCols = ['尺码', '69码'].concat(extraFields.map(f => escHtml(f.label))).concat(['操作']);
-        const rows = cList.map(p => {
-          const cells = [pval(p, 'size') || '—', pval(p, 'barcode') || '—'];
-          extraFields.forEach(f => {
-            const raw = (p.values || {})[f.key];
-            const txt = (raw == null ? '' : String(raw)).trim();
-            cells.push(txt ? escHtml(txt) : '—');
-          });
-          return `<tr>${cells.map(c => `<td>${c}</td>`).join('')}
-            <td><div class="pv-row-actions">
-              <button class="btn btn-outline btn-sm" onclick="openProductModal('${p.id}')">编辑</button>
-              <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.id}')">删除</button>
-            </div></td></tr>`;
-        }).join('');
-        const args = `[decodeURIComponent('${poEnc(name)}'),decodeURIComponent('${poEnc(style)}'),decodeURIComponent('${poEnc(color)}')]`;
-        return `<div class="pv-node ${cOpen ? 'open' : ''}">
-          <div class="pv-head" onclick="poToggle('color',${args})">
-            <span class="pv-chev">▶</span>
-            <span class="pv-title">🎨 ${escHtml(color)}</span>
-            <span class="pv-badge">${cList.length} 个尺码</span>
-          </div>
-          ${cOpen ? `<div class="pv-body">${mediaHtml}<div class="pv-table-wrap"><table class="pv-table">
-            <thead><tr>${headCols.map(h => `<th>${h}</th>`).join('')}</tr></thead>
-            <tbody>${rows}</tbody>
-          </table></div></div>` : ''}
-        </div>`;
-      }).join('');
-
-      const args = `[decodeURIComponent('${poEnc(name)}'),decodeURIComponent('${poEnc(style)}')]`;
-      return `<div class="pv-node ${sOpen ? 'open' : ''}">
-        <div class="pv-head" onclick="poToggle('style',${args})">
-          <span class="pv-chev">▶</span>
-          <span class="pv-title">👕 ${escHtml(style)}</span>
-          <span class="pv-badge">${colorNames.length} 色 · ${sList.length} 条</span>
-        </div>
-        ${sOpen ? `<div class="pv-body">${colorHtml}</div>` : ''}
-      </div>`;
-    }).join('');
-
-    const pargs = `[decodeURIComponent('${poEnc(name)}')]`;
-    return `<div class="prod-group ${pOpen ? 'open' : ''}">
-      <div class="prod-group-head" onclick="poToggle('product',${pargs})">
+    const styles = Array.from(new Set(list.map(p => pval(p, 'style')).filter(Boolean)));
+    const colors = Array.from(new Set(list.map(p => pval(p, 'color')).filter(Boolean)));
+    const short = arr => arr.length > 5 ? arr.slice(0, 5).join('、') + ' 等' : arr.join('、');
+    return `<div class="prod-flat-card">
+      <div class="pfc-head">
         ${thumbHtml}
-        <div style="min-width:0;">
+        <div class="pfc-main">
           <div class="prod-name">📦 ${escHtml(name)}</div>
-          <div class="prod-sub">${escHtml(common || styleNames.slice(0, 4).join(' · ') || '点击展开查看 SKU')}</div>
-          ${tags.length ? `<div class="prod-tags">${tags.map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('')}</div>` : ''}
+          <div class="pfc-count">${list.length} 条 SKU</div>
         </div>
-        <span class="prod-count">${styleNames.length} 款 · ${list.length} 条</span>
-        <button class="btn btn-danger btn-sm prod-group-del" title="删除该产品及其全部规格" onclick="event.stopPropagation();deleteProductGroup(decodeURIComponent('${poEnc(name)}'))">🗑 删除产品</button>
-        <span class="prod-chev">▶</span>
       </div>
-      ${pOpen ? `<div class="pv-body prod-l1">${styleHtml}</div>` : ''}
+      <div class="pfc-lines">
+        <div class="pfc-line"><span>款式</span><b>${escHtml(short(styles) || '—')}</b></div>
+        <div class="pfc-line"><span>颜色</span><b>${escHtml(short(colors) || '—')}</b></div>
+        <div class="pfc-line"><span>尺码</span><b>${escHtml(sizeRangeText(list))}</b></div>
+      </div>
+      ${common ? `<div class="pfc-common">${escHtml(common)}</div>` : ''}
+      ${tags.length ? `<div class="prod-tags">${tags.map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('')}</div>` : ''}
+      <div class="pfc-actions">
+        <button class="btn btn-outline btn-sm" onclick="openProductModal('${first.id}')">✏️ 编辑</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteProductGroup(decodeURIComponent('${poEnc(name)}'))">🗑 删除</button>
+      </div>
     </div>`;
-  }).join('');
+  }).join('')}</div>`;
 }
 
-/* ---------------- 产品层级规格（款式 → 颜色 → 尺码 → 69码） ---------------- */
 function partnerOptions(key) {
   const p = Store.getPartners();
   const base = key === 'supplier' ? p.suppliers : p.buyers;
@@ -7481,7 +7348,7 @@ function openProductModal(id) {
   const moreFields = fields.filter(f => specKeys.indexOf(f.key) < 0);
   const moreHtml = moreFields.length ? `
     <div class="form-group" style="margin-top:6px;">
-      <label style="cursor:pointer;color:var(--accent-caramel);" onclick="toggleMoreFields()">更多字段（采购商 / 自定义） <span id="more-arrow">▾</span></label>
+      <label style="cursor:pointer;color:var(--accent-caramel);" onclick="toggleMoreFields()">更多字段（采购商 / 自定义） <span id="more-arrow" class="chev-line"></span></label>
       <div id="more-fields" style="display:none;margin-top:8px;">
         ${moreFields.map(f => `
           <div class="form-group">
@@ -7494,15 +7361,11 @@ function openProductModal(id) {
   showModal(`
     <div class="modal-title">${p ? '✏️ 编辑产品' : '➕ 添加产品'}</div>
     <div class="prod-section">
-      <div class="prod-section-title"><span class="sec-idx">1</span> 产品基础公共信息<span class="sec-note">款式级数据，所有颜色尺码共用</span></div>
+      <div class="prod-section-title"><span class="sec-idx">1</span> 产品基础公共信息<span class="sec-note">所有颜色尺码共用，只需填一次</span></div>
       <div class="prod-form-grid">
         <div class="form-group">
           <label>产品名称 <span style="color:var(--accent-caramel);">*</span></label>
           <input type="text" class="input" id="pf_name" value="${escAttr(prodDraft.name)}" placeholder="同一产品名称会收纳到一起">
-        </div>
-        <div class="form-group">
-          <label>款式名称 / 款号</label>
-          <input type="text" class="input" id="pf_style" value="${escAttr(prodDraft.variants[0].style || '')}" placeholder="如：经典圆领款（可留空）">
         </div>
         <div class="form-group">
           <label>供应商</label>
@@ -7543,6 +7406,10 @@ function openProductModal(id) {
     </div>
     <div class="prod-section">
       <div class="prod-section-title"><span class="sec-idx">2</span> SKU 层级录入<span class="sec-note">款式 → 颜色 → 尺码</span></div>
+      <div class="form-group" style="margin-bottom:10px;">
+        <label>款式名称 / 款号</label>
+        <input type="text" class="input" id="pf_style" value="${escAttr(prodDraft.variants[0].style || '')}" placeholder="如：经典圆领款（可留空）">
+      </div>
       <div class="variant-hint">一个款式下可添加多个颜色，每个颜色下可添加多个尺码；「颜色 + 尺码」为一条独立 SKU，单独设置条码（全局唯一）。</div>
       <div class="variant-editor" id="variant-editor"></div>
     </div>
@@ -7567,7 +7434,7 @@ function toggleMoreFields() {
   if (!box) return;
   const show = box.style.display === 'none';
   box.style.display = show ? 'block' : 'none';
-  if (arrow) arrow.textContent = show ? '▴' : '▾';
+  if (arrow) arrow.style.transform = show ? 'rotate(225deg)' : 'rotate(45deg)';
 }
 function renderFabricChips() {
   const box = document.getElementById('fabric-chips');
@@ -7822,7 +7689,6 @@ function setBillStatus(page, id, field, val, btn) {
   } else {
     renderPage(page);
   }
-  showToast('状态已更新');
 }
 
 function billDateFields(prefix, r) {
@@ -9001,7 +8867,7 @@ function closeCommandPalette() {
 }
 function cmdSources() {
   const pages = [
-    ['dashboard','桌面','🏠'], ['work-checkin','工作台历','✅'], ['products','产品库','🏷️'],
+    ['dashboard','桌面','🏠'], ['products','产品库','🏷️'],
     ['purchases','采购清单','🛒'], ['sales','销售清单','💰'], ['po-orders','采购订单','📄'],
     ['settlement','结算材料','🧾'], ['sample-records','样品清单','📦'],
     ['todo','待办事项','📝'], ['daily-tasks','每日任务','📋'], ['lunch-menu','午饭菜单','🍱']
@@ -9044,7 +8910,7 @@ function openShortcutsHelp() {
     <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">知道了</button></div>
   `);
 }
-const SHORTCUT_PAGES = ['dashboard','work-checkin','products','purchases','sales','po-orders','settlement','sample-records','todo','daily-tasks'];
+const SHORTCUT_PAGES = ['dashboard','products','purchases','sales','po-orders','settlement','sample-records','todo','daily-tasks','lunch-menu'];
 document.addEventListener('keydown', e => {
   const key = e.key.toLowerCase();
   const typing = /input|textarea|select/i.test((e.target && e.target.tagName) || '');
@@ -9726,7 +9592,7 @@ function renderExerciseRecords() {
     return `<div class="month-card ${openSet.has(m) ? 'open' : ''}" id="mc-exercise-${m}">
       <div class="month-card-header" onclick="toggleMonthCard('exercise','${m}')">
         <div><span class="month-card-title">${fmtMonthLabel(m)}</span><span class="month-card-count">${days.length} 天 · ${totalMin} 分钟 · ${totalCal} 千卡</span></div>
-        <span class="month-arrow">▸</span>
+        <span class="month-arrow chev-line"></span>
       </div>
       <div class="month-card-body">
         ${days.map(day => byDay[day].map(r => {
@@ -9912,7 +9778,7 @@ function renderSleep(container) {
     return `<div class="month-card ${openSetS.has(m) ? 'open' : ''}" id="mc-sleep-${m}">
       <div class="month-card-header" onclick="toggleMonthCard('sleep','${m}')">
         <div><span class="month-card-title">${fmtMonthLabel(m)}</span><span class="month-card-count">${recs.length} 晚 · ${totalH.toFixed(1)}h</span></div>
-        <span class="month-arrow">▸</span>
+        <span class="month-arrow chev-line"></span>
       </div>
       <div class="month-card-body">
         ${recs.map(day => {
@@ -10100,7 +9966,7 @@ function renderJournal(container) {
       <div class="save-indicator" id="save-indicator">${data.journal || (data.journalImages && data.journalImages.length) ? '已保存' : '输入后自动保存'}</div>
     </div>
     <div class="card">
-      <div class="card-title journal-title-toggle" onclick="showJournalHistory()" title="点击查看历史记录">📅 历史小记 <span class="toggle-hint">▸</span></div>
+      <div class="card-title journal-title-toggle" onclick="showJournalHistory()" title="点击查看历史记录">📅 历史小记 <span class="toggle-hint chev-line"></span></div>
       <div id="journal-history" style="display:none;"></div>
     </div>
   `;
@@ -10130,7 +9996,7 @@ function showJournalHistory() {
     box.dataset.open = '';
   }
   const hint = document.querySelector('.journal-title-toggle .toggle-hint');
-  if (hint) hint.style.transform = (box.style.display === 'none') ? 'rotate(0deg)' : 'rotate(90deg)';
+  if (hint) hint.style.transform = (box.style.display === 'none') ? 'rotate(-45deg)' : 'rotate(45deg)';
 }
 
 function renderJournalHistory() {

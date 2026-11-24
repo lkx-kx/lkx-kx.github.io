@@ -424,7 +424,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .module-item .mi-dot.on { background: var(--green-strong); box-shadow: 0 0 0 3px rgba(175, 199, 175, 0.28); }
 
 /* 今日概览：小卡片（标题+内容区），四列同一行 */
-.overview-board-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.overview-board-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .overview-item {
   display: flex;
   flex-direction: column;
@@ -595,7 +595,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 /* 桌面顶部独立卡片（原单一 hero 卡拆成多张，避免空旷） */
 .hero-stats {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -658,7 +658,7 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
   .module-board-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .module-item { min-height: 50px; padding: 12px 13px; }
   .module-item .mi-title { font-size: 13px; }
-  .overview-board-grid { grid-template-columns: 1fr 1fr; }
+  .overview-board-grid { grid-template-columns: 1fr; }
   .overview-item { min-height: 90px; padding: 12px 10px; }
   .hero-stats { grid-template-columns: 1fr 1fr; }
   .hs-clock { grid-column: 1 / -1; }
@@ -1054,6 +1054,15 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .month-card-header:hover { background: var(--cream-card-hover); }
 .month-card-title { font-size: 15px; font-weight: 700; color: var(--text-main); }
 .month-card-count { font-size: 12px; color: var(--text-sub); margin-left: 8px; }
+.month-card-now {
+  display: inline-block; margin-left: 8px; padding: 1px 7px; border-radius: 10px;
+  font-size: 11px; font-weight: 600; color: var(--accent-caramel);
+  background: #FFF3EC; border: 1px solid #FFD9C7;
+}
+/* 待办完成后的「明日归档」提示 */
+.todo-arch-hint {
+  font-size: 11px; color: var(--accent-green); font-weight: 600;
+}
 .month-arrow {
   color: var(--text-light);
   transform: rotate(-45deg);
@@ -1834,6 +1843,25 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .punch-time { font-size: 22px; font-weight: 700; color: var(--accent-green); font-variant-numeric: tabular-nums; }
 .punch-time .punch-empty { font-size: 13px; font-weight: 500; color: var(--text-light); }
 .punch-hint { font-size: 12px; color: var(--text-sub); margin-top: 10px; line-height: 1.6; }
+/* 打卡卡片嵌入桌面「今日概览」后的紧凑样式 */
+.punch-card-inner { text-align: center; }
+.punch-card-inner .punch-grid { gap: 8px; }
+.punch-card-inner .punch-item {
+  background: var(--cream-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+  padding: 10px 6px;
+  gap: 5px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.punch-card-inner .punch-label { font-size: 12px; }
+.punch-card-inner .punch-time { font-size: 17px; }
+.punch-card-inner .punch-time .punch-empty { font-size: 11px; }
+.punch-card-inner .work-streak { margin-top: 10px; padding: 4px 12px; font-size: 12px; }
+.punch-card-inner .btn { min-width: 0 !important; width: 100%; }
+.punch-rest { font-size: 13px; color: var(--accent-green); padding: 14px 0; }
 
 /* ===== 同步状态指示 ===== */
 .sync-indicator {
@@ -3240,9 +3268,28 @@ body {
 }
 .bill-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
 .bill-table tr:hover td { background: #FFFCF9; }
-.bill-table .bill-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.bill-table .bill-actions { display: flex; gap: 6px; flex-wrap: nowrap; white-space: nowrap; align-items: center; }
+/* 按下单日期折叠收纳 */
+.bill-date-groups { display: flex; flex-direction: column; gap: 10px; }
+.bill-date-card { border: 1px solid var(--border-soft); border-radius: 8px; overflow: hidden; background: var(--cream-card); }
+.bill-date-head {
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  padding: 10px 14px; background: var(--cream-bg);
+  border-bottom: 1px solid transparent; transition: background .15s;
+}
+.bill-date-card.open .bill-date-head { border-bottom-color: var(--border-soft); }
+.bill-date-head:hover { background: #FFFAF6; }
+.bill-date-chev { color: var(--text-light); transform: rotate(-45deg); transition: transform .2s; flex: 0 0 auto; }
+.bill-date-card.open .bill-date-chev { transform: rotate(45deg); }
+.bill-date-label { font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.bill-date-count { font-size: 12px; color: var(--text-sub); }
+.bill-date-amount { margin-left: auto; font-size: 13px; font-weight: 700; color: var(--accent-caramel); white-space: nowrap; }
+.bill-table .bill-actions .btn { white-space: nowrap; }
+/* 状态列：上下两组，上组「未做单/已做单」，下组「未结算/已结算」 */
+.se-status-wrap { display: inline-flex; flex-direction: column; gap: 4px; align-items: flex-start; }
 .bill-total { font-weight: 700; color: var(--accent-caramel); white-space: nowrap; }
-.bill-name { font-weight: 600; color: var(--text-main); }
+.bill-name { font-weight: 600; color: var(--text-main); white-space: nowrap; }
+.bill-table td:first-child { min-width: 120px; word-break: keep-all; }
 .bill-sub { color: var(--text-light); font-size: 11px; margin-top: 3px; }
 .st-tag {
   display: inline-block; font-size: 11px; padding: 2px 7px; margin: 1px 3px 1px 0;
@@ -3473,6 +3520,9 @@ html[data-theme="dark"] .cal-sched { color: #1D2129 !important; }
         <div class="nav-item" data-page="lunch-menu" onclick="navigate('lunch-menu')">
           <span class="icon">🍱</span><span>午饭菜单</span>
         </div>
+        <div class="nav-item" data-page="history" onclick="navigate('history')">
+          <span class="icon">🗂️</span><span>历史记录</span>
+        </div>
       </div>
     </div>
   </div>
@@ -3546,12 +3596,14 @@ const PRODUCT_FIELDS_DEFAULT = [
 // 数据处理中心固定模板（采购订单导入字段 / 结算材料三类导出表头）
 const PO_TEMPLATE_HEADERS = ['产品名称', '款式', '颜色', '尺码', '数量', '成本单价', '供应商', '69码', '材质', '单据编号', '下单日期', '交货日期'];
 const PO_FIELD_ALIASES = {
-  name: ['产品名称', '品名', '商品名称', '货品名称', '产品'],
+  name: ['产品名称', '品名', '商品名称', '货品名称', '产品', '货品名称(款式)'],
   style: ['款式', '款号', '型号', '货号'],
   color: ['颜色', '色号', '色彩'],
   size: ['尺码', '尺寸', '规格', '码数'],
-  qty: ['数量', '件数', '采购数量', '订购数量'],
-  unitPrice: ['成本单价', '单价', '进价', '采购单价', '成本价'],
+  qty: ['数量', '件数', '采购数量', '订购数量', '数量（件）', '数量(件)'],
+  unit: ['单位', '计量单位'],
+  unitPrice: ['成本单价', '单价', '进价', '采购单价', '成本价', '单价(元)', '单价（元）'],
+  amount: ['金额', '金额(元)', '金额（元）', '总金额', '合计金额', '小计'],
   supplier: ['供应商', '供货商', '厂家', '厂商'],
   barcode: ['69码', '条码', '条形码', 'EAN'],
   material: ['材质', '成分', '面料'],
@@ -3874,6 +3926,13 @@ const Store = {
     } catch (e) { return base; }
   },
   savePoTemplate(obj) { safeSetItem('lxk_po_template', JSON.stringify(obj)); },
+  getPoTemplateDocx() {
+    const raw = localStorage.getItem('lxk_po_template_docx');
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  },
+  savePoTemplateDocx(obj) { safeSetItem('lxk_po_template_docx', JSON.stringify(obj)); },
+  clearPoTemplateDocx() { localStorage.removeItem('lxk_po_template_docx'); },
   getSettleDocs() {
     const raw = localStorage.getItem('lxk_settle_docs');
     return raw ? JSON.parse(raw) : [];
@@ -3979,6 +4038,7 @@ const DOG_ICONS = {
   'daily-tasks': dogSvg('#F2F3F5', '#C2D9C5', BDG_CLIP),
   'lunch-menu': dogSvg('#F0DCC0', '#E3C79C', BDG_BOWL),
   'todo': dogSvg('#EFE0CC', '#C8A886', BDG_PEN),
+  'history': dogSvg('#EDE9E2', '#C4A585', BDG_BOOK),
   'sample-records': dogSvg('#EDE9E2', '#C2D9C5', BDG_BOX)
 };
 
@@ -4128,7 +4188,7 @@ function pickImage(cb, maxW) {
 const ICON_PAGES = [
   ['dashboard','桌面'], ['products','产品库'], ['purchases','采购清单'],
   ['sales','销售清单'], ['po-orders','采购订单'], ['settlement','结算材料'], ['sample-records','样品清单'],
-  ['todo','待办事项'], ['daily-tasks','每日任务'], ['lunch-menu','午饭菜单']
+  ['todo','待办事项'], ['daily-tasks','每日任务'], ['lunch-menu','午饭菜单'], ['history','历史记录']
 ];
 
 function openAppearance() {
@@ -4246,7 +4306,7 @@ let currentPage = 'dashboard';
 // 一级板块 → 二级板块映射
 const NAV_GROUP_OF = {
   'products':'work', 'purchases':'work', 'sales':'work', 'sample-records':'work',
-  'todo':'notes', 'daily-tasks':'notes', 'lunch-menu':'notes',
+  'todo':'notes', 'daily-tasks':'notes', 'lunch-menu':'notes', 'history':'notes',
   'po-orders':'data', 'settlement':'data'
 };
 
@@ -4312,6 +4372,7 @@ function renderPage(page) {
     case 'daily-tasks': renderDailyTasks(pageDiv); break;
     case 'lunch-menu': renderLunchMenu(pageDiv); break;
     case 'todo': renderTodo(pageDiv); break;
+    case 'history': renderHistory(pageDiv); break;
     case 'sample-records': renderSampleRecords(pageDiv); break;
   }
   // 所有页面统一提供全局搜索入口
@@ -4354,6 +4415,9 @@ function renderDashboard(container) {
       <div class="progress-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>`;
   }
 
+  // 今日打卡（快捷打卡卡片，移入今日概览）
+  const punchHtml = punchCardHtml();
+
   const lunchKey = getTodayLunchKey();
   let lunchHtml;
   if (!lunchKey) {
@@ -4375,20 +4439,16 @@ function renderDashboard(container) {
           <div class="clock" id="dash-clock">--:--:--</div>
           <div class="date-display">${dateStr}</div>
         </div>
-        <div class="hs-card hs-leave hs-annual">
-          <div class="hs-label">🏖 剩余年假</div>
-          <div class="hs-value">${annualLeft}<span class="hs-unit">天</span></div>
-        </div>
-        <div class="hs-card hs-leave hs-comp">
-          <div class="hs-label">💤 剩余调休</div>
-          <div class="hs-value">${compLeft}<span class="hs-unit">天</span></div>
-        </div>
       </div>
 
       <div class="dash-section">
-        <div class="dash-section-title">📌 今日概览<span class="ds-desc">任务与午饭，一眼掌握今天</span></div>
+        <div class="dash-section-title">📌 今日概览<span class="ds-desc">打卡 · 任务 · 午饭，一眼掌握今天</span></div>
         <div class="board-card">
           <div class="board-grid overview-board-grid">
+            <div class="board-item overview-item">
+              <div class="bi-header"><span class="bi-icon">✅</span><div class="bi-title">今日打卡</div></div>
+              <div class="bi-body">${punchHtml}</div>
+            </div>
             <div class="board-item overview-item">
               <div class="bi-header"><span class="bi-icon">📋</span><div class="bi-title">每日任务完成情况</div></div>
               <div class="bi-body">${taskHtml}</div>
@@ -4402,7 +4462,6 @@ function renderDashboard(container) {
       </div>
 
       <div class="dash-section dash-checkin-section">
-        <div class="dash-section-title">✅ 工作台历<span class="ds-desc">打卡 · 假期 · 日程</span></div>
         ${workCheckinBodyHtml()}
       </div>
     </div>
@@ -4834,6 +4893,44 @@ function schedPills(sched) {
   return html;
 }
 
+// 今日快捷打卡卡片（桌面「今日概览」与工作台历共用）
+function punchCardHtml() {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
+  const todayKey = String(d).padStart(2, '0');
+  const att = Store.getAttendance(y + '-' + String(m + 1).padStart(2, '0'));
+  const todayRec = att[todayKey] || null;
+  const cum = Store.getCumulative();
+  const isRest = isRestDay(y, m, d);
+  const isMakeupDay = getDayKind(y, m, d) === 'makeup';
+
+  let inner;
+  if (isRest) {
+    inner = '<div class="punch-rest">🌿 今天休息，不用打卡～</div>';
+  } else if (todayRec && todayRec.type && todayRec.type !== 'checkin' && todayRec.type !== 'makeup' && todayRec.type !== 'duty') {
+    inner = leaveStatusText(todayRec);
+  } else {
+    const ci = (todayRec && todayRec.checkin) || null;
+    const co = (todayRec && todayRec.checkout) || null;
+    inner = `
+      <div class="punch-grid">
+        <div class="punch-item">
+          <div class="punch-label"><span class="punch-dot in"></span>上班</div>
+          <div class="punch-time">${ci ? escHtml(ci) : '<span class="punch-empty">未打卡</span>'}</div>
+          <button class="btn btn-pink btn-sm" onclick="quickCheckin()">${ci ? '重新上班打卡' : '上班打卡'}</button>
+        </div>
+        <div class="punch-item">
+          <div class="punch-label"><span class="punch-dot out"></span>下班</div>
+          <div class="punch-time">${co ? escHtml(co) : '<span class="punch-empty">未打卡</span>'}</div>
+          <button class="btn btn-pink btn-sm" onclick="quickCheckout()">${co ? '重新下班打卡' : '下班打卡'}</button>
+        </div>
+      </div>
+      ${isMakeupDay ? '<div class="punch-hint">🛠 今天是调休补班日，记得打上下班卡</div>' : ''}
+    `;
+  }
+  return `<div class="punch-card-inner">${inner}<div class="work-streak">🔥 累计打卡 ${cum.totalCheckins} 次</div></div>`;
+}
+
 function workCheckinBodyHtml() {
   const now = new Date();
   if (!calYear) { calYear = now.getFullYear(); calMonth = now.getMonth(); }
@@ -4903,43 +5000,7 @@ function workCheckinBodyHtml() {
     </div>`;
   }
 
-  // 今日快捷打卡卡片：上班 / 下班 分离
-  const def = getWorkDefaults();
-  const isRest = isCurrentMonth && isRestDay(now.getFullYear(), now.getMonth(), todayDate);
-  const isMakeupDay = isCurrentMonth && getDayKind(now.getFullYear(), now.getMonth(), todayDate) === 'makeup';
-  let punchCardInner = '';
-  if (isRest) {
-    punchCardInner = '<div style="color:var(--accent-green);font-size:16px;">🌿 今天休息，不用打卡～</div>';
-  } else if (todayRec && todayRec.type && todayRec.type !== 'checkin' && todayRec.type !== 'makeup' && todayRec.type !== 'duty') {
-    // 已标记为请假类（病假 / 年假 / 调休），展示状态，不提供打卡
-    punchCardInner = leaveStatusText(todayRec);
-  } else {
-    const ci = (todayRec && todayRec.checkin) || null;
-    const co = (todayRec && todayRec.checkout) || null;
-    punchCardInner = `
-      <div class="punch-grid">
-        <div class="punch-item">
-          <div class="punch-label"><span class="punch-dot in"></span>上班</div>
-          <div class="punch-time">${ci ? escHtml(ci) : '<span class="punch-empty">未打卡</span>'}</div>
-          <button class="btn btn-pink btn-sm" style="min-width:150px;" onclick="quickCheckin()">${ci ? '重新上班打卡' : '上班打卡'}</button>
-        </div>
-        <div class="punch-item">
-          <div class="punch-label"><span class="punch-dot out"></span>下班</div>
-          <div class="punch-time">${co ? escHtml(co) : '<span class="punch-empty">未打卡</span>'}</div>
-          <button class="btn btn-pink btn-sm" style="min-width:150px;" onclick="quickCheckout()">${co ? '重新下班打卡' : '下班打卡'}</button>
-        </div>
-      </div>
-      ${isMakeupDay ? '<div class="punch-hint">🛠 今天是调休补班日，记得打上下班卡</div>' : ''}
-    `;
-  }
-
   return `
-    <div class="card" style="text-align:center;padding:20px;">
-      <div style="font-size:14px;color:var(--text-sub);margin-bottom:14px;">今日快捷打卡</div>
-      ${punchCardInner}
-      <div class="work-streak" style="margin-top:14px;">🔥 累计打卡 ${cum.totalCheckins} 次</div>
-    </div>
-
     <div class="board-card work-leave-tray">
       <div class="leave-balance">
         <div class="leave-card lc-annual">
@@ -5450,6 +5511,7 @@ function cleanTodayGhosts(today) {
 }
 
 function renderDailyTasks(container) {
+  archiveCompletedTodos();
   rollForwardUnfinishedTasks();
   const data = Store.getDaily();
   const doneCount = data.tasks.filter(t => t.done).length;
@@ -5458,9 +5520,9 @@ function renderDailyTasks(container) {
 
   // 自动汇入：待办事项中 date == 今天的条目
   const todayKey = Store.todayKey();
-  // 已完成归档的待办事项不再在每日任务页显示
+  // 当天完成的待办仍显示在每日任务里（次日才归档到历史记录）
   const linkedTodos = Store.getTodos()
-    .filter(t => t.date === todayKey && !t.done)
+    .filter(t => t.date === todayKey && (!t.done || t.doneDate === todayKey))
     .sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
 
   // 自动汇入：日程（含重复）中「截至今天仍未完成」的发生项
@@ -5504,12 +5566,12 @@ function renderDailyTasks(container) {
         ` : `
           ${activeTasks.map(t => `
           <div class="task-item">
-            <div class="task-checkbox ${t.done ? 'done' : ''}" onclick="toggleTask('${t.id}')"></div>
+            <div class="task-checkbox ${t.done ? 'done' : ''}" onclick="toggleTask('${t.id || ''}','${escAttr(t.text || '')}')"></div>
             <span class="task-text ${t.done ? 'done' : ''}">${escHtml(t.text)}</span>
             ${t.rolled ? '<span class="task-meta"><span class="roll-badge" title="前一天未完成，已顺延到今天">↪ 顺延</span></span>' : ''}
             <span class="task-actions">
-              <button class="task-edit" onclick="editTask('${t.id}')" title="编辑">✎</button>
-              <button class="task-delete" onclick="deleteTask('${t.id}')">✕</button>
+              <button class="task-edit" onclick="editTask('${t.id || ''}','${escAttr(t.text || '')}')" title="编辑">✎</button>
+              <button class="task-delete" onclick="deleteTask('${t.id || ''}','${escAttr(t.text || '')}')">✕</button>
             </span>
           </div>
           `).join('')}
@@ -5563,9 +5625,9 @@ function addTask() {
   renderPage('daily-tasks');
 }
 
-function toggleTask(id) {
+function toggleTask(id, text) {
   const data = Store.getDaily();
-  const task = data.tasks.find(t => t.id === id);
+  const task = findDailyTask(data.tasks, id, text);
   if (task) {
     const wasDone = task.done;
     task.done = !task.done;
@@ -5583,14 +5645,25 @@ function toggleTask(id) {
   }
 }
 
-function deleteTask(id) {
+// 兼容旧数据：早期每日任务没有 id，onclick 传的是 'undefined'，此时按文本兜底定位
+function findDailyTask(tasks, id, text) {
+  const bad = (id === undefined || id === null || id === '' || id === 'undefined');
+  if (bad) return tasks.find(t => !t.id && (t.text || '') === (text || ''));
+  return tasks.find(t => t.id === id);
+}
+function deleteTask(id, text) {
   const data = Store.getDaily();
-  const task = data.tasks.find(t => t.id === id);
-  data.tasks = data.tasks.filter(t => t.id !== id);
+  const idx = data.tasks.findIndex(t => {
+    const bad = (id === undefined || id === null || id === '' || id === 'undefined');
+    return bad ? (!t.id && (t.text || '') === (text || '')) : t.id === id;
+  });
+  if (idx < 0) { showToast('没有找到要删除的任务'); return; }
+  const task = data.tasks[idx];
+  data.tasks.splice(idx, 1);
   Store.saveDaily(data);
   // 若删除的是从往日顺延(rolled)过来的任务，需同步清除所有往日记录里同 id 的未完成副本，
   // 否则 rollForwardUnfinishedTasks 会在下次渲染时把它再次顺延回来。
-  if (task) purgeRolledSource(id);
+  if (task && task.id) purgeRolledSource(task.id);
   renderPage('daily-tasks');
 }
 
@@ -5613,9 +5686,9 @@ function purgeRolledSource(id) {
   }
 }
 
-function editTask(id) {
+function editTask(id, text) {
   const data = Store.getDaily();
-  const task = data.tasks.find(t => t.id === id);
+  const task = findDailyTask(data.tasks, id, text);
   if (!task) return;
   showModal(`
     <div class="modal-title">✎ 编辑任务</div>
@@ -5647,8 +5720,11 @@ function saveTaskEdit(id) {
 // TODO (长期待办事项，可勾选联动到每日任务)
 // ====================================================================
 function renderTodo(container) {
+  archiveCompletedTodos();   // 跨天归档：昨天及更早完成的待办收进历史记录
   const todos = Store.getTodos();
-  const activeTodos = todos.filter(t => !t.done); // 已完成归档的待办不在列表中显示
+  const todayKey = Store.todayKey();
+  // 当天刚完成的待办仍保留在列表里（次日才归档到历史记录）
+  const activeTodos = todos.filter(t => !t.done || t.doneDate === todayKey);
   const cats = Store.getTodoCategories();
   const groups = {};
   cats.forEach(c => groups[c] = []);
@@ -5671,6 +5747,7 @@ function renderTodo(container) {
               <span class="todo-cat">${escHtml(cat)}</span>
               ${t.date ? `<span style="font-size:11px;color:var(--accent-blue);cursor:pointer;" onclick="editTodoDate('${t.id}')" title="点击改期">📅 ${escHtml(t.date)}${t.time ? ' ' + escHtml(t.time) : ''}</span>` : `<span style="font-size:11px;color:var(--text-light);cursor:pointer;" onclick="editTodoDate('${t.id}')" title="设定日期">📅 设日期</span>`}
               ${t.date === Store.todayKey() ? '<span style="font-size:11px;color:var(--accent-green);">今日自动汇入每日任务</span>' : ''}
+              ${t.done ? '<span class="todo-arch-hint">✓ 已完成 · 明日归档</span>' : ''}
             </div>
           </div>
           <div class="todo-done ${t.done ? 'on' : ''}" onclick="toggleTodoDone('${t.id}')" title="标记完成">${t.done ? '✓' : ''}</div>
@@ -5847,11 +5924,37 @@ function toggleTodoDone(id) {
   if (!todo) return;
   const wasDone = todo.done;
   todo.done = !todo.done;
-  Store.saveTodos(todos);
-  if (todo.done && !wasDone) {
-    Store.archiveTask({ id: todo.id, text: todo.text, doneDate: Store.todayKey(), doneTime: nowHMS(), source: 'todo', category: todo.category, icon: '📝' });
+  if (todo.done) {
+    // 记录完成日期：当天仍保留在页面上展示完成态，次日由归档流程收进「历史记录」
+    todo.doneDate = Store.todayKey();
+    todo.doneTime = nowHMS();
+  } else {
+    delete todo.doneDate;
+    delete todo.doneTime;
   }
+  Store.saveTodos(todos);
   renderPage(currentPage);
+}
+
+// 归档流程：把「昨天及更早」完成的待办收进历史记录，并从待办列表移除
+function archiveCompletedTodos() {
+  const today = Store.todayKey();
+  const todos = Store.getTodos();
+  if (!todos.length) return;
+  let changed = false;
+  const kept = [];
+  todos.forEach(t => {
+    if (t.done && t.doneDate && t.doneDate < today) {
+      Store.archiveTask({
+        id: t.id, text: t.text, doneDate: t.doneDate, doneTime: t.doneTime || '',
+        source: 'todo', category: t.category, icon: '📝'
+      });
+      changed = true;   // 已归档，从待办列表移除
+    } else {
+      kept.push(t);
+    }
+  });
+  if (changed) Store.saveTodos(kept);
 }
 
 function deleteTodo(id) {
@@ -6052,7 +6155,7 @@ function completeSchedPending(id) {
 }
 
 // ===== 历史任务（已完成任务自动归档） =====
-const _monthUI = { history: null, historySched: null, sleep: null, exercise: null };
+const _monthUI = { history: null, historySched: null, historyAll: null, sleep: null, exercise: null };
 function monthUIState(section, latestMonth) {
   if (!_monthUI[section]) {
     _monthUI[section] = new Set();
@@ -6101,52 +6204,82 @@ function historySectionHtml(items, sectionKey, title, icon, emptyText, renderIte
 }
 
 function renderHistory(container) {
+  archiveCompletedTodos();   // 跨天归档：把昨天及更早完成的待办收进来
   const raw = Store.getHistory().slice().sort((a, b) =>
     (b.doneDate + ' ' + (b.doneTime || '')).localeCompare(a.doneDate + ' ' + (a.doneTime || ''))
   );
-  const tasks = raw.filter(h => h.source !== 'sched');
-  const sched = raw.filter(h => h.source === 'sched');
+  const todayKey = Store.todayKey();
+  const currentYm = todayKey.slice(0, 7);   // 当前月份 YYYY-MM
+
+  // 按「年份-月份」分组
+  const byMonth = {};
+  raw.forEach(h => {
+    const ym = (h.doneDate || '').slice(0, 7) || '未知月份';
+    (byMonth[ym] = byMonth[ym] || []).push(h);
+  });
+  const months = Object.keys(byMonth).sort().reverse();
+
+  // 默认展开当前月份；当前月份没有记录时展开最近的一个月份
+  const openSet = monthUIState('historyAll', months.indexOf(currentYm) >= 0 ? currentYm : (months[0] || null));
+
+  const srcMeta = h => {
+    if (h.source === 'todo') return { cls: 'src-todo', label: '待办事项' };
+    if (h.source === 'sched') return { cls: 'src-sched', label: '日程' };
+    return { cls: 'src-daily', label: '每日任务' };
+  };
+
+  let listHtml;
+  if (!raw.length) {
+    listHtml = `<div class="card"><div class="empty-state"><div class="es-icon">🗂️</div><div>还没有历史记录，完成的待办与每日任务会在次日自动归档到这里～</div></div></div>`;
+  } else {
+    listHtml = months.map(ym => `
+      <div class="month-card ${openSet.has(ym) ? 'open' : ''}" id="mc-historyAll-${ym}">
+        <div class="month-card-header" onclick="toggleMonthCard('historyAll','${ym}')">
+          <div>
+            <span class="month-card-title">${fmtMonthLabel(ym)}</span>
+            <span class="month-card-count">${byMonth[ym].length} 条</span>
+            ${ym === currentYm ? '<span class="month-card-now">当前月</span>' : ''}
+          </div>
+          <span class="month-arrow chev-line"></span>
+        </div>
+        <div class="month-card-body">
+          <div class="history-list">
+            ${byMonth[ym].map(h => {
+              const m = srcMeta(h);
+              return `
+              <div class="history-item">
+                <div class="history-check">✓</div>
+                <div class="history-body">
+                  <div class="history-text">${escHtml(h.text)}</div>
+                  <div class="history-meta">
+                    <span class="history-src ${m.cls}">${m.label}</span>
+                    ${h.category ? `<span class="history-cat">${escHtml(h.category)}</span>` : ''}
+                    <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
+                    ${h.time ? `<span class="history-cat">⏰ ${escHtml(h.time)}</span>` : ''}
+                    ${h.repeat && h.repeat !== 'none' ? `<span class="sched-repeat-badge">🔁 ${repeatLabel(h.repeat)}</span>` : ''}
+                    ${h.rolled ? '<span class="roll-badge" title="由未完成顺延而来">↪ 顺延</span>' : ''}
+                  </div>
+                  ${h.note ? `<div class="sched-note">${escHtml(h.note)}</div>` : ''}
+                </div>
+                <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
   container.innerHTML = `
     <div class="page-header">
       <span class="ph-icon">${DOG_ICONS['history']}</span>
       <span class="ph-title">历史记录</span>
-      <span class="ph-desc">已完成任务与日程自动归档于此 · 共 ${raw.length} 条</span>
+      <span class="ph-desc">完成的待办与每日任务次日自动归档 · 按年月折叠 · 共 ${raw.length} 条</span>
     </div>
-    <div class="history-columns">
-      <div class="history-col">
-        ${historySectionHtml(tasks, 'history', '📋 历史任务', '📋', '还没有已完成的任务，完成一个就会自动归档到这里～', h => `
-          <div class="history-item">
-            <div class="history-check">✓</div>
-            <div class="history-body">
-              <div class="history-text">${escHtml(h.text)}</div>
-              <div class="history-meta">
-                <span class="history-src ${h.source === 'todo' ? 'src-todo' : h.source === 'sched' ? 'src-sched' : 'src-daily'}">${h.source === 'todo' ? '待办事项' : h.source === 'sched' ? '日程' : '每日任务'}</span>
-                ${h.category ? `<span class="history-cat">${escHtml(h.category)}</span>` : ''}
-                <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
-              </div>
-            </div>
-            <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
-          </div>
-        `)}
+    <div class="card">
+      <div class="section-head">
+        <div><div class="section-title">归档明细</div><div class="section-sub">默认展开当前月份（${fmtMonthLabel(currentYm)}），点击月份标题可展开或收起</div></div>
       </div>
-      <div class="history-col">
-        ${historySectionHtml(sched, 'historySched', '📆 历史日程', '📆', '还没有已完成的日程，完成一个就会自动归档到这里～', h => `
-          <div class="history-item">
-            <div class="history-check">✓</div>
-            <div class="history-body">
-              <div class="history-text">${escHtml(h.text)}</div>
-              <div class="history-meta">
-                <span class="history-src src-sched">日程</span>
-                <span class="history-date">🗓 ${escHtml(h.doneDate)}${h.doneTime ? ' ' + escHtml(h.doneTime) : ''}</span>
-                ${h.time ? `<span class="history-cat">⏰ ${escHtml(h.time)}</span>` : ''}
-                ${h.repeat && h.repeat !== 'none' ? `<span class="sched-repeat-badge">🔁 ${repeatLabel(h.repeat)}</span>` : ''}
-              </div>
-              ${h.note ? `<div class="sched-note">${escHtml(h.note)}</div>` : ''}
-            </div>
-            <button class="task-delete" onclick="deleteHistoryItem('${h.id}')" title="从历史移除">✕</button>
-          </div>
-        `)}
-      </div>
+      ${listHtml}
     </div>
   `;
 }
@@ -7663,12 +7796,16 @@ function statusTags(r, page) {
   page = page || 'purchases';
   const btn = (field, val, on, label, cls) =>
     `<button class="st-pill ${cls || ''} ${on ? 'on' : ''}" data-field="${field}" data-val="${val}" title="点击切换" onclick="setBillStatus('${page}','${r.id}','${field}','${val}',this)">${label}</button>`;
-  return `<span class="se-status">`
-    + btn('payStatus', 'unsettled', r.payStatus !== 'settled', '未结算')
-    + btn('payStatus', 'settled', r.payStatus === 'settled', '已结算', 'ret')
+  // 两组状态：上组「未做单 / 已做单」，下组「未结算 / 已结算」
+  const makeGroup = `<span class="se-status">`
     + btn('makeStatus', 'unmade', r.makeStatus !== 'made', '未做单')
     + btn('makeStatus', 'made', r.makeStatus === 'made', '已做单', 'ret')
     + `</span>`;
+  const payGroup = `<span class="se-status">`
+    + btn('payStatus', 'unsettled', r.payStatus !== 'settled', '未结算')
+    + btn('payStatus', 'settled', r.payStatus === 'settled', '已结算', 'ret')
+    + `</span>`;
+  return `<span class="se-status-wrap">${makeGroup}${payGroup}</span>`;
 }
 function setBillStatus(page, id, field, val, btn) {
   if (field !== 'payStatus' && field !== 'makeStatus') return;
@@ -7776,7 +7913,7 @@ function renderPurchases(container) {
         <button class="btn btn-primary" onclick="openPurchaseModal()">➕ 新增采购</button>
         <button class="btn btn-text btn-sm" onclick="openBillColumns('purchases')">⚙️ 列设置</button>
       </div>
-      ${list.length ? billTable('purchases', list) : emptyState('🛒', '还没有采购记录', '点击「新增采购」关联产品库，即可自动带出成本单价并计算金额。')}
+      ${list.length ? billDateGroups('purchases', list) : emptyState('🛒', '还没有采购记录', '点击「新增采购」关联产品库，即可自动带出成本单价并计算金额。')}
     </div>
   `;
 }
@@ -7883,7 +8020,7 @@ function renderSales(container) {
         <button class="btn btn-primary" onclick="openSalesModal()">➕ 新增销售</button>
         <button class="btn btn-text btn-sm" onclick="openBillColumns('sales')">⚙️ 列设置</button>
       </div>
-      ${list.length ? billTable('sales', list) : emptyState('💰', '还没有销售记录', '点击「新增销售」关联产品或采购清单，即可自动带出销售单价。')}
+      ${list.length ? billDateGroups('sales', list) : emptyState('💰', '还没有销售记录', '点击「新增销售」关联产品或采购清单，即可自动带出销售单价。')}
     </div>
   `;
 }
@@ -8169,10 +8306,11 @@ function deleteSale(id) {
 // ====================================================================
 // 数据处理中心：采购订单 / 结算材料
 // ====================================================================
-const PO_HEADER_KEYS = ['name','style','color','size','qty','unitPrice','supplier','barcode','material','billNo','orderDate','deliveryDate'];
+const PO_HEADER_KEYS = ['name','style','color','size','qty','unit','unitPrice','amount','supplier','barcode','material','billNo','orderDate','deliveryDate'];
 const PO_FIELD_LABELS = {
-  name:'产品名称', style:'款式', color:'颜色', size:'尺码', qty:'数量', unitPrice:'成本单价',
-  supplier:'供应商', barcode:'69码', material:'材质', billNo:'单据编号', orderDate:'下单日期', deliveryDate:'交货日期'
+  name:'产品名称', style:'款式', color:'颜色', size:'尺码', qty:'数量', unit:'单位', unitPrice:'成本单价',
+  amount:'金额', supplier:'供应商', barcode:'69码', material:'材质', billNo:'单据编号',
+  orderDate:'下单日期', deliveryDate:'交货日期'
 };
 
 function downloadAoa(aoa, filename, sheetName) {
@@ -8200,6 +8338,156 @@ function readExcelTemplate(file, cb) {
   };
   reader.readAsArrayBuffer(file);
 }
+// ====================================================================
+// ZIP 读写 + Word 模板原位填充（把整理后的数据写回用户上传的 docx 模板）
+// ====================================================================
+const _crcTable = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = _crcTable[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function bytesToB64(bytes) {
+  let bin = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+  }
+  return btoa(bin);
+}
+function b64ToBytes(b64) {
+  const bin = atob(b64);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+// 读取 zip 的全部条目（保留原始压缩字节，未修改的条目原样写回）
+function zipReadEntries(buf) {
+  const dv = new DataView(buf);
+  let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= 0 && i >= buf.byteLength - 65557; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw Error('zip 结构无效');
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const entries = [];
+  for (let i = 0; i < count; i++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const crc = dv.getUint32(off + 16, true);
+    const csize = dv.getUint32(off + 20, true);
+    const usize = dv.getUint32(off + 24, true);
+    const nlen = dv.getUint16(off + 28, true);
+    const elen = dv.getUint16(off + 30, true);
+    const clen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = new TextDecoder().decode(new Uint8Array(buf, off + 46, nlen));
+    const lnlen = dv.getUint16(lho + 26, true);
+    const lelen = dv.getUint16(lho + 28, true);
+    const dataOff = lho + 30 + lnlen + lelen;
+    entries.push({
+      name, method, crc, usize,
+      data: new Uint8Array(buf.slice(dataOff, dataOff + csize))
+    });
+    off += 46 + nlen + elen + clen;
+  }
+  return entries;
+}
+// 生成 zip（method 0 存储 / method 8 deflate 原始压缩字节）
+function zipWriteBlob(entries) {
+  const chunks = [];
+  const central = [];
+  let offset = 0;
+  const enc = new TextEncoder();
+  entries.forEach(e => {
+    const nameBytes = enc.encode(e.name);
+    const stored = e.method === 0;
+    const payload = stored ? e.raw : e.data;
+    const csize = payload.length;
+    const usize = e.usize !== undefined ? e.usize : csize;
+    const crc = e.crc !== undefined ? e.crc : crc32(payload);
+    const local = new Uint8Array(30 + nameBytes.length);
+    const dv = new DataView(local.buffer);
+    dv.setUint32(0, 0x04034b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 0, true);
+    dv.setUint16(8, e.method, true);
+    dv.setUint16(10, 0, true);
+    dv.setUint16(12, 0x2821, true);
+    dv.setUint32(14, crc, true);
+    dv.setUint32(18, csize, true);
+    dv.setUint32(22, usize, true);
+    dv.setUint16(26, nameBytes.length, true);
+    dv.setUint16(28, 0, true);
+    local.set(nameBytes, 30);
+    chunks.push(local, payload);
+    central.push({ nameBytes, crc, csize, usize, method: e.method, offset });
+    offset += local.length + csize;
+  });
+  const cdChunks = [];
+  let cdSize = 0;
+  central.forEach(c => {
+    const h = new Uint8Array(46 + c.nameBytes.length);
+    const dv = new DataView(h.buffer);
+    dv.setUint32(0, 0x02014b50, true);
+    dv.setUint16(4, 20, true);
+    dv.setUint16(6, 20, true);
+    dv.setUint16(8, 0, true);
+    dv.setUint16(10, c.method, true);
+    dv.setUint16(12, 0, true);
+    dv.setUint16(14, 0x2821, true);
+    dv.setUint32(16, c.crc, true);
+    dv.setUint32(20, c.csize, true);
+    dv.setUint32(24, c.usize, true);
+    dv.setUint16(28, c.nameBytes.length, true);
+    dv.setUint16(30, 0, true);
+    dv.setUint16(32, 0, true);
+    dv.setUint16(34, 0, true);
+    dv.setUint16(36, 0, true);
+    dv.setUint32(38, 0, true);
+    dv.setUint32(42, c.offset, true);
+    h.set(c.nameBytes, 46);
+    cdChunks.push(h);
+    cdSize += h.length;
+  });
+  const eocd = new Uint8Array(22);
+  const dv = new DataView(eocd.buffer);
+  dv.setUint32(0, 0x06054b50, true);
+  dv.setUint16(4, 0, true);
+  dv.setUint16(6, 0, true);
+  dv.setUint16(8, entries.length, true);
+  dv.setUint16(10, entries.length, true);
+  dv.setUint32(12, cdSize, true);
+  dv.setUint32(16, offset, true);
+  dv.setUint16(20, 0, true);
+  chunks.push(...cdChunks, eocd);
+  return new Blob(chunks, { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+}
+async function deflateRaw(bytes) {
+  if (typeof CompressionStream === 'undefined') return null;
+  const ds = new CompressionStream('deflate-raw');
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+}
+
 // 解析 Word(.docx) 正文中的段落与表格，转为二维数组
 function docxBodyToAoa(xml) {
   const doc = new DOMParser().parseFromString(xml, 'application/xml');
@@ -8309,22 +8597,224 @@ function poAutoMapping(headers) {
   return mapping;
 }
 
+// ====================================================================
+// 采购订单导出：按上传的 Word/Excel 导出模板整理数据
+//  1) 读取订单附件明细（Excel）→ 字段映射
+//  2) 按「产品名称」汇总数量、金额
+//  3) 按导出模板的表头与前导内容填入模板，导出 Excel / Word
+// ====================================================================
+
+// 按产品名称汇总明细行（同一产品的款式/颜色/尺码合并，累计数量与金额）
+function poAggregateRows(rows) {
+  const map = new Map();
+  rows.forEach(r => {
+    const name = (r.name || '').trim();
+    if (!name) return;
+    const qty = Number(r.qty) || 0;
+    const price = Number(r.unitPrice) || 0;
+    const amt = r.amount !== undefined && r.amount !== '' ? (Number(r.amount) || 0) : qty * price;
+    if (!map.has(name)) {
+      map.set(name, {
+        name: name, qty: 0, amount: 0, unit: (r.unit || '').trim() || '件',
+        unitPrice: price, style: r.style || '', color: r.color || '', size: r.size || '',
+        supplier: r.supplier || '', material: r.material || '', barcode: r.barcode || '',
+        billNo: r.billNo || '', orderDate: r.orderDate || '', deliveryDate: r.deliveryDate || '',
+        details: []
+      });
+    }
+    const g = map.get(name);
+    g.qty += qty;
+    g.amount += amt;
+    if (!g.unitPrice && price) g.unitPrice = price;
+    g.details.push(r);
+  });
+  return Array.from(map.values());
+}
+
+// 模板表头 → 内部字段（按用户上传模板的列名映射）
+function poTemplateFieldOf(header) {
+  const v = String(header || '').trim();
+  if (!v) return '';
+  const hit = (aliases) => aliases.some(a => v === a || v.indexOf(a) >= 0);
+  if (hit(PO_FIELD_ALIASES.name)) return 'name';
+  if (hit(PO_FIELD_ALIASES.style)) return 'style';
+  if (hit(PO_FIELD_ALIASES.color)) return 'color';
+  if (hit(PO_FIELD_ALIASES.size)) return 'size';
+  if (hit(PO_FIELD_ALIASES.qty)) return 'qty';
+  if (hit(PO_FIELD_ALIASES.unit)) return 'unit';
+  if (hit(PO_FIELD_ALIASES.amount)) return 'amount';
+  if (hit(PO_FIELD_ALIASES.unitPrice)) return 'unitPrice';
+  if (hit(PO_FIELD_ALIASES.supplier)) return 'supplier';
+  if (hit(PO_FIELD_ALIASES.barcode)) return 'barcode';
+  if (hit(PO_FIELD_ALIASES.material)) return 'material';
+  if (hit(PO_FIELD_ALIASES.billNo)) return 'billNo';
+  if (hit(PO_FIELD_ALIASES.orderDate)) return 'orderDate';
+  if (hit(PO_FIELD_ALIASES.deliveryDate)) return 'deliveryDate';
+  return '';
+}
+
+// 按模板表头生成一行数据
+function poRowForTemplate(tplHeaders, agg) {
+  return tplHeaders.map(h => {
+    const f = poTemplateFieldOf(h);
+    if (!f) return '';
+    let v = agg[f];
+    if (v === undefined || v === null) return '';
+    if (f === 'amount') return (Math.round(Number(v) * 100) / 100);
+    return v;
+  });
+}
+
+// 完整表格内容（用于 Excel 导出）
+function poTemplateAoa(aggRows) {
+  const tpl = Store.getPoTemplate();
+  const headers = tpl.headers && tpl.headers.length ? tpl.headers : PO_TEMPLATE_HEADERS;
+  const data = aggRows.map(a => poRowForTemplate(headers, a));
+  return (tpl.preamble || []).concat([headers], data);
+}
+
+// ---------- Word 模板原位填充 ----------
+const W_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+function wEl(tag) { return document.createElementNS(W_NS, 'w:' + tag); }
+function wTextOf(node) {
+  let t = '';
+  Array.from(node.getElementsByTagNameNS(W_NS, 't')).forEach(x => { t += (x.textContent || ''); });
+  return t.trim();
+}
+// 找到模板里“表头行”所在的表格
+function docxFindTable(doc, tplHeaders) {
+  const tbls = Array.from(doc.getElementsByTagNameNS(W_NS, 'tbl'));
+  let best = null, bestScore = -1;
+  tbls.forEach(tbl => {
+    const rows = Array.from(tbl.getElementsByTagNameNS(W_NS, 'tr'));
+    if (!rows.length) return;
+    const headCells = Array.from(rows[0].getElementsByTagNameNS(W_NS, 'tc')).map(wTextOf);
+    let score = 0;
+    tplHeaders.forEach(h => {
+      const f = poTemplateFieldOf(h);
+      if (!f) return;
+      if (headCells.some(c => poTemplateFieldOf(c) === f)) score++;
+    });
+    if (score > bestScore) { bestScore = score; best = { tbl, rows, headCells }; }
+  });
+  return bestScore > 0 ? best : null;
+}
+// 用一行数据构造一个 <w:tr>（克隆样板行的单元格结构）
+function docxMakeRow(protoRow, values, cellCount) {
+  const tr = wEl('tr');
+  const protoCells = protoRow ? Array.from(protoRow.getElementsByTagNameNS(W_NS, 'tc')) : [];
+  for (let i = 0; i < cellCount; i++) {
+    const tc = wEl('tc');
+    const src = protoCells[i];
+    if (src) {
+      // 克隆源单元格的属性（宽度/边框等）
+      const tcPr = src.getElementsByTagNameNS(W_NS, 'tcPr')[0];
+      if (tcPr) tc.appendChild(tcPr.cloneNode(true));
+    }
+    const p = wEl('p');
+    const srcP = src ? Array.from(src.getElementsByTagNameNS(W_NS, 'p'))[0] : null;
+    if (srcP) {
+      const pPr = srcP.getElementsByTagNameNS(W_NS, 'pPr')[0];
+      if (pPr) p.appendChild(pPr.cloneNode(true));
+      const srcR = Array.from(srcP.getElementsByTagNameNS(W_NS, 'r'))[0];
+      if (srcR) {
+        const r = wEl('r');
+        const rPr = srcR.getElementsByTagNameNS(W_NS, 'rPr')[0];
+        if (rPr) r.appendChild(rPr.cloneNode(true));
+        const t = wEl('t');
+        t.setAttribute('xml:space', 'preserve');
+        t.textContent = values[i] === undefined || values[i] === null ? '' : String(values[i]);
+        r.appendChild(t);
+        p.appendChild(r);
+      }
+    }
+    if (!p.getElementsByTagNameNS(W_NS, 'r').length) {
+      const r = wEl('r');
+      const t = wEl('t');
+      t.setAttribute('xml:space', 'preserve');
+      t.textContent = values[i] === undefined || values[i] === null ? '' : String(values[i]);
+      r.appendChild(t);
+      p.appendChild(r);
+    }
+    tc.appendChild(p);
+    tr.appendChild(tc);
+  }
+  return tr;
+}
+// 把汇总数据填入 docx 模板并打包返回 Blob
+async function docxFillTemplate(docxBytes, aggRows) {
+  const entries = zipReadEntries(docxBytes.buffer.slice(docxBytes.byteOffset, docxBytes.byteOffset + docxBytes.byteLength));
+  const docEntry = entries.find(e => e.name === 'word/document.xml');
+  if (!docEntry) throw Error('Word 模板里找不到正文文件');
+  // 解压 document.xml
+  let xml;
+  if (docEntry.method === 0) {
+    xml = new TextDecoder().decode(docEntry.data);
+  } else if (docEntry.method === 8) {
+    const ds = new DecompressionStream('deflate-raw');
+    xml = await new Response(new Blob([docEntry.data]).stream().pipeThrough(ds)).text();
+  } else {
+    throw Error('不支持的压缩方式');
+  }
+  const tpl = Store.getPoTemplate();
+  const tplHeaders = tpl.headers && tpl.headers.length ? tpl.headers : PO_TEMPLATE_HEADERS;
+
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const found = docxFindTable(doc, tplHeaders);
+  if (!found) throw Error('模板中找不到与表头匹配的表格');
+
+  const { tbl, rows, headCells } = found;
+  const cellCount = Math.max(headCells.length, tplHeaders.length);
+  // 找到“数据行样板”：表头行之后第一行非空行（作为格式样板）
+  let protoRow = null;
+  let insertBefore = null;
+  for (let i = 1; i < rows.length; i++) {
+    const txt = wTextOf(rows[i]);
+    if (txt) { protoRow = rows[i]; insertBefore = rows[i + 1] || null; break; }
+  }
+  // 删除模板中原有的数据行
+  for (let i = rows.length - 1; i >= 1; i--) {
+    if (rows[i] === protoRow) continue;
+    if (wTextOf(rows[i])) rows[i].parentNode.removeChild(rows[i]);
+  }
+  if (protoRow && protoRow.parentNode) protoRow.parentNode.removeChild(protoRow);
+
+  // 逐行插入汇总数据
+  aggRows.forEach(agg => {
+    const vals = poRowForTemplate(tplHeaders, agg);
+    const tr = docxMakeRow(protoRow, vals, cellCount);
+    if (insertBefore && insertBefore.parentNode) insertBefore.parentNode.insertBefore(tr, insertBefore);
+    else tbl.appendChild(tr);
+  });
+
+  const outXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\r\n' +
+    new XMLSerializer().serializeToString(doc.documentElement);
+  const outBytes = new TextEncoder().encode(outXml);
+  const compressed = await deflateRaw(outBytes);
+  const newEntry = compressed
+    ? { name: 'word/document.xml', method: 8, data: compressed, usize: outBytes.length, crc: crc32(outBytes) }
+    : { name: 'word/document.xml', method: 0, raw: outBytes, usize: outBytes.length, crc: crc32(outBytes) };
+  const newEntries = entries.map(e => e.name === 'word/document.xml' ? newEntry : e);
+  return zipWriteBlob(newEntries);
+}
+
 let poDraft = null;
 
 function renderPoOrders(container) {
   const batches = Store.getPoOrders();
   const tpl = Store.getPoTemplate();
+  const tplDoc = Store.getPoTemplateDocx();
   container.innerHTML = `
     <div class="page-header">
       <span class="ph-icon">${DOG_ICONS['po-orders']}</span>
       <span class="ph-title">采购订单</span>
-      <span class="ph-desc">上传订单附件明细 · 按当前导出模板加工并导出 Excel</span>
+      <span class="ph-desc">上传导出文件模板与订单附件明细 · 按产品名称汇总后填入模板导出</span>
     </div>
     <div class="card">
       <div class="section-head">
-        <div><div class="section-title">订单附件明细</div><div class="section-sub">当前导出模板：${escHtml(tpl.name)}（${tpl.headers.length} 列）· 附件明细仅产品信息不同，上传后自动识别并整理</div></div>
+        <div><div class="section-title">导出文件模板</div><div class="section-sub">当前模板：${escHtml(tpl.name)}（${tpl.headers.length} 列${tplDoc ? '，Word 原件已保存' : ''}）· 上传 Word 模板后，导出会把汇总结果原位填入该模板</div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('po-tpl-file').click()">⬆ 上传模板（Excel / Word）</button>
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('po-tpl-file').click()">⬆ 上传导出文件模板（Word / Excel）</button>
           <button class="btn btn-text btn-sm" onclick="resetPoTemplate()">恢复默认</button>
           <button class="btn btn-text btn-sm" onclick="downloadPoTemplate()">下载当前模板</button>
           <input type="file" id="po-tpl-file" accept=".xlsx,.xls,.docx" style="display:none;" onchange="handlePoTemplateUpload(this)">
@@ -8332,8 +8822,8 @@ function renderPoOrders(container) {
       </div>
       <div class="upload-zone" onclick="document.getElementById('po-file').click()">
         <div class="uz-icon">⬆</div>
-        <div class="uz-title">点击选择 Excel 文件（.xlsx / .xls）</div>
-        <div class="uz-sub">也可将文件拖到此处</div>
+        <div class="uz-title">上传订单附件明细（.xlsx / .xls）</div>
+        <div class="uz-sub">上传后按「产品名称」汇总数量与金额，再填入导出文件模板 · 也可将文件拖到此处</div>
         <input type="file" id="po-file" accept=".xlsx,.xls" style="display:none;" onchange="handlePoUpload(this)">
       </div>
       <div id="po-preview"></div>
@@ -8342,6 +8832,7 @@ function renderPoOrders(container) {
       <div class="section-head"><div class="section-title">历史加工记录</div></div>
       ${batches.length ? `<div class="bill-scroll"><table class="bill-table"><thead><tr><th>文件名</th><th>处理时间</th><th>产品行数</th><th>操作</th></tr></thead><tbody>
         ${batches.map(b => `<tr><td>${escHtml(b.fileName)}</td><td>${escHtml(b.createdAt)}</td><td>${b.rows.length}</td><td><div class="bill-actions">
+          <button class="btn btn-outline btn-sm" onclick="exportPoBatchDocx('${b.id}')">导出 Word</button>
           <button class="btn btn-outline btn-sm" onclick="exportPoBatch('${b.id}')">导出 Excel</button>
           <button class="btn btn-text btn-sm" onclick="deletePoBatch('${b.id}')">删除</button>
         </div></td></tr>`).join('')}
@@ -8421,17 +8912,28 @@ function renderPoPreview() {
     <div class="map-item"><label>${PO_FIELD_LABELS[key]}</label><select class="input" id="pom_${key}" onchange="applyPoMapping()">${mapOpts(poDraft.mapping[key])}</select></div>
   `).join('');
   const rows = poDraft.rows.slice(0, 40).map(r => `<tr>${PO_HEADER_KEYS.map(k => `<td>${escHtml(r[k] || '—')}</td>`).join('')}</tr>`).join('');
+  // 按模板汇总预览（按产品名称合并数量与金额）
+  const tpl = Store.getPoTemplate();
+  const tplHeaders = tpl.headers && tpl.headers.length ? tpl.headers : PO_TEMPLATE_HEADERS;
+  const agg = poAggregateRows(poDraft.rows);
+  const aggRows = agg.slice(0, 40).map(a => `<tr>${poRowForTemplate(tplHeaders, a).map(v =>
+    `<td>${escHtml(v === '' ? '—' : v)}</td>`).join('')}</tr>`).join('');
+  const aggTotal = agg.reduce((n, a) => n + (Number(a.amount) || 0), 0);
+  const aggQty = agg.reduce((n, a) => n + (Number(a.qty) || 0), 0);
   box.innerHTML = `
     <div class="po-result">
       <div class="section-head"><div><div class="section-title">字段映射</div><div class="section-sub">来源：${escHtml(poDraft.fileName)} · 共 ${poDraft.rows.length} 行</div></div></div>
       <div class="map-grid">${mappingHtml}</div>
-      <div class="section-head" style="margin-top:8px;"><div class="section-title">加工预览${poDraft.rows.length > 40 ? '（前 40 行）' : ''}</div></div>
+      <div class="section-head" style="margin-top:8px;"><div><div class="section-title">明细预览${poDraft.rows.length > 40 ? '（前 40 行）' : ''}</div><div class="section-sub">以下为附件原始明细</div></div></div>
       <div class="bill-scroll"><table class="bill-table po-table"><thead><tr>${PO_HEADER_KEYS.map(k => `<th>${PO_FIELD_LABELS[k]}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="section-head" style="margin-top:14px;"><div><div class="section-title">按产品名称汇总（将填入导出模板）</div><div class="section-sub">共 ${agg.length} 个产品 · 合计数量 ${aggQty} · 合计金额 ¥${aggTotal.toFixed(2)}</div></div></div>
+      <div class="bill-scroll"><table class="bill-table po-table"><thead><tr>${tplHeaders.map(h => `<th>${escHtml(h)}</th>`).join('')}</tr></thead><tbody>${aggRows}</tbody></table></div>
       <div class="form-actions">
         <button class="btn btn-text btn-sm" onclick="clearPoDraft()">清空</button>
         <button class="btn btn-outline btn-sm" onclick="savePoBatch()">保存加工记录</button>
         <button class="btn btn-outline btn-sm" onclick="importPoToPurchases()">导入采购清单</button>
-        <button class="btn btn-primary btn-sm" onclick="exportPoDraft()">导出标准 Excel</button>
+        <button class="btn btn-outline btn-sm" onclick="exportPoDraftDocx()">导出 Word（填入模板）</button>
+        <button class="btn btn-primary btn-sm" onclick="exportPoDraft()">导出 Excel（按模板）</button>
       </div>
     </div>`;
 }
@@ -8455,10 +8957,31 @@ function poAoaFromRows(rows) {
   return (tpl.preamble || []).concat([headers], data);
 }
 function poDraftAoa() { return poAoaFromRows(poDraft ? poDraft.rows : []); }
+// 汇总后的数据（按产品名称合并数量与金额）
+function poDraftAgg() { return poAggregateRows(poDraft ? poDraft.rows : []); }
+// 按模板导出 Excel
 function exportPoDraft() {
   if (!poDraft || !poDraft.rows.length) { showToast('没有可导出的数据'); return; }
   const tpl = Store.getPoTemplate();
-  downloadAoa(poDraftAoa(), '采购订单_' + poDraft.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
+  const agg = poDraftAgg();
+  downloadAoa(poTemplateAoa(agg), '采购订单_' + poDraft.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
+  showToast('已按模板导出 ' + agg.length + ' 个产品（数量与金额已汇总）');
+}
+// 按 Word 模板导出：把汇总数据原位填入上传的 docx 再下载
+async function exportPoDraftDocx() {
+  if (!poDraft || !poDraft.rows.length) { showToast('没有可导出的数据'); return; }
+  const tplDoc = Store.getPoTemplateDocx();
+  if (!tplDoc || !tplDoc.b64) { showToast('请先上传 Word 格式的导出文件模板'); return; }
+  try {
+    const bytes = b64ToBytes(tplDoc.b64);
+    const agg = poDraftAgg();
+    const blob = await docxFillTemplate(bytes, agg);
+    const base = (poDraft.fileName || '采购订单').replace(/\.[^.]+$/, '');
+    downloadBlob(blob, '采购订单_' + base + '.docx');
+    showToast('已按 Word 模板填入 ' + agg.length + ' 个产品');
+  } catch (err) {
+    showToast('导出失败：' + (err && err.message ? err.message : '模板处理异常'));
+  }
 }
 function downloadPoTemplate() {
   const tpl = Store.getPoTemplate();
@@ -8474,7 +8997,17 @@ function downloadPoTemplate() {
 function handlePoTemplateUpload(input) {
   const f = input.files && input.files[0];
   if (!f) return;
-  readTemplateFile(f, info => {
+  const isDocx = (f.name || '').toLowerCase().endsWith('.docx');
+  // Word 模板需要保留原始文件字节，导出时才能把数据原位填进模板
+  const saveDocxBytes = isDocx
+    ? f.arrayBuffer().then(buf => {
+        const bytes = new Uint8Array(buf);
+        Store.savePoTemplateDocx({ name: f.name, b64: bytesToB64(bytes) });
+      }).catch(() => {})
+    : Promise.resolve();
+  Promise.all([saveDocxBytes, new Promise(res => {
+    readTemplateFile(f, info => res(info));
+  })]).then(([_, info]) => {
     const found = detectHeaderRow(info.aoa, Object.values(PO_FIELD_ALIASES));
     if (!found.headers.length) { showToast('没有在模板中识别到表头'); return; }
     Store.savePoTemplate({ name: f.name, headers: found.headers, preamble: info.aoa.slice(0, found.headerIdx), sheetName: info.sheetName });
@@ -8485,6 +9018,7 @@ function handlePoTemplateUpload(input) {
 }
 function resetPoTemplate() {
   Store.savePoTemplate({ name: '固定模板', headers: PO_TEMPLATE_HEADERS.slice(), preamble: [], sheetName: '采购订单' });
+  Store.clearPoTemplateDocx();
   renderPage('po-orders');
   showToast('已恢复默认导出模板');
 }
@@ -8500,7 +9034,23 @@ function exportPoBatch(id) {
   const b = Store.getPoOrders().find(x => x.id === id);
   if (!b) return;
   const tpl = Store.getPoTemplate();
-  downloadAoa(poAoaFromRows(b.rows), '采购订单_' + b.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
+  const agg = poAggregateRows(b.rows || []);
+  downloadAoa(poTemplateAoa(agg), '采购订单_' + b.fileName.replace(/\.[^.]+$/, '') + '.xlsx', tpl.sheetName || '采购订单');
+}
+async function exportPoBatchDocx(id) {
+  const b = Store.getPoOrders().find(x => x.id === id);
+  if (!b) return;
+  const tplDoc = Store.getPoTemplateDocx();
+  if (!tplDoc || !tplDoc.b64) { showToast('请先上传 Word 格式的导出文件模板'); return; }
+  try {
+    const bytes = b64ToBytes(tplDoc.b64);
+    const agg = poAggregateRows(b.rows || []);
+    const blob = await docxFillTemplate(bytes, agg);
+    downloadBlob(blob, '采购订单_' + b.fileName.replace(/\.[^.]+$/, '') + '.docx');
+    showToast('已按 Word 模板填入 ' + agg.length + ' 个产品');
+  } catch (err) {
+    showToast('导出失败：' + (err && err.message ? err.message : '模板处理异常'));
+  }
 }
 function deletePoBatch(id) {
   Store.savePoOrders(Store.getPoOrders().filter(x => x.id !== id));
@@ -8841,6 +9391,48 @@ function billTable(page, list) {
   </table></div>`;
 }
 
+// 按「下单日期」把清单折叠收纳：日期倒序，每个日期一张可展开的卡片
+const _billDateOpen = {};
+function billDateGroups(page, list) {
+  const groups = new Map();
+  list.forEach(r => {
+    const d = (r.orderDate || '').trim() || '未填写日期';
+    if (!groups.has(d)) groups.set(d, []);
+    groups.get(d).push(r);
+  });
+  const dates = Array.from(groups.keys()).sort((a, b) => {
+    if (a === '未填写日期') return 1;
+    if (b === '未填写日期') return -1;
+    return b.localeCompare(a);
+  });
+  if (_billDateOpen[page] === undefined) _billDateOpen[page] = new Set();
+  const openSet = _billDateOpen[page];
+  // 首次渲染默认展开第一个（最新）日期
+  if (!openSet.size && dates.length) openSet.add(dates[0]);
+
+  return `<div class="bill-date-groups">${dates.map(d => {
+    const rows = groups.get(d);
+    const amt = rows.reduce((n, r) => n + (Number(r.total) || 0), 0);
+    const open = openSet.has(d);
+    return `
+      <div class="bill-date-card ${open ? 'open' : ''}">
+        <div class="bill-date-head" onclick="toggleBillDateGroup('${page}','${d}')">
+          <span class="bill-date-chev chev-line"></span>
+          <span class="bill-date-label">${escHtml(fmtCNDate(d) || d)}</span>
+          <span class="bill-date-count">${rows.length} 条</span>
+          <span class="bill-date-amount">${money(amt)}</span>
+        </div>
+        ${open ? billTable(page, rows) : ''}
+      </div>`;
+  }).join('')}</div>`;
+}
+function toggleBillDateGroup(page, date) {
+  if (!_billDateOpen[page]) _billDateOpen[page] = new Set();
+  const set = _billDateOpen[page];
+  if (set.has(date)) set.delete(date); else set.add(date);
+  renderPage(page);
+}
+
 /* ---- 全局搜索（Cmd/Ctrl + K）与快捷键 ---- */
 let cmdResults = [], cmdIndex = 0;
 function ensureCmdOverlay() {
@@ -8870,7 +9462,7 @@ function cmdSources() {
     ['dashboard','桌面','🏠'], ['products','产品库','🏷️'],
     ['purchases','采购清单','🛒'], ['sales','销售清单','💰'], ['po-orders','采购订单','📄'],
     ['settlement','结算材料','🧾'], ['sample-records','样品清单','📦'],
-    ['todo','待办事项','📝'], ['daily-tasks','每日任务','📋'], ['lunch-menu','午饭菜单','🍱']
+    ['todo','待办事项','📝'], ['daily-tasks','每日任务','📋'], ['lunch-menu','午饭菜单','🍱'], ['history','历史记录','🗂️']
   ].map(([page, label, icon]) => ({ page, label, type: '页面', icon }));
   const data = [];
   Store.getProducts().forEach(p => data.push({ page: 'products', label: p.name + (productSpec(p) ? ' · ' + productSpec(p) : ''), type: '产品', icon: '🏷️' }));
@@ -8910,7 +9502,7 @@ function openShortcutsHelp() {
     <div class="modal-actions"><button class="btn btn-primary" onclick="closeModal()">知道了</button></div>
   `);
 }
-const SHORTCUT_PAGES = ['dashboard','products','purchases','sales','po-orders','settlement','sample-records','todo','daily-tasks','lunch-menu'];
+const SHORTCUT_PAGES = ['dashboard','products','purchases','sales','po-orders','settlement','sample-records','todo','daily-tasks','lunch-menu','history'];
 document.addEventListener('keydown', e => {
   const key = e.key.toLowerCase();
   const typing = /input|textarea|select/i.test((e.target && e.target.tagName) || '');
@@ -10429,7 +11021,13 @@ function gbBuiltinToken() {
   try { return b64dec(GB_BUILTIN_CONFIG.tokenB64); } catch (e) { return ''; }
 }
 // 本地没有配置时，用内置配置自动填充（仅首次/被清空后），避免每次重填
+// 安全：只有通过 http(s) 正式站点访问时才自动连接云端。
+// 本地 file:// 打开（调试、备份、离线使用）时绝不自动上传，避免把本地/测试数据写进用户云端。
+function gbIsLocalFile() {
+  try { return location.protocol === 'file:'; } catch (e) { return false; }
+}
 function gbApplyBuiltinIfEmpty() {
+  if (gbIsLocalFile()) return;   // 本地文件模式：不接入云端
   if (localStorage.getItem(GB_TOKEN_KEY)) return; // 已存在本地配置，尊重用户手动改动
   if (!GB_BUILTIN_CONFIG.owner || !GB_BUILTIN_CONFIG.repo || !GB_BUILTIN_CONFIG.file) return;
   writeSyncConfig({
@@ -10450,6 +11048,7 @@ function gbSetStatus(state, text) {
   if (tx) tx.textContent = text;
 }
 function gbRefreshStatus() {
+  if (gbIsLocalFile()) { gbSetStatus('off', '本地模式 · 未连接云端'); return; }
   if (!gbReady()) { gbSetStatus('off', '未开启同步'); return; }
   if (gbConflictOpen) { gbSetStatus('busy', '有版本冲突，已暂停'); return; }
   if (gbPushing || gbPulling) { gbSetStatus('busy', '同步中…'); return; }
@@ -10584,6 +11183,7 @@ function applyPayload(payload) {
 }
 function scheduleSyncPush() {
   if (!gbReady() || gbApplying) return;
+  if (gbIsLocalFile()) return;   // 本地文件模式：不上传
   if (!gbPullDone) return;     // 云端还没拉下来，先不上传，避免本机旧数据覆盖云端
   if (gbConflictOpen) return;  // 有未处理的版本冲突，先不要自动上传
   gbSetStatus('busy', '改动待同步…');
@@ -10592,6 +11192,8 @@ function scheduleSyncPush() {
 }
 async function syncPush(verbose, force) {
   if (!gbReady()) return false;
+  // 本地文件模式：不上传，避免把本地调试数据写进用户云端（手动强制上传除外）
+  if (gbIsLocalFile() && !force) return false;
   if (gbConflictOpen && !force) return false;
   if (gbPushing) return false;          // 防止重入导致弹窗连环触发
   gbPushing = true;
@@ -10763,6 +11365,8 @@ function showSyncConflictUnknown() {
 }
 async function syncPull(verbose) {
   if (!gbReady()) return false;
+  // 本地文件模式：不做自动拉取（避免把云端数据覆盖到本地调试数据），仅允许手动拉取
+  if (gbIsLocalFile() && !verbose) return false;
   gbPulling = true;
   gbSetStatus('busy', '同步中…');
   try {
@@ -10880,6 +11484,7 @@ function startAutoPull() {
   clearInterval(gbPullTimer);
   gbPullTimer = null;
   if (!gbAutoPull) return;
+  if (gbIsLocalFile()) return;   // 本地文件模式：不自动拉取
   gbPullTimer = setInterval(() => {
     if (!gbReady() || gbApplying || gbPushing || gbPulling) return;
     if (gbConflictOpen || !gbPullDone) return;
@@ -11101,7 +11706,7 @@ initDogIcons();
 applyAvatar();
 gbApplyBuiltinIfEmpty();   // 本地无同步配置时，自动用内置配置连接（免重填）
 gbRefreshStatus();
-if (gbReady()) { gbLastPullAt = Date.now(); syncPull(); }
+if (gbReady() && !gbIsLocalFile()) { gbLastPullAt = Date.now(); syncPull(); }
 startAutoPull();
 if (!window.matchMedia('(max-width: 768px)').matches) document.body.classList.remove('nav-hidden');
 rollForwardUnfinishedTasks();

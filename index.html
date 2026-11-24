@@ -4273,34 +4273,41 @@ function shrinkImage(file, maxW, targetBytes) {
         let out = cv.toDataURL('image/png');
         if (out.length <= targetBytes) { resolve(out); return; }
 
+        // 转 JPEG 前先铺浅灰底：否则透明区域会被编码成纯黑
+        const jpegCanvas = (src, sw, sh) => {
+          const c = document.createElement('canvas');
+          c.width = sw; c.height = sh;
+          const cx = c.getContext('2d');
+          cx.fillStyle = '#F2F3F5';           // 网站画布底色
+          cx.fillRect(0, 0, sw, sh);
+          cx.drawImage(img, 0, 0, sw, sh);
+          return c;
+        };
+        const jcv = jpegCanvas(cv, w, h);
         // 再尝试 JPEG 逐级降质：0.82 → 0.72 → 0.62 → 0.52 → 0.44 → 0.38
         const qualities = [0.82, 0.72, 0.62, 0.52, 0.44, 0.38];
         for (const q of qualities) {
-          out = cv.toDataURL('image/jpeg', q);
+          out = jcv.toDataURL('image/jpeg', q);
           if (out.length <= targetBytes) { resolve(out); return; }
         }
         // 仍超限：逐级缩小尺寸（最多缩到 45%）并用 JPEG 0.5 重试，直到达标
-        let cur = cv;
         for (const ratio of [0.8, 0.65, 0.5, 0.45]) {
           const smaller = Math.max(96, Math.floor(w * ratio));
           if (smaller >= w) break;
-          const cv2 = document.createElement('canvas');
           const r = smaller / w;
-          cv2.width = smaller; cv2.height = Math.max(1, Math.round(h * r));
-          cv2.getContext('2d').drawImage(img, 0, 0, cv2.width, cv2.height);
+          const sw = smaller, sh = Math.max(1, Math.round(h * r));
+          const jcv2 = jpegCanvas(cv, sw, sh);
           for (const q of [0.55, 0.45, 0.35]) {
-            out = cv2.toDataURL('image/jpeg', q);
+            out = jcv2.toDataURL('image/jpeg', q);
             if (out.length <= targetBytes) { resolve(out); return; }
           }
-          cur = cv2;
         }
         // 兜底：用最小尺寸 JPEG 0.3，接受略超限（最多 1.15 倍）
         const smallest = Math.max(96, Math.floor(w * 0.4));
-        const cv3 = document.createElement('canvas');
         const r3 = smallest / w;
-        cv3.width = smallest; cv3.height = Math.max(1, Math.round(h * r3));
-        cv3.getContext('2d').drawImage(img, 0, 0, cv3.width, cv3.height);
-        out = cv3.toDataURL('image/jpeg', 0.3);
+        const sw3 = smallest, sh3 = Math.max(1, Math.round(h * r3));
+        const jcv3 = jpegCanvas(cv, sw3, sh3);
+        out = jcv3.toDataURL('image/jpeg', 0.3);
         if (out.length <= targetBytes * 1.15) { resolve(out); return; }
         reject(new Error('图片压缩后仍超过 ' + Math.round(targetBytes / 1000) + 'KB，请换一张更小的图片'));
       };
@@ -7439,8 +7446,9 @@ function renderProductList() {
     ].filter(Boolean).join(' · ');
     const tags = Array.isArray(first.tags) ? first.tags : String(fv.tags || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
     const thumb = list.find(p => p.images && p.images.length);
+    // 缩略图若为黑底（透明底 PNG 转 JPEG 所致），渲染后自动洗成网站浅灰底
     const thumbHtml = thumb
-      ? `<img class="prod-thumb" src="${thumb.images[0]}" alt="">`
+      ? `<img class="prod-thumb" src="${thumb.images[0]}" alt="" onload="fixThumbBg(this)">`
       : `<div class="prod-thumb">🏷️</div>`;
     const styles = Array.from(new Set(list.map(p => pval(p, 'style')).filter(Boolean)));
     const colors = Array.from(new Set(list.map(p => pval(p, 'color')).filter(Boolean)));
@@ -7502,7 +7510,7 @@ function showProductDetail(name) {
 
   showModal(`
     <div class="modal-title">${escHtml(name)}</div>
-    ${imgs.length ? `<div class="pd-imgs">${imgs.map(src => `<img src="${src}" alt="" onclick="viewImage(this.src)">`).join('')}</div>` : ''}
+    ${imgs.length ? `<div class="pd-imgs">${imgs.map(src => `<img src="${src}" alt="" onload="fixThumbBg(this)" onclick="viewImage(this.src)">`).join('')}</div>` : ''}
     <div class="pd-meta">
       <span class="pd-chip">${list.length} 条 SKU</span>
       ${(fv.costPrice || fv.salePrice) ? `<span class="pd-chip">成本 ¥${escHtml(fv.costPrice || '—')}</span><span class="pd-chip">售价 ¥${escHtml(fv.salePrice || '—')}</span>` : ''}
@@ -7511,7 +7519,7 @@ function showProductDetail(name) {
     ${infoRows ? `<div class="pd-info">${infoRows}</div>` : ''}
     <div class="pd-section-title">SKU 明细（款式 → 颜色 → 尺码）</div>
     <div class="pd-tree">${styleHtml || '<div class="empty-block">暂无 SKU 明细</div>'}</div>
-    ${chart ? `<div class="pd-section-title">尺码表</div><div class="pd-chart"><img src="${chart}" alt="尺码表" onclick="viewImage(this.src)"></div>` : ''}
+    ${chart ? `<div class="pd-section-title">尺码表</div><div class="pd-chart"><img src="${chart}" alt="尺码表" onload="fixThumbBg(this)" onclick="viewImage(this.src)"></div>` : ''}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal()">关闭</button>
       <button class="btn btn-primary" onclick="closeModal();openProductModal('${first.id}')">✏️ 编辑该产品</button>
@@ -12548,16 +12556,91 @@ function gbPayloadSizePercent() {
   return Math.min(100, Math.round(gbPayloadSize() / 750000 * 100));
 }
 
+// 缩略图黑底兜底：把纯黑背景替换为网站浅灰底
+function fixThumbBg(el) {
+  if (!el || el.dataset.bgFixed) return;
+  el.dataset.bgFixed = '1';
+  try {
+    const w = el.naturalWidth, h = el.naturalHeight;
+    if (!w || !h) return;
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(el, 0, 0);
+    const d = ctx.getImageData(0, 0, w, h);
+    const p = d.data;
+    let black = 0;
+    for (let i = 0; i < p.length; i += 4) {
+      if (p[i] < 34 && p[i + 1] < 34 && p[i + 2] < 34) {
+        p[i] = 242; p[i + 1] = 243; p[i + 2] = 245;
+        black++;
+      }
+    }
+    // 黑像素占比过高才处理，避免误伤本来就是深色主体的产品图
+    if (black / (w * h) > 0.25) {
+      ctx.putImageData(d, 0, 0);
+      el.src = cv.toDataURL('image/jpeg', 0.9);
+    }
+  } catch (e) { /* 忽略 */ }
+}
+
 // ====================================================================
 // 存量图片瘦身：把已存的 base64 图片重新压缩，腾出云端同步空间
 // ====================================================================
+// 检测图片四角是否接近纯黑（透明区被转 JPEG 后的典型特征）
+function hasBlackBg(img) {
+  try {
+    const cv = document.createElement('canvas');
+    cv.width = img.width; cv.height = img.height;
+    cv.getContext('2d').drawImage(img, 0, 0);
+    const ctx = cv.getContext('2d');
+    const pts = [[3, 3], [img.width - 4, 3], [3, img.height - 4], [img.width - 4, img.height - 4]];
+    let black = 0;
+    pts.forEach(p => {
+      const d = ctx.getImageData(p[0], p[1], 1, 1).data;
+      if (d[3] > 8 && d[0] < 34 && d[1] < 34 && d[2] < 34) black++;
+    });
+    return black >= 3;   // 四角里至少三个是纯黑
+  } catch (e) { return false; }
+}
+// 把纯黑背景替换为网站浅灰底（保留主体图形）
+async function fixBlackBg(dataUrl) {
+  if (!dataUrl || dataUrl.indexOf('data:image/') !== 0) return dataUrl;
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = dataUrl;
+    });
+    if (!img.width || !img.height) return dataUrl;
+    if (!hasBlackBg(img)) return dataUrl;
+    const w = img.width, h = img.height;
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#F2F3F5';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0);
+    // 把近黑像素整体提亮为浅灰（容差处理，保留主体深色轮廓）
+    const data = ctx.getImageData(0, 0, w, h);
+    const d = data.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i] < 34 && d[i + 1] < 34 && d[i + 2] < 34) {
+        d[i] = 242; d[i + 1] = 243; d[i + 2] = 245;
+      }
+    }
+    ctx.putImageData(data, 0, 0);
+    const out = cv.toDataURL('image/jpeg', 0.9);
+    return out;
+  } catch (e) { return dataUrl; }
+}
+
 async function compressDataUrl(dataUrl, maxW, targetBytes) {
   if (!dataUrl || dataUrl.indexOf('data:image/') !== 0) return dataUrl;
-  // 已经是目标体积以内的不动
-  if (dataUrl.length <= targetBytes) return dataUrl;
   try {
     // 直接用 Image 解码 base64（file:// 下 fetch 可能被拦截）
-    const img = await new Promise((resolve, reject) => {
+    let img = await new Promise((resolve, reject) => {
       const im = new Image();
       im.onload = () => resolve(im);
       im.onerror = reject;
@@ -12565,14 +12648,49 @@ async function compressDataUrl(dataUrl, maxW, targetBytes) {
     });
     let w = img.width, h = img.height;
     if (!w || !h) return dataUrl;
+    // 已是 JPEG 的黑底图：先把近黑像素提亮为浅灰，避免压缩后仍是黑底
+    let washed = false;
+    if (hasBlackBg(img)) {
+      const fixCv = document.createElement('canvas');
+      fixCv.width = img.width; fixCv.height = img.height;
+      const fx = fixCv.getContext('2d');
+      fx.drawImage(img, 0, 0);
+      const fd = fx.getImageData(0, 0, img.width, img.height);
+      const pd = fd.data;
+      for (let i = 0; i < pd.length; i += 4) {
+        if (pd[i] < 34 && pd[i + 1] < 34 && pd[i + 2] < 34) {
+          pd[i] = 242; pd[i + 1] = 243; pd[i + 2] = 245;
+        }
+      }
+      fx.putImageData(fd, 0, 0);
+      img = fixCv;
+      w = img.width; h = img.height;
+      washed = true;
+    }
+    // 体积已达标：仅在修过黑底时输出修复结果，否则原样返回
+    if (dataUrl.length <= targetBytes) {
+      if (!washed) return dataUrl;
+      const cvw = document.createElement('canvas');
+      cvw.width = w; cvw.height = h;
+      cvw.getContext('2d').drawImage(img, 0, 0, w, h);
+      return cvw.toDataURL('image/png');
+    }
     if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
-    const cv = document.createElement('canvas');
-    cv.width = w; cv.height = h;
-    const ctx = cv.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
-    // PNG 会保留透明但体积大，优先 JPEG（无透明需求时）
+    // 转 JPEG 前先铺浅灰底：否则原本的透明/黑色区域会变成纯黑
+    const withBg = (sw, sh) => {
+      const c = document.createElement('canvas');
+      c.width = sw; c.height = sh;
+      const cx = c.getContext('2d');
+      cx.fillStyle = '#F2F3F5';
+      cx.fillRect(0, 0, sw, sh);
+      cx.drawImage(img, 0, 0, sw, sh);
+      return c;
+    };
+    const cv = withBg(w, h);
+    // PNG 会保留透明但体积大，优先 JPEG
     let out = cv.toDataURL('image/png');
-    if (out.length <= targetBytes) return out.length < dataUrl.length ? out : dataUrl;
+    // PNG 分支只在体积达标时用；若原图是黑底，PNG 仍会是黑底 → 不走此分支
+    if (out.length <= targetBytes && !hasBlackBg(img)) return out.length < dataUrl.length ? out : dataUrl;
     for (const q of [0.82, 0.72, 0.62, 0.52, 0.44, 0.38]) {
       out = cv.toDataURL('image/jpeg', q);
       if (out.length <= targetBytes) return out.length < dataUrl.length ? out : dataUrl;
@@ -12580,10 +12698,8 @@ async function compressDataUrl(dataUrl, maxW, targetBytes) {
     for (const ratio of [0.8, 0.65, 0.5, 0.45]) {
       const smaller = Math.max(96, Math.floor(w * ratio));
       if (smaller >= w) break;
-      const cv2 = document.createElement('canvas');
       const r = smaller / w;
-      cv2.width = smaller; cv2.height = Math.max(1, Math.round(h * r));
-      cv2.getContext('2d').drawImage(img, 0, 0, cv2.width, cv2.height);
+      const cv2 = withBg(smaller, Math.max(1, Math.round(h * r)));
       for (const q of [0.55, 0.45, 0.35]) {
         out = cv2.toDataURL('image/jpeg', q);
         if (out.length <= targetBytes) return out.length < dataUrl.length ? out : dataUrl;
@@ -12600,16 +12716,24 @@ async function compressStoredImages() {
   let changed = 0;
   // 1) 产品库：主图 + 尺码表
   const products = Store.getProducts();
+  let fixedBlack = 0;
   for (const p of products) {
     if (Array.isArray(p.images) && p.images.length) {
       const beforeImgs = p.images.join('').length;
       const next = [];
-      for (const src of p.images) next.push(await compressDataUrl(src, 320, 26000));
+      for (const src of p.images) {
+        // 先把纯黑背景洗成浅灰，再压缩
+        const washed = await fixBlackBg(src);
+        if (washed !== src) fixedBlack++;
+        next.push(await compressDataUrl(washed, 320, 26000));
+      }
       const afterImgs = next.join('').length;
-      if (afterImgs < beforeImgs) { p.images = next; changed++; }
+      if (afterImgs < beforeImgs || next.some((n, i) => n !== p.images[i])) { p.images = next; changed++; }
     }
     if (p.sizeChart) {
-      const c = await compressDataUrl(p.sizeChart, 360, 26000);
+      const washed = await fixBlackBg(p.sizeChart);
+      if (washed !== p.sizeChart) fixedBlack++;
+      const c = await compressDataUrl(washed, 360, 26000);
       if (c !== p.sizeChart) { p.sizeChart = c; changed++; }
     }
   }
@@ -12623,7 +12747,7 @@ async function compressStoredImages() {
     if (c !== v) { localStorage.setItem(k, c); changed++; }
   }
   const after = JSON.stringify(collectPayload()).length;
-  return { before, after, changed };
+  return { before, after, changed, fixedBlack };
 }
 async function runCompressStoredImages() {
   const btn = document.getElementById('gb-compress-btn');
@@ -12631,9 +12755,10 @@ async function runCompressStoredImages() {
   try {
     const r = await compressStoredImages();
     const saved = Math.max(0, Math.round((r.before - r.after) / 1024));
+    const blackTip = r.fixedBlack ? '，并修复了 ' + r.fixedBlack + ' 张黑底图片' : '';
     showToast(r.changed
-      ? '已压缩 ' + r.changed + ' 处图片，同步包减少约 ' + saved + 'KB'
-      : '图片已经足够小，没有可压缩的空间', 6000);
+      ? '已处理 ' + r.changed + ' 处图片，同步包减少约 ' + saved + 'KB' + blackTip
+      : (r.fixedBlack ? '已修复 ' + r.fixedBlack + ' 张黑底图片' : '图片已经足够小，没有可压缩的空间'), 6000);
     openSyncSettings();
   } catch (e) {
     showToast('压缩失败：' + (e && e.message ? e.message : '未知错误'), 6000);

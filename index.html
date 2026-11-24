@@ -12057,13 +12057,31 @@ function gbReadUrl() {
   return gbApi() + '?access_token=' + encodeURIComponent(token)
     + '&ref=' + encodeURIComponent(gbBranch()) + '&_t=' + Date.now();
 }
-// 统一读取云端：返回 { ok, status, missing, sha, cloud }
+// ===== 云端容量上限 =====
+// 实测（2026-11-24）：Gitee contents API 单文件 base64 内容上传最高可到约 13.9MB，
+// 超过后「上传成功但回读被服务端响应体截断」。原先的 750KB 是我们自设的保守线，并非平台限制。
+// 安全上限取 8MB：既能完整回读，又覆盖本机 localStorage（约 4.75MB 字符 → base64 约 6.5MB）能存下的全部数据。
+const GB_MAX_CONTENT = 8 * 1024 * 1024;   // 单文件 base64 上限（8MB）
+// 回读完整性校验用：Gitee 返回的 size 字段（原始字节数）与 content 字段（base64 字符数）换算后必须一致，
+// 不一致说明响应被截断 —— 此时必须拒绝用这份残缺数据覆盖本机，也不能拿它去覆盖云端。
+function gbContentComplete(j) {
+  if (!j || typeof j.size !== 'number') return true;      // 没有 size 字段（旧接口）→ 不做拦截
+  if (typeof j.content !== 'string') return false;
+  const expectB64 = 4 * Math.ceil(j.size / 3);
+  return j.content.length === expectB64;
+}
+
+// 统一读取云端：返回 { ok, status, missing, sha, cloud, truncated }
 async function gbFetchRemote() {
   try {
     const r = await fetch(gbReadUrl(), { cache: 'no-store' });
     if (r.status === 404) return { ok: true, status: 404, missing: true, sha: null, cloud: null };
     if (!r.ok) return { ok: false, status: r.status, missing: false, sha: null, cloud: null };
     const j = await r.json();
+    // 回读被截断（超大容量时 Gitee 服务端会截响应体）→ 标记 truncated，调用方必须中止，绝不能当成「云端为空」
+    if (!gbContentComplete(j)) {
+      return { ok: false, status: 200, missing: false, sha: j.sha || null, cloud: null, truncated: true };
+    }
     return { ok: true, status: 200, missing: false, sha: j.sha || null, cloud: j.content ? parseRemote(b64dec(j.content)) : null };
   } catch (e) {
     return { ok: false, status: 0, missing: false, sha: null, cloud: null, error: e };
@@ -12157,6 +12175,11 @@ async function doSyncPush(verbose, force) {
   // 上传前必须先看一眼云端当前版本，防止用本机旧快照覆盖别的设备刚提交的新版本
   const head = await gbFetchRemote();
   if (!head.ok) {
+    // 回读被截断（超大容量时 Gitee 会截响应体）→ 云端状态未知，绝不能当作「云端为空」去覆盖
+    if (head.truncated) {
+      showToast('云端数据回读不完整（响应被截断），已取消上传以免覆盖云端数据', 9000);
+      return false;
+    }
     showToast(head.status ? ('读不到云端版本（HTTP ' + head.status + '），已取消上传以免覆盖数据')
                           : '读不到云端版本（网络异常），已取消上传以免覆盖数据', 7000);
     return false;
@@ -12177,9 +12200,9 @@ async function doSyncPush(verbose, force) {
     __meta: { rev: nextRev, updatedAt: new Date().toISOString(), device: gbDeviceName() },
     data: collectPayload()
   }));
-  // Gitee 单文件 content（base64 后）限制约 1MB；留 25% 余量，超过 750KB 就拦截
-  if (content.length > 750000) {
-    showToast('同步包已达 ' + Math.round(content.length / 1024) + 'KB，超过云端 750KB 安全上限。请删除几张小记图片或复位部分图标/头像后再试。', 9000);
+  // Gitee 单文件 base64 实测可到约 13.9MB；这里取 8MB 安全上限（覆盖本机 localStorage 能存下的全部数据）
+  if (content.length > GB_MAX_CONTENT) {
+    showToast('同步包已达 ' + Math.round(content.length / 1024 / 1024 * 10) / 10 + 'MB，超过云端 ' + Math.round(GB_MAX_CONTENT / 1024 / 1024) + 'MB 安全上限。请删除几张小记图片或复位部分图标/头像后再试。', 9000);
     return false;
   }
   const msg = 'workbench sync v' + nextRev + ' from ' + gbDeviceName();
@@ -12326,6 +12349,11 @@ async function syncPull(verbose) {
     }
     if (!head.ok) {
       saveSyncDiag({ phase: 'pull', status: head.status, url: gbApi(), branch: gbBranch(), at: new Date().toISOString() });
+      // 回读被截断 → 云端数据不完整，绝不能当成「云端为空」（那会触发覆盖云端）
+      if (head.truncated) {
+        showToast('云端数据回读不完整（响应被截断），已暂停上传以免覆盖云端数据', 9000);
+        return false;
+      }
       showToast(head.status ? ('云端拉取失败（HTTP ' + head.status + '），已暂停上传以免覆盖云端数据')
                             : '云端拉取失败（网络异常），已暂停上传以免覆盖云端数据', 7000);
       return false;
@@ -12459,7 +12487,7 @@ function renderSyncDiag() {
   const diag = loadSyncDiag();
   let html = '<div style="font-size:12px;color:var(--text-sub);margin-top:12px;padding:10px;background:var(--cream-card);border-radius:10px;line-height:1.7;">';
   html += '<div style="font-weight:600;color:var(--text-main);margin-bottom:6px;">📊 同步包诊断</div>';
-  html += '<div>当前同步包（base64 后）：<b>' + Math.round(stats.contentLen / 1024) + ' KB</b> / 上限 750 KB</div>';
+  html += '<div>当前同步包（base64 后）：<b>' + Math.round(stats.contentLen / 1024) + ' KB</b> / 上限 ' + Math.round(GB_MAX_CONTENT / 1024 / 1024) + ' MB</div>';
   html += '<div style="margin-top:6px;">占用最大的键（Top 5）：</div>';
   html += '<ul style="margin:4px 0 0 16px;padding:0;font-size:11px;">';
   stats.items.slice(0, 5).forEach(it => {
@@ -12525,7 +12553,7 @@ function openSyncSettings() {
     <div class="sync-size-box">
       <div class="ssb-line"><span>当前同步包体积</span><b id="gb-size-val">${gbPayloadSizeText()}</b></div>
       <div class="ssb-bar"><div class="ssb-fill" id="gb-size-fill" style="width:${gbPayloadSizePercent()}%"></div></div>
-      <div class="ssb-tip">云端单文件上限约 1MB（安全线 750KB）。图片过多时先压缩，可立刻腾出空间。</div>
+      <div class="ssb-tip">云端单文件上限 8MB（实测 Gitee 可稳定读写约 13MB，此处留足余量）。图片过多时可先压缩，立刻腾出空间。</div>
       <button class="btn btn-outline btn-sm" id="gb-compress-btn" onclick="runCompressStoredImages()">🗜️ 压缩图片腾出空间</button>
     </div>
     <div class="modal-actions">
@@ -12550,10 +12578,11 @@ function gbPayloadSize() {
 }
 function gbPayloadSizeText() {
   const n = gbPayloadSize();
-  return Math.round(n / 1024) + 'KB / 750KB';
+  const lim = Math.round(GB_MAX_CONTENT / 1024 / 1024) + 'MB';
+  return (n >= 1024 * 1024 ? (Math.round(n / 1024 / 1024 * 10) / 10 + 'MB') : (Math.round(n / 1024) + 'KB')) + ' / ' + lim;
 }
 function gbPayloadSizePercent() {
-  return Math.min(100, Math.round(gbPayloadSize() / 750000 * 100));
+  return Math.min(100, Math.round(gbPayloadSize() / GB_MAX_CONTENT * 100));
 }
 
 // 缩略图黑底兜底：把纯黑背景替换为网站浅灰底

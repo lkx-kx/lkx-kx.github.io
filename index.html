@@ -2650,6 +2650,16 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .draft-sizechart img {
   background: var(--cream-bg);
 }
+/* 同步包体积显示 */
+.sync-size-box {
+  margin: 10px 0 14px; padding: 12px 14px;
+  border: 1px solid var(--border-soft); border-radius: 8px; background: var(--cream-bg);
+}
+.ssb-line { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--text-sub); margin-bottom: 8px; }
+.ssb-line b { color: var(--text-main); font-size: 13px; }
+.ssb-bar { height: 6px; border-radius: 999px; background: var(--border-soft); overflow: hidden; margin-bottom: 8px; }
+.ssb-fill { height: 100%; border-radius: 999px; background: var(--accent-green); transition: width .3s; }
+.ssb-tip { font-size: 11px; color: var(--text-light); line-height: 1.6; margin-bottom: 10px; }
 /* 产品模糊查找 */
 .prod-sort-select {
   width: auto; min-width: 150px; height: 34px; padding: 0 8px;
@@ -4246,7 +4256,8 @@ function resetNavIcon(page) { localStorage.removeItem('lxk_icon_' + page); apply
 // targetBytes: 图标默认 50KB，头像默认 80KB，保证多图同步不触 Gitee 1MB 上限
 function shrinkImage(file, maxW, targetBytes) {
   maxW = maxW || 160;
-  targetBytes = targetBytes || (maxW <= 160 ? 50000 : 80000);
+  // 目标体积上限（base64 字符数）：头像/图标 50KB，产品图 26KB，尺码表 40KB
+  targetBytes = targetBytes || (maxW <= 160 ? 50000 : (maxW <= 360 ? 26000 : 40000));
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -4262,22 +4273,35 @@ function shrinkImage(file, maxW, targetBytes) {
         let out = cv.toDataURL('image/png');
         if (out.length <= targetBytes) { resolve(out); return; }
 
-        // 再尝试 JPEG 0.85 → 0.70 → 0.60 → 0.50
-        const qualities = [0.85, 0.75, 0.65, 0.55, 0.5];
+        // 再尝试 JPEG 逐级降质：0.82 → 0.72 → 0.62 → 0.52 → 0.44 → 0.38
+        const qualities = [0.82, 0.72, 0.62, 0.52, 0.44, 0.38];
         for (const q of qualities) {
           out = cv.toDataURL('image/jpeg', q);
           if (out.length <= targetBytes) { resolve(out); return; }
         }
-        // 仍超限：再降一档尺寸（头像 180，图标 120）后重试一次 JPEG 0.5
-        if (maxW > 120) {
-          const smaller = Math.max(120, Math.floor(maxW * 0.7));
+        // 仍超限：逐级缩小尺寸（最多缩到 45%）并用 JPEG 0.5 重试，直到达标
+        let cur = cv;
+        for (const ratio of [0.8, 0.65, 0.5, 0.45]) {
+          const smaller = Math.max(96, Math.floor(w * ratio));
+          if (smaller >= w) break;
           const cv2 = document.createElement('canvas');
-          const ratio = smaller / w;
-          cv2.width = smaller; cv2.height = Math.max(1, Math.round(h * ratio));
+          const r = smaller / w;
+          cv2.width = smaller; cv2.height = Math.max(1, Math.round(h * r));
           cv2.getContext('2d').drawImage(img, 0, 0, cv2.width, cv2.height);
-          out = cv2.toDataURL('image/jpeg', 0.5);
+          for (const q of [0.55, 0.45, 0.35]) {
+            out = cv2.toDataURL('image/jpeg', q);
+            if (out.length <= targetBytes) { resolve(out); return; }
+          }
+          cur = cv2;
         }
-        if (out.length <= targetBytes * 1.5) { resolve(out); return; }
+        // 兜底：用最小尺寸 JPEG 0.3，接受略超限（最多 1.15 倍）
+        const smallest = Math.max(96, Math.floor(w * 0.4));
+        const cv3 = document.createElement('canvas');
+        const r3 = smallest / w;
+        cv3.width = smallest; cv3.height = Math.max(1, Math.round(h * r3));
+        cv3.getContext('2d').drawImage(img, 0, 0, cv3.width, cv3.height);
+        out = cv3.toDataURL('image/jpeg', 0.3);
+        if (out.length <= targetBytes * 1.15) { resolve(out); return; }
         reject(new Error('图片压缩后仍超过 ' + Math.round(targetBytes / 1000) + 'KB，请换一张更小的图片'));
       };
       img.onerror = reject;
@@ -8036,7 +8060,7 @@ function pickImages(cb, maxW) {
     if (!files.length) return;
     const out = [];
     for (const f of files) {
-      try { out.push(await shrinkImage(f, maxW || 400)); }
+      try { out.push(await shrinkImage(f, maxW || 320)); }
       catch (err) { showToast('有图片处理失败：' + (err && err.message ? err.message : '')); }
     }
     if (out.length) cb(out);
@@ -8050,7 +8074,7 @@ function prodPickImages() {
     prodDraft.images = (prodDraft.images || []).concat(imgs.slice(0, room));
     renderProdImages();
     showToast(`已添加 ${Math.min(imgs.length, room)} 张主图，可拖拽排序`);
-  }, 400);
+  }, 320);
 }
 function prodImageDragStart(e, i) { if (e.dataTransfer) e.dataTransfer.setData('text/plain', String(i)); }
 function prodImageDrop(e, i) {
@@ -8081,7 +8105,7 @@ function renderProdImages() {
   }
 }
 function prodRemoveImage(i) { prodDraft.images.splice(i, 1); renderProdImages(); }
-function prodPickSizeChart() { pickImage(d => { prodDraft.sizeChart = d; renderProdImages(); }, 600); }
+function prodPickSizeChart() { pickImage(d => { prodDraft.sizeChart = d; renderProdImages(); }, 360); }
 function prodRemoveSizeChart() { prodDraft.sizeChart = ''; renderProdImages(); }
 
 function saveProduct() {
@@ -12490,6 +12514,12 @@ function openSyncSettings() {
       <button class="btn btn-outline" onclick="manualPush()">⬆️ 立即上传</button>
       <button class="btn btn-danger" style="background:#FFFFFF;color:var(--accent-red);border:1px solid var(--accent-red);" onclick="manualForcePush()">⬆️ 强制覆盖上传</button>
     </div>
+    <div class="sync-size-box">
+      <div class="ssb-line"><span>当前同步包体积</span><b id="gb-size-val">${gbPayloadSizeText()}</b></div>
+      <div class="ssb-bar"><div class="ssb-fill" id="gb-size-fill" style="width:${gbPayloadSizePercent()}%"></div></div>
+      <div class="ssb-tip">云端单文件上限约 1MB（安全线 750KB）。图片过多时先压缩，可立刻腾出空间。</div>
+      <button class="btn btn-outline btn-sm" id="gb-compress-btn" onclick="runCompressStoredImages()">🗜️ 压缩图片腾出空间</button>
+    </div>
     <div class="modal-actions">
       <button class="btn btn-danger" onclick="clearSync()">断开</button>
       <button class="btn btn-outline" onclick="testConnection(true)">测试连接</button>
@@ -12503,6 +12533,111 @@ function openSyncSettings() {
       <b>版本保护：</b>云端每次更新版本号 +1。上传前会先比对版本，若云端比本机新则<b>拒绝覆盖</b>并弹窗让你选择；新设备连接时只会往下拉取，不会把本机旧数据推上去。
     </div>
   `);
+}
+
+// 当前同步包体积（base64 后的大致长度，与上传判定一致）
+function gbPayloadSize() {
+  try { return b64enc(JSON.stringify({ __meta: {}, data: collectPayload() })).length; }
+  catch (e) { return 0; }
+}
+function gbPayloadSizeText() {
+  const n = gbPayloadSize();
+  return Math.round(n / 1024) + 'KB / 750KB';
+}
+function gbPayloadSizePercent() {
+  return Math.min(100, Math.round(gbPayloadSize() / 750000 * 100));
+}
+
+// ====================================================================
+// 存量图片瘦身：把已存的 base64 图片重新压缩，腾出云端同步空间
+// ====================================================================
+async function compressDataUrl(dataUrl, maxW, targetBytes) {
+  if (!dataUrl || dataUrl.indexOf('data:image/') !== 0) return dataUrl;
+  // 已经是目标体积以内的不动
+  if (dataUrl.length <= targetBytes) return dataUrl;
+  try {
+    // 直接用 Image 解码 base64（file:// 下 fetch 可能被拦截）
+    const img = await new Promise((resolve, reject) => {
+      const im = new Image();
+      im.onload = () => resolve(im);
+      im.onerror = reject;
+      im.src = dataUrl;
+    });
+    let w = img.width, h = img.height;
+    if (!w || !h) return dataUrl;
+    if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    // PNG 会保留透明但体积大，优先 JPEG（无透明需求时）
+    let out = cv.toDataURL('image/png');
+    if (out.length <= targetBytes) return out.length < dataUrl.length ? out : dataUrl;
+    for (const q of [0.82, 0.72, 0.62, 0.52, 0.44, 0.38]) {
+      out = cv.toDataURL('image/jpeg', q);
+      if (out.length <= targetBytes) return out.length < dataUrl.length ? out : dataUrl;
+    }
+    for (const ratio of [0.8, 0.65, 0.5, 0.45]) {
+      const smaller = Math.max(96, Math.floor(w * ratio));
+      if (smaller >= w) break;
+      const cv2 = document.createElement('canvas');
+      const r = smaller / w;
+      cv2.width = smaller; cv2.height = Math.max(1, Math.round(h * r));
+      cv2.getContext('2d').drawImage(img, 0, 0, cv2.width, cv2.height);
+      for (const q of [0.55, 0.45, 0.35]) {
+        out = cv2.toDataURL('image/jpeg', q);
+        if (out.length <= targetBytes) return out.length < dataUrl.length ? out : dataUrl;
+      }
+    }
+    return dataUrl;
+  } catch (e) {
+    return dataUrl;
+  }
+}
+// 压缩产品库 / 样品等所有内嵌图片，返回压缩前后体积
+async function compressStoredImages() {
+  const before = JSON.stringify(collectPayload()).length;
+  let changed = 0;
+  // 1) 产品库：主图 + 尺码表
+  const products = Store.getProducts();
+  for (const p of products) {
+    if (Array.isArray(p.images) && p.images.length) {
+      const beforeImgs = p.images.join('').length;
+      const next = [];
+      for (const src of p.images) next.push(await compressDataUrl(src, 320, 26000));
+      const afterImgs = next.join('').length;
+      if (afterImgs < beforeImgs) { p.images = next; changed++; }
+    }
+    if (p.sizeChart) {
+      const c = await compressDataUrl(p.sizeChart, 360, 26000);
+      if (c !== p.sizeChart) { p.sizeChart = c; changed++; }
+    }
+  }
+  if (changed) Store.saveProducts(products);
+  // 2) 头像与页面图标
+  for (const k of Object.keys(localStorage)) {
+    if (!/^lxk_(avatar|icon_)/.test(k)) continue;
+    const v = localStorage.getItem(k);
+    if (!v || v.indexOf('data:image/') !== 0) continue;
+    const c = await compressDataUrl(v, k === 'lxk_avatar' ? 180 : 120, k === 'lxk_avatar' ? 40000 : 26000);
+    if (c !== v) { localStorage.setItem(k, c); changed++; }
+  }
+  const after = JSON.stringify(collectPayload()).length;
+  return { before, after, changed };
+}
+async function runCompressStoredImages() {
+  const btn = document.getElementById('gb-compress-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '压缩中…'; }
+  try {
+    const r = await compressStoredImages();
+    const saved = Math.max(0, Math.round((r.before - r.after) / 1024));
+    showToast(r.changed
+      ? '已压缩 ' + r.changed + ' 处图片，同步包减少约 ' + saved + 'KB'
+      : '图片已经足够小，没有可压缩的空间', 6000);
+    openSyncSettings();
+  } catch (e) {
+    showToast('压缩失败：' + (e && e.message ? e.message : '未知错误'), 6000);
+  }
 }
 
 function readSyncForm() {

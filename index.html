@@ -2668,31 +2668,53 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .ps-box { margin-bottom: 8px; }
 .ps-box .input { margin-bottom: 4px; }
 .ps-hint { font-size: 11px; color: var(--text-light); min-height: 14px; }
-/* 销售新增：简洁多选选择器 */
-.sa-picker { position: relative; }
+/* 销售新增：独立弹出选择页 */
 .sa-picker-trigger { width: 100%; min-height: 38px; text-align: left; display: flex; align-items: center; gap: 8px; cursor: pointer; }
 .sa-picker-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-main); }
 .sa-picker-summary.placeholder { color: var(--text-light); }
-.sa-picker-arrow { color: var(--text-light); font-size: 12px; transition: transform .15s; }
-.sa-picker.open .sa-picker-arrow { transform: rotate(180deg); }
-.sa-picker-panel {
-  position: absolute; z-index: 60; left: 0; right: 0; top: calc(100% + 6px);
-  background: var(--cream-card); border: 1px solid var(--border-soft); border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(29,33,41,.14); padding: 10px;
-  max-height: 420px; display: flex; flex-direction: column;
-}
-.sa-picker-panel .input { margin-bottom: 8px; }
-.sa-picker-list { overflow: auto; min-height: 80px; max-height: 330px; }
-.sa-picker-group { font-size: 11px; color: var(--text-light); font-weight: 600; padding: 8px 2px 4px; }
-.sa-picker-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
-.sa-picker-row:hover { background: var(--cream-bg); }
-.sa-picker-row input { margin-top: 3px; accent-color: var(--accent-caramel); }
-.sa-picker-main { flex: 1; min-width: 0; }
-.sa-picker-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sa-picker-sub { display: block; font-size: 11px; color: var(--text-light); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sa-picker-tag { font-size: 10.5px; color: var(--text-light); background: var(--cream-bg); border-radius: 8px; padding: 1px 6px; white-space: nowrap; }
-.sa-picker-empty { padding: 16px 4px; text-align: center; color: var(--text-light); font-size: 12px; }
+.sa-picker-arrow { color: var(--text-light); font-size: 12px; }
 .sa-picker-hint { font-size: 11px; color: var(--text-sub); margin-top: 6px; min-height: 14px; }
+.sales-pick-overlay {
+  position: fixed; inset: 0; z-index: 1100; display: none;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(29,33,41,.5);
+}
+.sales-pick-overlay.show { display: flex; }
+.sales-pick-page {
+  width: min(960px, 96vw); height: min(720px, 92vh);
+  background: var(--cream-card); border: 1px solid var(--border-soft); border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(29,33,41,.22);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sp-head { padding: 16px 18px 12px; border-bottom: 1px solid var(--border-soft); }
+.sp-title { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 10px; }
+.sp-head .input { margin-bottom: 0; }
+.sp-tabs { display: flex; gap: 10px; padding: 0 18px; border-bottom: 1px solid var(--border-soft); }
+.sp-tab {
+  border: 0; border-bottom: 2px solid transparent; background: transparent;
+  padding: 10px 4px; font-size: 13px; color: var(--text-sub); cursor: pointer;
+}
+.sp-tab.active { color: var(--accent-caramel); border-bottom-color: var(--accent-caramel); font-weight: 700; }
+.sp-tab b { font-weight: 600; color: var(--text-light); font-size: 11px; margin-left: 4px; }
+.sp-tab.active b { color: var(--accent-caramel); }
+.sp-body { flex: 1; overflow: auto; padding: 12px 18px; }
+.sp-group { font-size: 11px; font-weight: 600; color: var(--text-light); padding: 8px 2px 4px; }
+.sp-row { display: flex; align-items: flex-start; gap: 8px; padding: 8px; border-radius: 6px; cursor: pointer; }
+.sp-row:hover { background: var(--cream-bg); }
+.sp-row input { margin-top: 3px; accent-color: var(--accent-caramel); }
+.sp-main { flex: 1; min-width: 0; }
+.sp-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-sub { display: block; font-size: 11px; color: var(--text-light); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-tag { font-size: 10.5px; color: var(--text-light); background: var(--cream-bg); border-radius: 8px; padding: 1px 6px; white-space: nowrap; }
+.sp-empty { padding: 28px 4px; text-align: center; color: var(--text-light); font-size: 12px; }
+.sp-foot { padding: 12px 18px; border-top: 1px solid var(--border-soft); display: flex; align-items: center; gap: 10px; }
+.sp-count { margin-right: auto; font-size: 12.5px; color: var(--text-sub); }
+@media (max-width: 768px) {
+  .sales-pick-overlay { padding: 0; }
+  .sales-pick-page { width: 100%; height: 100%; border-radius: 0; }
+  .sp-head, .sp-tabs, .sp-foot { padding-left: 12px; padding-right: 12px; }
+  .sp-body { padding: 10px 12px; }
+}
 
 /* ==================================================================
    SaaS 后台 UI 风格 · 统一覆盖层
@@ -9299,14 +9321,10 @@ function openSalesModal(id) {
     <div class="modal-title">${r ? '✏️ 编辑销售' : '➕ 新增销售'}</div>
     <div class="form-group"><label>选择产品或采购清单（可多选）</label>
       <div class="sa-picker" id="sa_picker">
-        <button type="button" class="input sa-picker-trigger" onclick="toggleSalesPicker()">
+        <button type="button" class="input sa-picker-trigger" onclick="openSalesPickerPage()">
           <span class="sa-picker-summary" id="sa_picker_summary"></span>
-          <span class="sa-picker-arrow">▾</span>
+          <span class="sa-picker-arrow">▸</span>
         </button>
-        <div class="sa-picker-panel" id="sa_picker_panel" style="display:none;">
-          <input type="search" class="input" id="sa_kw" placeholder="搜索产品 / 单据号 / 下单日期 / 供应商" oninput="renderSalesPickerList()" autocomplete="off">
-          <div class="sa-picker-list" id="sa_picker_list"></div>
-        </div>
         <div class="sa-picker-hint" id="sa_picker_hint"></div>
       </div>
     </div>
@@ -9335,85 +9353,139 @@ function openSalesModal(id) {
     ? linesFromRecord(r, price)
     : [{ style: '', color: '', size: (r && r.spec) || '', qty: r ? (Number(r.qty) || 0) : 0, unitPrice: Number(price) || 0 }]);
   calcBillTotal('sa');
-  if (!window._salesPickerBound) {
-    document.addEventListener('click', function (e) {
-      const wrap = document.getElementById('sa_picker');
-      if (wrap && !wrap.contains(e.target)) toggleSalesPicker(false);
-    });
-    window._salesPickerBound = true;
-  }
 }
 
-// 简洁多选选择器：产品库 + 采购清单（按批次折叠展示）
-function salesPickerLabel(v) {
-  if (v.indexOf('p:') === 0) {
-    const p = Store.getProducts().find(x => x.id === v.slice(2));
-    return p ? p.name : v.slice(2);
-  }
-  if (v.indexOf('b:') === 0) {
-    const b = Store.getPurchases().find(x => x.id === v.slice(2));
-    return b ? (b.productName || b.billNo || '采购记录') : v.slice(2);
-  }
-  if (v.indexOf('bg:') === 0) {
-    const b = purchaseBatchList(Store.getPurchases()).find(x => x.id === v.slice(3));
-    return b ? b.name : '整份采购清单';
-  }
-  return v;
+// 销售选择页：产品库 / 采购清单分标签展示，避免混排
+let _salesPickTab = 'products', _salesSelSnapshot = new Set();
+function salesExpandedSelections() {
+  const products = Store.getProducts(), purchases = Store.getPurchases(), batches = purchaseBatchList(purchases);
+  const out = [], seen = new Set();
+  const push = (kind, item) => {
+    if (!item) return;
+    const key = kind + ':' + item.id;
+    if (seen.has(key)) return;
+    seen.add(key); out.push({ kind, item });
+  };
+  Array.from(_salesSel || []).forEach(v => {
+    if (v.indexOf('p:') === 0) push('product', products.find(x => x.id === v.slice(2)));
+    else if (v.indexOf('b:') === 0) push('purchase', purchases.find(x => x.id === v.slice(2)));
+    else if (v.indexOf('bg:') === 0) {
+      const batch = batches.find(x => x.id === v.slice(3));
+      if (batch) batch.rows.forEach(b => push('purchase', b));
+    } else if (v.indexOf('bd:') === 0) {
+      const date = v.slice(3);
+      purchases.filter(b => ((b.orderDate || '').trim() || '未填写日期') === date).forEach(b => push('purchase', b));
+    }
+  });
+  return out;
 }
 function syncSalesPickerSummary() {
   const el = document.getElementById('sa_picker_summary');
   if (!el) return;
-  const vals = Array.from(_salesSel);
-  if (!vals.length) {
+  const items = salesExpandedSelections();
+  if (!items.length) {
     el.className = 'sa-picker-summary placeholder';
     el.textContent = '点击选择产品或采购清单（可多选）';
   } else {
     el.className = 'sa-picker-summary';
-    const labels = vals.slice(0, vals.length > 2 ? 2 : vals.length).map(salesPickerLabel);
-    el.textContent = labels.join('、') + (vals.length > 1 ? ' 等 ' + vals.length + ' 项' : '');
+    const labels = items.slice(0, items.length > 2 ? 2 : items.length)
+      .map(x => x.kind === 'product' ? (x.item.name || '产品') : (x.item.productName || x.item.billNo || '采购'));
+    el.textContent = labels.join('、') + (items.length > 1 ? ' 等 ' + items.length + ' 项' : '');
   }
   const hint = document.getElementById('sa_picker_hint');
-  if (hint) hint.textContent = vals.length > 1 ? '已选 ' + vals.length + ' 项，保存时将按每项生成一条销售记录。' : '';
+  if (hint) hint.textContent = items.length > 1 ? '已选 ' + items.length + ' 项，保存时将按每项生成一条销售记录。' : '';
 }
-function toggleSalesPicker(force) {
-  const wrap = document.getElementById('sa_picker'), panel = document.getElementById('sa_picker_panel');
-  if (!wrap || !panel) return;
-  const show = force === undefined ? panel.style.display === 'none' : !!force;
-  panel.style.display = show ? 'flex' : 'none';
-  wrap.classList.toggle('open', show);
-  if (show) renderSalesPickerList();
+function ensureSalesPickOverlay() {
+  let ov = document.getElementById('sales-pick-overlay');
+  if (ov) return ov;
+  ov = document.createElement('div');
+  ov.className = 'sales-pick-overlay';
+  ov.id = 'sales-pick-overlay';
+  ov.onclick = function (e) { if (e.target === this) closeSalesPickerPage(false); };
+  ov.innerHTML = `
+    <div class="sales-pick-page">
+      <div class="sp-head">
+        <div class="sp-title">选择销售来源（可多选）</div>
+        <input type="search" class="input" id="sp_kw" placeholder="搜索产品名称 / 规格 / 69码 / 供应商" oninput="renderSalesPickList()" autocomplete="off">
+      </div>
+      <div class="sp-tabs">
+        <button type="button" class="sp-tab" data-tab="products" onclick="switchSalesPickTab('products')">产品库 <b id="sp_tab_products">0</b></button>
+        <button type="button" class="sp-tab" data-tab="purchases" onclick="switchSalesPickTab('purchases')">采购清单 <b id="sp_tab_purchases">0</b></button>
+      </div>
+      <div class="sp-body" id="sp_list"></div>
+      <div class="sp-foot">
+        <span class="sp-count" id="sp_count"></span>
+        <button class="btn btn-outline btn-sm" onclick="closeSalesPickerPage(false)">取消</button>
+        <button class="btn btn-primary btn-sm" onclick="closeSalesPickerPage(true)">确定</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  return ov;
 }
-function salesPickerRowHtml(v, name, sub, tag) {
-  return `<label class="sa-picker-row"><input type="checkbox" value="${escAttr(v)}" ${_salesSel.has(v) ? 'checked' : ''} onchange="toggleSalesPick(this.value,this.checked)">
-    <span class="sa-picker-main"><span class="sa-picker-name">${escHtml(name)}</span><span class="sa-picker-sub">${escHtml(sub)}</span></span>
-    <span class="sa-picker-tag">${escHtml(tag)}</span></label>`;
+function openSalesPickerPage() {
+  const ov = ensureSalesPickOverlay();
+  _salesSelSnapshot = new Set(_salesSel);
+  ov.classList.add('show');
+  switchSalesPickTab(_salesPickTab || 'products');
 }
-function renderSalesPickerList() {
-  const host = document.getElementById('sa_picker_list');
+function closeSalesPickerPage(commit) {
+  const ov = document.getElementById('sales-pick-overlay');
+  if (!ov) return;
+  if (!commit) _salesSel = new Set(_salesSelSnapshot);
+  ov.classList.remove('show');
+  if (commit) { syncSalesPickerSummary(); applySalesSelectionToForm(); }
+}
+function switchSalesPickTab(tab) {
+  _salesPickTab = tab;
+  const ov = document.getElementById('sales-pick-overlay');
+  if (!ov) return;
+  ov.querySelectorAll('.sp-tab').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === tab));
+  const kw = document.getElementById('sp_kw');
+  if (kw) kw.placeholder = tab === 'products' ? '搜索产品名称 / 规格 / 69码 / 供应商' : '搜索采购产品 / 单据号 / 下单日期 / 供应商';
+  updateSalesPickCounts();
+  renderSalesPickList();
+}
+function salesPickRowHtml(v, name, sub, tag) {
+  return `<label class="sp-row"><input type="checkbox" value="${escAttr(v)}" ${_salesSel.has(v) ? 'checked' : ''} onchange="toggleSalesPick(this.value,this.checked)">
+    <span class="sp-main"><span class="sp-name">${escHtml(name)}</span><span class="sp-sub">${escHtml(sub)}</span></span>
+    <span class="sp-tag">${escHtml(tag)}</span></label>`;
+}
+function renderSalesPickList() {
+  const host = document.getElementById('sp_list');
   if (!host) return;
-  const kw = ((document.getElementById('sa_kw') || {}).value || '').trim();
-  const products = searchProducts(kw);
-  const purchases = Store.getPurchases().filter(b => fuzzyHit([
-    b.productName, b.billNo, b.orderDate, b.spec, b.batchName, purchaseSupplier(b)
-  ].filter(Boolean).join(' '), kw));
-  const batches = purchaseBatchList(purchases);
-  let html = `<div class="sa-picker-group">产品库 · ${products.length} 项</div>`;
-  html += products.length
-    ? products.map(p => salesPickerRowHtml('p:' + p.id, p.name || '未命名产品', productSpec(p) || '无规格', '产品')).join('')
-    : '<div class="sa-picker-empty">没有匹配的产品</div>';
-  html += `<div class="sa-picker-group">采购清单 · ${purchases.length} 条 / ${batches.length} 份</div>`;
-  if (!batches.length) {
-    html += '<div class="sa-picker-empty">没有匹配的采购清单</div>';
+  const top = host.scrollTop;
+  const kw = ((document.getElementById('sp_kw') || {}).value || '').trim();
+  if (_salesPickTab === 'products') {
+    const list = searchProducts(kw);
+    host.innerHTML = list.length
+      ? list.map(p => salesPickRowHtml('p:' + p.id, p.name || '未命名产品', productSpec(p) || '无规格', '产品')).join('')
+      : '<div class="sp-empty">没有匹配的产品</div>';
   } else {
-    batches.forEach(b => {
-      html += salesPickerRowHtml('bg:' + b.id, '整份 · ' + b.name, b.rows.length + ' 项 · ' + money(b.total), '整批');
-      b.rows.forEach(r => {
-        html += salesPickerRowHtml('b:' + r.id, r.productName || '未命名产品',
-          [r.billNo || '无单号', (Number(r.qty) || 0) + '件', purchaseSupplier(r) || '未填供应商'].join(' · '), '采购');
-      });
-    });
+    const purchases = Store.getPurchases().filter(b => fuzzyHit([
+      b.productName, b.billNo, b.orderDate, b.spec, b.batchName, purchaseSupplier(b)
+    ].filter(Boolean).join(' '), kw));
+    const batches = purchaseBatchList(purchases);
+    if (!batches.length) {
+      host.innerHTML = '<div class="sp-empty">没有匹配的采购清单</div>';
+    } else {
+      host.innerHTML = batches.map(b => `
+        <div class="sp-group">${escHtml(b.name)} · ${b.rows.length} 项 · ${money(b.total)}${b.orderDate ? ' · 下单 ' + escHtml(fmtDateFull(b.orderDate)) : ''}</div>
+        ${salesPickRowHtml('bg:' + b.id, '整份选择', '选中该清单下全部产品', '整批')}
+        ${b.rows.map(r => salesPickRowHtml('b:' + r.id, r.productName || '未命名产品',
+          [r.billNo || '无单号', (Number(r.qty) || 0) + '件', purchaseSupplier(r) || '未填供应商'].join(' · '), '采购')).join('')}
+      `).join('');
+    }
   }
-  host.innerHTML = html;
+  host.scrollTop = top;
+}
+function updateSalesPickCounts() {
+  const items = salesExpandedSelections();
+  const pc = items.filter(x => x.kind === 'product').length, bc = items.length - pc;
+  const pe = document.getElementById('sp_tab_products'), be = document.getElementById('sp_tab_purchases');
+  if (pe) pe.textContent = '产品库 ' + pc;
+  if (be) be.textContent = '采购清单 ' + bc;
+  const cnt = document.getElementById('sp_count');
+  if (cnt) cnt.textContent = '已选 ' + items.length + ' 项（产品 ' + pc + ' · 采购 ' + bc + '）';
 }
 function toggleSalesPick(v, checked) {
   if (checked) _salesSel.add(v); else _salesSel.delete(v);
@@ -9424,34 +9496,28 @@ function toggleSalesPick(v, checked) {
     const r = Store.getPurchases().find(x => x.id === v.slice(2));
     if (r && !checked) _salesSel.delete('bg:' + purchaseBatchIdOf(r));
   }
-  const host = document.getElementById('sa_picker_list'), top = host ? host.scrollTop : 0;
-  renderSalesPickerList();
-  if (host) host.scrollTop = top;
-  syncSalesPickerSummary();
-  if (_salesSel.size === 1) applySalesPickToForm(Array.from(_salesSel)[0]);
+  updateSalesPickCounts();
+  renderSalesPickList();
 }
-function applySalesPickToForm(v) {
-  if (_salesSel.size !== 1) return;
-  const qEl = document.getElementById('sa_qty'), pEl = document.getElementById('sa_price');
+function applySalesSelectionToForm() {
+  const items = salesExpandedSelections();
+  if (items.length !== 1) return;
+  const item = items[0].item, qEl = document.getElementById('sa_qty'), pEl = document.getElementById('sa_price');
   if (!pEl) return;
-  if (v.indexOf('p:') === 0) {
-    const p = Store.getProducts().find(x => x.id === v.slice(2));
-    if (!p) return;
-    const price = (p.values && p.values.salePrice) || '';
+  if (items[0].kind === 'product') {
+    const price = (item.values && item.values.salePrice) || '';
     pEl.value = price;
-    openBillLineEditor('sa', productLineSeeds(p, price));
-  } else if (v.indexOf('b:') === 0) {
-    const b = Store.getPurchases().find(x => x.id === v.slice(2));
-    if (!b) return;
-    const p = Store.getProducts().find(x => x.id === b.productId);
-    const price = (p && p.values && p.values.salePrice) || b.unitPrice || '';
+    openBillLineEditor('sa', productLineSeeds(item, price));
+  } else {
+    const p = Store.getProducts().find(x => x.id === item.productId);
+    const price = (p && p.values && p.values.salePrice) || item.unitPrice || '';
     pEl.value = price;
-    if (qEl && (Number(b.qty) || 0) > 0) qEl.value = Number(b.qty);
-    const lines = b.lines && b.lines.length
-      ? b.lines.map(l => ({ style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(price) || 0 }))
-      : [{ style: '', color: '', size: b.spec || productSpec(p), qty: Number(b.qty) || 0, unitPrice: Number(price) || 0 }];
+    if (qEl && (Number(item.qty) || 0) > 0) qEl.value = Number(item.qty);
+    const lines = item.lines && item.lines.length
+      ? item.lines.map(l => ({ style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(price) || 0 }))
+      : [{ style: '', color: '', size: item.spec || productSpec(p), qty: Number(item.qty) || 0, unitPrice: Number(price) || 0 }];
     openBillLineEditor('sa', lines);
-  } else return;
+  }
   calcBillTotal('sa');
 }
 
@@ -9556,34 +9622,10 @@ function salesRecordFromPurchase(b, common, products) {
   });
 }
 function saveSales(id) {
-  const values = Array.from(_salesSel || []);
-  if (!values.length) { showToast('请选择产品或采购清单'); return; }
-  const products = Store.getProducts(), purchases = Store.getPurchases();
-  const batches = purchaseBatchList(purchases);
-  const expanded = [];
-  values.forEach(v => {
-    if (v.indexOf('p:') === 0) {
-      const p = products.find(x => x.id === v.slice(2));
-      if (p) expanded.push({ kind: 'product', item: p });
-    } else if (v.indexOf('b:') === 0) {
-      const b = purchases.find(x => x.id === v.slice(2));
-      if (b) expanded.push({ kind: 'purchase', item: b });
-    } else if (v.indexOf('bg:') === 0) {
-      const batch = batches.find(x => x.id === v.slice(3));
-      if (batch) batch.rows.forEach(b => expanded.push({ kind: 'purchase', item: b }));
-    } else if (v.indexOf('bd:') === 0) {
-      const date = v.slice(3);
-      purchases.filter(b => ((b.orderDate || '').trim() || '未填写日期') === date)
-        .forEach(b => expanded.push({ kind: 'purchase', item: b }));
-    }
-  });
-  const seen = new Set();
-  const items = expanded.filter(x => {
-    const key = x.kind + ':' + x.item.id;
-    if (seen.has(key)) return false;
-    seen.add(key); return true;
-  });
+  const items = salesExpandedSelections();
+  if (!_salesSel || !_salesSel.size) { showToast('请选择产品或采购清单'); return; }
   if (!items.length) { showToast('所选产品或采购清单不存在，请重新选择'); return; }
+  const products = Store.getProducts();
   const common = readBillCommon('sa');
   if (items.some(x => x.kind === 'product') && !(common.qty > 0)) { showToast('请填写正确的销售数量'); return; }
   const linesText = document.getElementById('sa_lines').value || '';

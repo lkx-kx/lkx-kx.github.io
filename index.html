@@ -8371,6 +8371,20 @@ function noProductModal(page) {
 
 /* ---- 采购清单：一次录入或一次导入 = 一份清单（批次） ---- */
 function purchaseBatchIdOf(r) { return (r && r.batchId) || ('legacy:' + (((r && r.orderDate) || '').trim() || '未填写日期')); }
+// 供应商：未手动改过的采购记录实时跟随产品库；手动改过后保留自定义值
+function purchaseSupplier(r) {
+  if (!r) return '';
+  if (r.supplierCustom) return (r.supplier || '').trim();
+  if (r.productId) {
+    const p = Store.getProducts().find(x => x.id === r.productId);
+    const v = p ? ((p.values || {}).supplier || '').trim() : '';
+    if (v) return v;
+  }
+  return (r.supplier || '').trim();
+}
+function supplierOptionsHtml(id) {
+  return `<datalist id="${id}">${partnerOptions('supplier').map(s => `<option value="${escAttr(s)}"></option>`).join('')}</datalist>`;
+}
 function purchaseBatchList(arr) {
   const map = new Map();
   (arr || []).forEach(r => {
@@ -8398,6 +8412,7 @@ function renderPurchases(container) {
   const unsettled = batches.filter(b => b.rows.some(r => r.payStatus !== 'settled')).length;
   const unmade = batches.filter(b => b.rows.some(r => r.makeStatus !== 'made')).length;
   container.innerHTML = `
+    ${supplierOptionsHtml('partner_supplier_options')}
     <div class="page-header">
       <span class="ph-icon">${DOG_ICONS['purchases']}</span>
       <span class="ph-title">采购清单</span>
@@ -8500,7 +8515,8 @@ function pbRecordFromProduct(p, common) {
     id: uid(), productId: p.id, productName: p.name, spec,
     style: '', color: '', size: spec,
     lines: [{ style: '', color: '', size: spec, qty: 1, unitPrice: price }],
-    qty: 1, unitPrice: price, total: price
+    qty: 1, unitPrice: price, total: price,
+    supplier: ((p.values || {}).supplier || '').trim(), supplierCustom: false
   }, common);
 }
 // 附件汇总产品 → 采购产品行（成本单价优先取产品库）
@@ -8527,7 +8543,9 @@ function pbRecordFromAgg(a, common) {
     id: uid(), productId: p ? p.id : '', productName: a.name,
     spec: [a.style, a.color, a.size].filter(Boolean).join(' / '),
     style: a.style || '', color: a.color || '', size: a.size || '',
-    lines, qty: realQty, unitPrice: price, total: +total.toFixed(2)
+    lines, qty: realQty, unitPrice: price, total: +total.toFixed(2),
+    supplier: (((p && p.values || {}).supplier || '').trim() || (a.supplier || '').trim()),
+    supplierCustom: false
   }, common);
 }
 function pbModalHtml(title) {
@@ -8539,6 +8557,7 @@ function pbModalHtml(title) {
       <option value="${on}" ${cur === on ? 'selected' : ''}>${onLabel}</option>
     </select>`;
   return `
+    ${supplierOptionsHtml('pb_supplier_options')}
     <div class="modal-title">${escHtml(title || '➕ 新增采购清单')}</div>
     <div class="field-hint" style="margin-bottom:12px;">一次录入或导入生成一份采购清单；保存后仍可继续往清单里增减产品。按住 Ctrl / ⌘ 可多选产品。</div>
     <div class="pb-section">清单信息</div>
@@ -8633,9 +8652,10 @@ function renderPbItems() {
   const total = items.reduce((n, r) => n + (Number(r.total) || 0), 0);
   box.innerHTML = items.length ? `
     <div class="bill-scroll"><table class="bill-table">
-      <thead><tr><th>产品</th><th>规格明细</th><th>数量</th><th>成本单价</th><th>金额</th><th>操作</th></tr></thead>
+      <thead><tr><th>产品</th><th>供应商</th><th>规格明细</th><th>数量</th><th>成本单价</th><th>金额</th><th>操作</th></tr></thead>
       <tbody>${items.map((r, i) => `<tr>
         <td><div class="bill-name">${escHtml(r.productName)}</div><div class="bill-sub">${escHtml(r.spec || '')}</div></td>
+        <td><input class="input" list="pb_supplier_options" value="${escAttr(purchaseSupplier(r))}" placeholder="—" style="min-width:110px;width:130px;padding:5px 8px;" onchange="pbSetSupplier(${i},this.value)" title="可修改，留空则跟随产品库"></td>
         <td>${(r.lines || []).map(l => `${escHtml([l.style, l.color, l.size].filter(Boolean).join('/') || '默认')} ×${l.qty}`).join('<br>') || '—'}</td>
         <td>${r.qty}</td><td>${money(r.unitPrice)}</td><td class="bill-total">${money(r.total)}</td>
         <td><div class="bill-actions">
@@ -8653,6 +8673,13 @@ function pbRemoveItem(i) {
   pbReadCommon();
   pbDraft.items.splice(i, 1);
   renderPbItems();
+}
+function pbSetSupplier(i, value) {
+  pbReadCommon();
+  const r = pbDraft.items[i];
+  if (!r) return;
+  r.supplier = (value || '').trim();
+  r.supplierCustom = !!r.supplier;   // 留空表示继续跟随产品库
 }
 function pbEditLines(i) {
   pbReadCommon();
@@ -8839,11 +8866,18 @@ function openPurchaseModal(id) {
   const selected = r ? products.find(p => p.id === r.productId) : products[0];
   const opts = products.map(p => `<option value="${p.id}" ${selected && selected.id === p.id ? 'selected' : ''}>${escHtml(productLabel(p))}</option>`).join('');
   const price = r ? r.unitPrice : ((selected && selected.values && selected.values.costPrice) || '');
+  const supValue = r ? (r.supplierCustom ? (r.supplier || '') : purchaseSupplier(r)) : (((selected && selected.values || {}).supplier || '').trim());
   showModal(`
+    ${supplierOptionsHtml('pu_supplier_options')}
     <div class="modal-title">${r ? '✏️ 编辑采购' : '➕ 新增采购'}</div>
     <div class="form-group"><label>选择产品</label>
       ${productSearchBoxHtml('pu', '输入产品名 / 款式 / 颜色 / 尺码 模糊查找')}
       <select class="input" id="pu_product" onchange="onPurchaseProductChange()">${opts}</select>
+    </div>
+    <div class="form-group"><label>供应商</label>
+      <input type="text" class="input" id="pu_supplier" list="pu_supplier_options" value="${escAttr(supValue)}" placeholder="自动从产品库同步，可修改" oninput="var d=document.getElementById('pu_supplier_dirty');if(d)d.value='1'">
+      <input type="hidden" id="pu_supplier_dirty" value="${r && r.supplierCustom ? '1' : '0'}">
+      <div class="field-hint">切换产品时自动带出产品库中的供应商；手动修改后不再随产品库变化，留空则恢复跟随。</div>
     </div>
     <div class="form-group"><label>单据编号</label><input type="text" class="input" id="pu_billno" value="${escAttr(r ? r.billNo : '')}" placeholder="可留空"></div>
     <div class="calc-line">
@@ -8875,6 +8909,9 @@ function onPurchaseProductChange() {
   if (!p) return;
   const price = (p.values && p.values.costPrice) || '';
   document.getElementById('pu_price').value = price;
+  const dirty = document.getElementById('pu_supplier_dirty');
+  const sup = document.getElementById('pu_supplier');
+  if (sup && dirty && dirty.value !== '1') sup.value = ((p.values || {}).supplier || '').trim();
   if (billLineDraft && billLineDraft.prefix === 'pu') {
     billLineDraft.lines = productLineSeeds(p, price);
     renderBillLines('pu');
@@ -8884,16 +8921,22 @@ function onPurchaseProductChange() {
 }
 
 function savePurchase(id) {
+  const r = id ? Store.getPurchases().find(x => x.id === id) : null;  // 编辑单品时保留原记录信息
   const productId = document.getElementById('pu_product').value;
   const p = Store.getProducts().find(x => x.id === productId);
   if (!p) { showToast('请选择产品'); return; }
   const common = readBillCommon('pu');
   if (!(common.qty > 0)) { showToast('请填写正确的采购数量'); return; }
+  const supplierEl = document.getElementById('pu_supplier');
+  const supplier = supplierEl ? supplierEl.value.trim() : '';
+  const dirtyEl = document.getElementById('pu_supplier_dirty');
+  const supplierCustom = !!supplier && !!(dirtyEl && dirtyEl.value === '1');
   const lines = billParsedLines('pu', productSpec(p), common.qty, common.unitPrice);
   const total = lines.length ? lines.reduce((n, l) => n + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0) : common.qty * common.unitPrice;
   const rec = Object.assign({
     id: id || uid(), productId, productName: p.name, spec: productSpec(p),
-    lines, total: +total.toFixed(2), createdAt: r ? r.createdAt : Store.todayKey()
+    lines, total: +total.toFixed(2), createdAt: r ? r.createdAt : Store.todayKey(),
+    supplier, supplierCustom
   }, common);
   // 编辑清单里的单个产品时保留所属批次，避免产品掉出清单
   if (r && r.batchId) {
@@ -10546,7 +10589,7 @@ function emptyState(icon, title, sub) {
 
 const BILL_COLUMNS = {
   purchases: [
-    { key: 'product', label: '产品' }, { key: 'billNo', label: '单据编号' }, { key: 'qty', label: '数量' },
+    { key: 'product', label: '产品' }, { key: 'supplier', label: '供应商' }, { key: 'billNo', label: '单据编号' }, { key: 'qty', label: '数量' },
     { key: 'unitPrice', label: '成本单价' }, { key: 'total', label: '总金额' },
     { key: 'orderDate', label: '下单日期' }, { key: 'deliveryDate', label: '交货日期' }, { key: 'billDate', label: '系统单据日期' },
     { key: 'status', label: '状态' }, { key: 'actions', label: '操作', fixed: true }
@@ -10563,7 +10606,14 @@ function getBillCols(page) {
   const raw = localStorage.getItem('lxk_cols_' + page);
   if (!raw) return defs;
   try {
-    const arr = JSON.parse(raw).filter(k => defs.indexOf(k) >= 0);
+    let arr = JSON.parse(raw).filter(k => defs.indexOf(k) >= 0);
+    // 一次性迁移：老用户保存过的列设置里补上新增的供应商列
+    const flag = 'lxk_cols_' + page + '_supplier_added';
+    if (page === 'purchases' && arr.indexOf('supplier') < 0 && !localStorage.getItem(flag)) {
+      arr.splice(Math.min(1, arr.length), 0, 'supplier');
+      localStorage.setItem('lxk_cols_purchases', JSON.stringify(arr));
+      localStorage.setItem(flag, '1');
+    }
     return defs.filter(k => k === 'actions' || arr.indexOf(k) >= 0);
   } catch (e) { return defs; }
 }
@@ -10585,8 +10635,18 @@ function saveBillColumns(page) {
   localStorage.setItem('lxk_cols_' + page, JSON.stringify(keys));
   closeModal(); renderPage(page); showToast('表格列已更新');
 }
+function setPurchaseSupplier(id, value) {
+  const arr = Store.getPurchases();
+  const r = arr.find(x => x.id === id);
+  if (!r) return;
+  r.supplier = (value || '').trim();
+  r.supplierCustom = !!r.supplier;   // 留空表示继续跟随产品库
+  Store.savePurchases(arr);
+  showToast('供应商已更新');
+}
 function billCell(page, key, r) {
   if (key === 'product') return `<div class="bill-name">${escHtml(r.productName || '—')}</div><div class="bill-sub">${escHtml(r.spec || '')} ${page === 'sales' ? remainingBadge(r) : ''}</div>`;
+  if (key === 'supplier') return `<input class="input" list="partner_supplier_options" value="${escAttr(purchaseSupplier(r))}" placeholder="—" style="width:130px;max-width:100%;padding:4px 6px;" onchange="setPurchaseSupplier('${r.id}',this.value)" title="点击修改，回车保存；留空则跟随产品库">`;
   if (key === 'link') return escHtml(r.linkLabel || '—');
   if (key === 'billNo') return escHtml(r.billNo || '—');
   if (key === 'qty') {
@@ -10684,6 +10744,9 @@ function openBillSelEdit(page) {
       <label>交货日期</label><input type="date" class="input" id="be_delivery" value="">
       <label>系统单据日期</label><input type="date" class="input" id="be_bill" value="">
     </div>
+    <div class="form-group"><label>供应商</label>
+      <input type="text" class="input" id="be_supplier" list="partner_supplier_options" placeholder="留空则不修改">
+    </div>
     <div class="form-group"><label>备注</label>
       <textarea class="input" id="be_note" rows="2" placeholder="留空则不修改">${escHtml(first.note || '')}</textarea>
     </div>
@@ -10701,7 +10764,8 @@ function applyBillSelEdit(page) {
   const delivery = val('be_delivery');
   const bill = val('be_bill');
   const note = val('be_note');
-  if (!billNo && !order && !delivery && !bill && !note) { showToast('请至少填写一个要修改的字段'); return; }
+  const supplier = val('be_supplier').trim();
+  if (!billNo && !order && !delivery && !bill && !note && !supplier) { showToast('请至少填写一个要修改的字段'); return; }
   const arr = billListOf(page);
   let n = 0;
   arr.forEach(r => {
@@ -10711,6 +10775,7 @@ function applyBillSelEdit(page) {
     if (delivery) r.deliveryDate = delivery;
     if (bill) r.billDate = bill;
     if (note) r.note = note;
+    if (supplier) { r.supplier = supplier; r.supplierCustom = true; }
     n++;
   });
   saveBillList(page, arr);

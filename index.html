@@ -4320,16 +4320,26 @@ function shrinkImage(file, maxW, targetBytes) {
 }
 
 // 通用图片选择（自动压缩，避免超出本地容量与云端同步体积上限）
+// ⚠️ 必须把 input 挂到 DOM 上再点击：移动端 Safari/iOS 对「未连接文档的 file input」
+//    点击会静默失效（不弹选择器、也不报错），表现为「点了没反应」。桌面 Chrome 恰好
+//    容忍这种写法，所以只在手机上复现。用完立即 remove，避免残留节点。
 function pickImage(cb, maxW) {
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/*';
+  inp.style.display = 'none';
+  document.body.appendChild(inp);
+  let done = false;
+  const cleanup = () => { if (!done) { done = true; inp.remove(); } };
   inp.onchange = (e) => {
     const f = e.target.files && e.target.files[0];
+    cleanup();
     if (!f) return;
     shrinkImage(f, maxW || 160).then(cb).catch((err) => {
       showToast(err && err.message ? err.message : '图片处理失败，请换一张更小的图片');
     });
   };
+  // 用户直接关闭选择器时不会触发 onchange → 用 focus 兜底清理残留节点
+  window.addEventListener('focus', () => setTimeout(cleanup, 800), { once: true });
   inp.click();
 }
 
@@ -8063,8 +8073,14 @@ function tagRemove(i) { prodDraft.tags.splice(i, 1); renderTagChips(); }
 function pickImages(cb, maxW) {
   const inp = document.createElement('input');
   inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+  // 同 pickImage：必须挂到 DOM 上，否则移动端 Safari 点击静默失效
+  inp.style.display = 'none';
+  document.body.appendChild(inp);
+  let done = false;
+  const cleanup = () => { if (!done) { done = true; inp.remove(); } };
   inp.onchange = async e => {
     const files = Array.from(e.target.files || []);
+    cleanup();
     if (!files.length) return;
     const out = [];
     for (const f of files) {
@@ -8073,6 +8089,7 @@ function pickImages(cb, maxW) {
     }
     if (out.length) cb(out);
   };
+  window.addEventListener('focus', () => setTimeout(cleanup, 800), { once: true });
   inp.click();
 }
 function prodPickImages() {

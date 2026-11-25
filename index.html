@@ -2668,6 +2668,31 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .ps-box { margin-bottom: 8px; }
 .ps-box .input { margin-bottom: 4px; }
 .ps-hint { font-size: 11px; color: var(--text-light); min-height: 14px; }
+/* 销售新增：简洁多选选择器 */
+.sa-picker { position: relative; }
+.sa-picker-trigger { width: 100%; min-height: 38px; text-align: left; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.sa-picker-summary { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-main); }
+.sa-picker-summary.placeholder { color: var(--text-light); }
+.sa-picker-arrow { color: var(--text-light); font-size: 12px; transition: transform .15s; }
+.sa-picker.open .sa-picker-arrow { transform: rotate(180deg); }
+.sa-picker-panel {
+  position: absolute; z-index: 60; left: 0; right: 0; top: calc(100% + 6px);
+  background: var(--cream-card); border: 1px solid var(--border-soft); border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(29,33,41,.14); padding: 10px;
+  max-height: 420px; display: flex; flex-direction: column;
+}
+.sa-picker-panel .input { margin-bottom: 8px; }
+.sa-picker-list { overflow: auto; min-height: 80px; max-height: 330px; }
+.sa-picker-group { font-size: 11px; color: var(--text-light); font-weight: 600; padding: 8px 2px 4px; }
+.sa-picker-row { display: flex; align-items: flex-start; gap: 8px; padding: 7px 8px; border-radius: 6px; cursor: pointer; }
+.sa-picker-row:hover { background: var(--cream-bg); }
+.sa-picker-row input { margin-top: 3px; accent-color: var(--accent-caramel); }
+.sa-picker-main { flex: 1; min-width: 0; }
+.sa-picker-name { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sa-picker-sub { display: block; font-size: 11px; color: var(--text-light); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sa-picker-tag { font-size: 10.5px; color: var(--text-light); background: var(--cream-bg); border-radius: 8px; padding: 1px 6px; white-space: nowrap; }
+.sa-picker-empty { padding: 16px 4px; text-align: center; color: var(--text-light); font-size: 12px; }
+.sa-picker-hint { font-size: 11px; color: var(--text-sub); margin-top: 6px; min-height: 14px; }
 
 /* ==================================================================
    SaaS 后台 UI 风格 · 统一覆盖层
@@ -3352,6 +3377,8 @@ body {
 .bill-stat .bs-label { font-size: 12px; color: var(--text-light); }
 .bill-stat .bs-val { font-size: 19px; font-weight: 700; color: var(--text-main); margin-top: 4px; }
 .bill-stat .bs-val.accent { color: var(--accent-caramel); }
+.bill-stat .bs-sub { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 11px; color: var(--text-sub); line-height: 1.5; }
+.bill-stat .bs-sub b { color: var(--text-main); font-weight: 600; }
 .bill-scroll { overflow-x: auto; }
 .bill-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 860px; }
 .bill-table th {
@@ -7252,39 +7279,6 @@ function onProductSearch(prefix) {
     }
     return;
   }
-  if (prefix === 'sa') {
-    // 销售：产品库部分刷新（采购清单部分按日期分组保持不变）
-    const sel = document.getElementById('sa_link');
-    if (!sel) return;
-    const cur = sel.value;
-    const purchases = Store.getPurchases();
-    const purGroups = new Map();
-    purchases.forEach(b => {
-      const d = (b.orderDate || '').trim() || '未填写日期';
-      if (!purGroups.has(d)) purGroups.set(d, []);
-      purGroups.get(d).push(b);
-    });
-    const purDates = Array.from(purGroups.keys()).sort((a, b) => {
-      if (a === '未填写日期') return 1;
-      if (b === '未填写日期') return -1;
-      return b.localeCompare(a);
-    });
-    const purOpts = purDates.map(d => {
-      const rows = purGroups.get(d);
-      const amt = rows.reduce((n, x) => n + (Number(x.total) || 0), 0);
-      return `<optgroup label="📅 ${escHtml(fmtDateFull(d) || d)} · ${rows.length} 条 · ${money(amt)}">
-        <option value="bd:${d}">📦 整批选择该日期全部 ${rows.length} 条</option>
-        ${rows.map(b => `<option value="b:${b.id}">采购清单 · ${escHtml(b.productName || '未命名')}${b.billNo ? ' · ' + escHtml(b.billNo) : ''}</option>`).join('')}
-      </optgroup>`;
-    }).join('');
-    const list = searchProducts(kwText);
-    sel.innerHTML = `<option value="">请选择…</option>
-      <optgroup label="产品库">${list.map(p => `<option value="p:${p.id}">产品库 · ${escHtml(productLabel(p))}</option>`).join('')}</optgroup>
-      ${purOpts}`;
-    const cnt = document.getElementById('sa_count');
-    if (cnt) cnt.textContent = kwText.trim() ? `匹配到 ${list.length} 个产品` : '';
-    if (cur) sel.value = cur;
-  }
 }
 
 // ====================================================================
@@ -8505,6 +8499,24 @@ function purchaseSupplier(r) {
 function supplierOptionsHtml(id) {
   return `<datalist id="${id}">${partnerOptions('supplier').map(s => `<option value="${escAttr(s)}"></option>`).join('')}</datalist>`;
 }
+// 采购总金额按供应商分项统计（金额多的在前；未填供应商单列）
+function purchaseSupplierTotals(list) {
+  const map = new Map();
+  (list || []).forEach(r => {
+    const name = (purchaseSupplier(r) || '').trim() || '未填供应商';
+    map.set(name, (map.get(name) || 0) + (Number(r.total) || 0));
+  });
+  return Array.from(map, ([name, amount]) => ({ name, amount })).sort((a, b) => b.amount - a.amount);
+}
+function purchaseSupplierTotalsHtml(list) {
+  const rows = purchaseSupplierTotals(list);
+  if (!rows.length) return '';
+  const shown = rows.slice(0, 3), rest = rows.slice(3);
+  const restAmount = rest.reduce((n, x) => n + x.amount, 0);
+  return `<div class="bs-sub" title="${escAttr(rows.map(x => x.name + ' ' + money(x.amount)).join('\n'))}">${shown.map(x =>
+    `<span>${escHtml(x.name)} <b>${money(x.amount)}</b></span>`).join('')}${rest.length
+      ? `<span>其他 ${rest.length} 家 <b>${money(restAmount)}</b></span>` : ''}</div>`;
+}
 function purchaseBatchList(arr) {
   const map = new Map();
   (arr || []).forEach(r => {
@@ -8549,7 +8561,7 @@ function renderPurchases(container) {
     </div>
     <div class="bill-stats">
       <div class="bill-stat"><div class="bs-label">采购清单 / 产品明细</div><div class="bs-val">${batches.length} / ${list.length}</div></div>
-      <div class="bill-stat"><div class="bs-label">采购总金额</div><div class="bs-val accent">${money(total)}</div></div>
+      <div class="bill-stat"><div class="bs-label">采购总金额</div><div class="bs-val accent">${money(total)}</div>${purchaseSupplierTotalsHtml(list)}</div>
       <div class="bill-stat"><div class="bs-label">未结算清单</div><div class="bs-val">${unsettled}</div></div>
       <div class="bill-stat"><div class="bs-label">未做单清单</div><div class="bs-val">${unmade}</div></div>
     </div>
@@ -9276,43 +9288,27 @@ function remainingBadge(r) {
   return `<span class="remaining-badge">${escHtml('剩余' + text + '未做结算材料')}</span>`;
 }
 
+let _salesSel = new Set();
 function openSalesModal(id) {
   const products = Store.getProducts();
   if (!products.length) { noProductModal('products'); return; }
-  const purchases = Store.getPurchases();
   const r = id ? Store.getSales().find(x => x.id === id) : null;
-  const prodOpts = products.map(p => `<option value="p:${p.id}">产品库 · ${escHtml(productLabel(p))}</option>`).join('');
-  // 采购清单按「下单日期」分组，每组提供「整批选择」选项
-  const purGroups = new Map();
-  purchases.forEach(b => {
-    const d = (b.orderDate || '').trim() || '未填写日期';
-    if (!purGroups.has(d)) purGroups.set(d, []);
-    purGroups.get(d).push(b);
-  });
-  const purDates = Array.from(purGroups.keys()).sort((a, b) => {
-    if (a === '未填写日期') return 1;
-    if (b === '未填写日期') return -1;
-    return b.localeCompare(a);
-  });
-  const purOpts = purDates.map(d => {
-    const rows = purGroups.get(d);
-    const amt = rows.reduce((n, x) => n + (Number(x.total) || 0), 0);
-    return `<optgroup label="📅 ${escHtml(fmtDateFull(d) || d)} · ${rows.length} 条 · ${money(amt)}">
-      <option value="bd:${d}">📦 整批选择该日期全部 ${rows.length} 条</option>
-      ${rows.map(b => `<option value="b:${b.id}">采购清单 · ${escHtml(b.productName || '未命名')}${b.billNo ? ' · ' + escHtml(b.billNo) : ''}</option>`).join('')}
-    </optgroup>`;
-  }).join('');
-  const linkVal = r ? r.link : '';
   const price = r ? r.unitPrice : '';
+  _salesSel = new Set(r && r.link ? [r.link] : []);
   showModal(`
     <div class="modal-title">${r ? '✏️ 编辑销售' : '➕ 新增销售'}</div>
-    <div class="form-group"><label>选择产品或关联采购清单</label>
-      ${productSearchBoxHtml('sa', '输入产品名 / 款式 / 颜色 / 尺码 模糊查找（采购清单按日期分组）')}
-      <select class="input" id="sa_link" onchange="onSalesLinkChange()">
-        <option value="">请选择…</option>
-        <optgroup label="产品库">${prodOpts}</optgroup>
-        ${purOpts ? `<optgroup label="采购清单">${purOpts}</optgroup>` : ''}
-      </select>
+    <div class="form-group"><label>选择产品或采购清单（可多选）</label>
+      <div class="sa-picker" id="sa_picker">
+        <button type="button" class="input sa-picker-trigger" onclick="toggleSalesPicker()">
+          <span class="sa-picker-summary" id="sa_picker_summary"></span>
+          <span class="sa-picker-arrow">▾</span>
+        </button>
+        <div class="sa-picker-panel" id="sa_picker_panel" style="display:none;">
+          <input type="search" class="input" id="sa_kw" placeholder="搜索产品 / 单据号 / 下单日期 / 供应商" oninput="renderSalesPickerList()" autocomplete="off">
+          <div class="sa-picker-list" id="sa_picker_list"></div>
+        </div>
+        <div class="sa-picker-hint" id="sa_picker_hint"></div>
+      </div>
     </div>
     <div class="form-group"><label>单据编号</label><input type="text" class="input" id="sa_billno" value="${escAttr(r ? r.billNo : '')}" placeholder="可留空"></div>
     <div class="calc-line">
@@ -9322,7 +9318,7 @@ function openSalesModal(id) {
     </div>
     <div style="height:14px;"></div>
     <div class="form-group"><label>按款式 / 颜色 / 尺码录入数量</label>
-      <div class="field-hint" style="margin-bottom:8px;">每个规格分别录入数量，结算材料的剩余数量会自动按规格追踪。</div>
+      <div class="field-hint" style="margin-bottom:8px;">每个规格分别录入数量，结算材料的剩余数量会自动按规格追踪。选择采购清单时，数量与规格会自动沿用采购记录。</div>
       <div id="sa-line-editor"></div>
       <textarea id="sa_lines" style="display:none;">${escHtml(r && r.lines && r.lines.length ? salesLinesToText(r.lines) : '')}</textarea>
     </div>
@@ -9334,35 +9330,128 @@ function openSalesModal(id) {
       <button class="btn btn-primary" onclick="saveSales('${r ? r.id : ''}')">保存</button>
     </div>
   `);
-  if (linkVal) document.getElementById('sa_link').value = linkVal;
+  syncSalesPickerSummary();
   openBillLineEditor('sa', r && r.lines && r.lines.length
     ? linesFromRecord(r, price)
     : [{ style: '', color: '', size: (r && r.spec) || '', qty: r ? (Number(r.qty) || 0) : 0, unitPrice: Number(price) || 0 }]);
   calcBillTotal('sa');
+  if (!window._salesPickerBound) {
+    document.addEventListener('click', function (e) {
+      const wrap = document.getElementById('sa_picker');
+      if (wrap && !wrap.contains(e.target)) toggleSalesPicker(false);
+    });
+    window._salesPickerBound = true;
+  }
 }
 
-function onSalesLinkChange() {
-  const v = document.getElementById('sa_link').value;
-  let p = null;
-  if (v.indexOf('p:') === 0) p = Store.getProducts().find(x => x.id === v.slice(2));
-  else if (v.indexOf('b:') === 0) {
+// 简洁多选选择器：产品库 + 采购清单（按批次折叠展示）
+function salesPickerLabel(v) {
+  if (v.indexOf('p:') === 0) {
+    const p = Store.getProducts().find(x => x.id === v.slice(2));
+    return p ? p.name : v.slice(2);
+  }
+  if (v.indexOf('b:') === 0) {
     const b = Store.getPurchases().find(x => x.id === v.slice(2));
-    if (b) p = Store.getProducts().find(x => x.id === b.productId);
-  } else if (v.indexOf('bd:') === 0) {
-    // 整批选择：按采购清单日期一次带入该日期全部记录
-    const date = v.slice(3);
-    const rows = Store.getPurchases().filter(b => ((b.orderDate || '').trim() || '未填写日期') === date);
-    applySalesBatch(rows);
-    return;
+    return b ? (b.productName || b.billNo || '采购记录') : v.slice(2);
   }
-  if (!p) return;
-  const price = (p.values && p.values.salePrice) || '';
-  document.getElementById('sa_price').value = price;
-  if (billLineDraft && billLineDraft.prefix === 'sa') {
-    billLineDraft.lines = productLineSeeds(p, price);
-    renderBillLines('sa');
-    syncBillLines('sa');
+  if (v.indexOf('bg:') === 0) {
+    const b = purchaseBatchList(Store.getPurchases()).find(x => x.id === v.slice(3));
+    return b ? b.name : '整份采购清单';
   }
+  return v;
+}
+function syncSalesPickerSummary() {
+  const el = document.getElementById('sa_picker_summary');
+  if (!el) return;
+  const vals = Array.from(_salesSel);
+  if (!vals.length) {
+    el.className = 'sa-picker-summary placeholder';
+    el.textContent = '点击选择产品或采购清单（可多选）';
+  } else {
+    el.className = 'sa-picker-summary';
+    const labels = vals.slice(0, vals.length > 2 ? 2 : vals.length).map(salesPickerLabel);
+    el.textContent = labels.join('、') + (vals.length > 1 ? ' 等 ' + vals.length + ' 项' : '');
+  }
+  const hint = document.getElementById('sa_picker_hint');
+  if (hint) hint.textContent = vals.length > 1 ? '已选 ' + vals.length + ' 项，保存时将按每项生成一条销售记录。' : '';
+}
+function toggleSalesPicker(force) {
+  const wrap = document.getElementById('sa_picker'), panel = document.getElementById('sa_picker_panel');
+  if (!wrap || !panel) return;
+  const show = force === undefined ? panel.style.display === 'none' : !!force;
+  panel.style.display = show ? 'flex' : 'none';
+  wrap.classList.toggle('open', show);
+  if (show) renderSalesPickerList();
+}
+function salesPickerRowHtml(v, name, sub, tag) {
+  return `<label class="sa-picker-row"><input type="checkbox" value="${escAttr(v)}" ${_salesSel.has(v) ? 'checked' : ''} onchange="toggleSalesPick(this.value,this.checked)">
+    <span class="sa-picker-main"><span class="sa-picker-name">${escHtml(name)}</span><span class="sa-picker-sub">${escHtml(sub)}</span></span>
+    <span class="sa-picker-tag">${escHtml(tag)}</span></label>`;
+}
+function renderSalesPickerList() {
+  const host = document.getElementById('sa_picker_list');
+  if (!host) return;
+  const kw = ((document.getElementById('sa_kw') || {}).value || '').trim();
+  const products = searchProducts(kw);
+  const purchases = Store.getPurchases().filter(b => fuzzyHit([
+    b.productName, b.billNo, b.orderDate, b.spec, b.batchName, purchaseSupplier(b)
+  ].filter(Boolean).join(' '), kw));
+  const batches = purchaseBatchList(purchases);
+  let html = `<div class="sa-picker-group">产品库 · ${products.length} 项</div>`;
+  html += products.length
+    ? products.map(p => salesPickerRowHtml('p:' + p.id, p.name || '未命名产品', productSpec(p) || '无规格', '产品')).join('')
+    : '<div class="sa-picker-empty">没有匹配的产品</div>';
+  html += `<div class="sa-picker-group">采购清单 · ${purchases.length} 条 / ${batches.length} 份</div>`;
+  if (!batches.length) {
+    html += '<div class="sa-picker-empty">没有匹配的采购清单</div>';
+  } else {
+    batches.forEach(b => {
+      html += salesPickerRowHtml('bg:' + b.id, '整份 · ' + b.name, b.rows.length + ' 项 · ' + money(b.total), '整批');
+      b.rows.forEach(r => {
+        html += salesPickerRowHtml('b:' + r.id, r.productName || '未命名产品',
+          [r.billNo || '无单号', (Number(r.qty) || 0) + '件', purchaseSupplier(r) || '未填供应商'].join(' · '), '采购');
+      });
+    });
+  }
+  host.innerHTML = html;
+}
+function toggleSalesPick(v, checked) {
+  if (checked) _salesSel.add(v); else _salesSel.delete(v);
+  if (v.indexOf('bg:') === 0) {
+    const b = purchaseBatchList(Store.getPurchases()).find(x => x.id === v.slice(3));
+    if (b) b.rows.forEach(r => { const rv = 'b:' + r.id; if (checked) _salesSel.add(rv); else _salesSel.delete(rv); });
+  } else if (v.indexOf('b:') === 0) {
+    const r = Store.getPurchases().find(x => x.id === v.slice(2));
+    if (r && !checked) _salesSel.delete('bg:' + purchaseBatchIdOf(r));
+  }
+  const host = document.getElementById('sa_picker_list'), top = host ? host.scrollTop : 0;
+  renderSalesPickerList();
+  if (host) host.scrollTop = top;
+  syncSalesPickerSummary();
+  if (_salesSel.size === 1) applySalesPickToForm(Array.from(_salesSel)[0]);
+}
+function applySalesPickToForm(v) {
+  if (_salesSel.size !== 1) return;
+  const qEl = document.getElementById('sa_qty'), pEl = document.getElementById('sa_price');
+  if (!pEl) return;
+  if (v.indexOf('p:') === 0) {
+    const p = Store.getProducts().find(x => x.id === v.slice(2));
+    if (!p) return;
+    const price = (p.values && p.values.salePrice) || '';
+    pEl.value = price;
+    openBillLineEditor('sa', productLineSeeds(p, price));
+  } else if (v.indexOf('b:') === 0) {
+    const b = Store.getPurchases().find(x => x.id === v.slice(2));
+    if (!b) return;
+    const p = Store.getProducts().find(x => x.id === b.productId);
+    const price = (p && p.values && p.values.salePrice) || b.unitPrice || '';
+    pEl.value = price;
+    if (qEl && (Number(b.qty) || 0) > 0) qEl.value = Number(b.qty);
+    const lines = b.lines && b.lines.length
+      ? b.lines.map(l => ({ style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(price) || 0 }))
+      : [{ style: '', color: '', size: b.spec || productSpec(p), qty: Number(b.qty) || 0, unitPrice: Number(price) || 0 }];
+    openBillLineEditor('sa', lines);
+  } else return;
   calcBillTotal('sa');
 }
 
@@ -9416,55 +9505,106 @@ function rLines(id) {
   return r && r.lines && r.lines.length ? r.lines : [];
 }
 
-function saveSales(id) {
-  const link = document.getElementById('sa_link').value;
-  const products = Store.getProducts();
-  const purchases = Store.getPurchases();
-  let p = null, b = null;
-  if (link.indexOf('p:') === 0) p = products.find(x => x.id === link.slice(2));
-  else if (link.indexOf('b:') === 0) {
-    b = purchases.find(x => x.id === link.slice(2));
-    if (b) p = products.find(x => x.id === b.productId);
-  } else if (link.indexOf('bd:') === 0) {
-    // 整批选择：直接按该日期生成全部销售记录
-    const date = link.slice(3);
-    const rows = purchases.filter(x => ((x.orderDate || '').trim() || '未填写日期') === date);
-    applySalesBatch(rows);
-    return;
-  }
-  if (!link) { showToast('请选择产品或关联采购清单'); return; }
-  const common = readBillCommon('sa');
-  if (!(common.qty > 0)) { showToast('请填写正确的销售数量'); return; }
-  const select = document.getElementById('sa_link');
-  const linkLabel = select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : '';
-  const spec = p ? productSpec(p) : (b ? b.spec : '');
-  const linesText = document.getElementById('sa_lines').value || '';
-  const keepProgress = !linesText.trim() && id;
-  const lines = keepProgress && rLines(id).length ? rLines(id) : parseSalesLines(linesText, spec, common.qty, common.unitPrice);
-  const rec = Object.assign({
-    id: id || uid(),
-    link,
-    source: b ? 'purchase' : 'product',
-    productId: p ? p.id : '',
-    purchaseId: b ? b.id : '',
-    productName: p ? p.name : (b ? b.productName : ''),
+function salesRecordFromProduct(p, common, linesText) {
+  const spec = productSpec(p);
+  const lines = (linesText && linesText.trim())
+    ? parseSalesLines(linesText, spec, common.qty, common.unitPrice)
+    : [{ style: '', color: '', size: spec, qty: common.qty, unitPrice: common.unitPrice }];
+  return Object.assign({}, common, {
+    id: uid(),
+    link: 'p:' + p.id,
+    source: 'product',
+    productId: p.id,
+    purchaseId: '',
+    productName: p.name || '',
     spec,
-    linkLabel,
+    linkLabel: '产品库 · ' + productLabel(p),
     lines,
-    settledLines: keepProgress ? (Store.getSales().find(x => x.id === id).settledLines || []) : [],
+    settledLines: [],
     total: +lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0).toFixed(2),
+    qty: lines.reduce((s, l) => s + (Number(l.qty) || 0), 0),
+    unitPrice: common.unitPrice,
     createdAt: Store.todayKey()
-  }, common);
-  if (keepProgress) rec.createdAt = Store.getSales().find(x => x.id === id).createdAt || Store.todayKey();
+  });
+}
+function salesRecordFromPurchase(b, common, products) {
+  const p = products.find(x => x.id === b.productId);
+  const price = (p && p.values && p.values.salePrice) ? Number(p.values.salePrice) : (Number(b.unitPrice) || Number(common.unitPrice) || 0);
+  const lines = b.lines && b.lines.length
+    ? b.lines.map(l => ({ style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: price }))
+    : [{ style: '', color: '', size: b.spec || productSpec(p), qty: Number(b.qty) || 0, unitPrice: price }];
+  return Object.assign({}, common, {
+    id: uid(),
+    link: 'b:' + b.id,
+    source: 'purchase',
+    productId: b.productId || '',
+    purchaseId: b.id,
+    productName: b.productName || (p ? p.name : ''),
+    spec: b.spec || productSpec(p),
+    linkLabel: '采购清单 · ' + (b.billNo || b.productName || ''),
+    lines,
+    settledLines: [],
+    total: +lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0).toFixed(2),
+    qty: lines.reduce((s, l) => s + (Number(l.qty) || 0), 0),
+    unitPrice: price,
+    billNo: common.billNo || b.billNo || '',
+    orderDate: common.orderDate || b.orderDate || Store.todayKey(),
+    deliveryDate: common.deliveryDate || b.deliveryDate || '',
+    billDate: common.billDate || b.billDate || '',
+    note: common.note || b.note || '',
+    createdAt: Store.todayKey()
+  });
+}
+function saveSales(id) {
+  const values = Array.from(_salesSel || []);
+  if (!values.length) { showToast('请选择产品或采购清单'); return; }
+  const products = Store.getProducts(), purchases = Store.getPurchases();
+  const batches = purchaseBatchList(purchases);
+  const expanded = [];
+  values.forEach(v => {
+    if (v.indexOf('p:') === 0) {
+      const p = products.find(x => x.id === v.slice(2));
+      if (p) expanded.push({ kind: 'product', item: p });
+    } else if (v.indexOf('b:') === 0) {
+      const b = purchases.find(x => x.id === v.slice(2));
+      if (b) expanded.push({ kind: 'purchase', item: b });
+    } else if (v.indexOf('bg:') === 0) {
+      const batch = batches.find(x => x.id === v.slice(3));
+      if (batch) batch.rows.forEach(b => expanded.push({ kind: 'purchase', item: b }));
+    } else if (v.indexOf('bd:') === 0) {
+      const date = v.slice(3);
+      purchases.filter(b => ((b.orderDate || '').trim() || '未填写日期') === date)
+        .forEach(b => expanded.push({ kind: 'purchase', item: b }));
+    }
+  });
+  const seen = new Set();
+  const items = expanded.filter(x => {
+    const key = x.kind + ':' + x.item.id;
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+  if (!items.length) { showToast('所选产品或采购清单不存在，请重新选择'); return; }
+  const common = readBillCommon('sa');
+  if (items.some(x => x.kind === 'product') && !(common.qty > 0)) { showToast('请填写正确的销售数量'); return; }
+  const linesText = document.getElementById('sa_lines').value || '';
   const arr = Store.getSales();
-  if (id) {
-    const i = arr.findIndex(x => x.id === id);
-    if (i >= 0) arr[i] = rec;
-  } else arr.push(rec);
+  const old = id ? arr.find(x => x.id === id) : null;
+  items.forEach((x, idx) => {
+    const rec = x.kind === 'product'
+      ? salesRecordFromProduct(x.item, common, linesText)
+      : salesRecordFromPurchase(x.item, common, products);
+    if (old && idx === 0) {
+      rec.id = old.id;
+      rec.createdAt = old.createdAt || Store.todayKey();
+      rec.settledLines = old.settledLines || [];
+      const i = arr.findIndex(y => y.id === id);
+      if (i >= 0) arr[i] = rec;
+    } else arr.push(rec);
+  });
   Store.saveSales(arr);
   closeModal();
   renderPage('sales');
-  showToast('销售记录已保存～ 💰');
+  showToast(items.length > 1 ? '已按所选生成 ' + items.length + ' 条销售记录～ 💰' : '销售记录已保存～ 💰');
 }
 
 function deleteSale(id) {

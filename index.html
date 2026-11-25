@@ -3149,6 +3149,19 @@ body {
 .prod-flat-card { cursor: pointer; }
 .prod-flat-card .pfc-more { margin-left: auto; font-size: 11.5px; color: var(--text-light); white-space: nowrap; }
 .prod-flat-card:hover .pfc-more { color: var(--accent-caramel); }
+/* 自定义排序：拖拽卡片或用 ↑/↓ 按钮移动 */
+.prod-order-hint {
+  margin: 0 0 12px; padding: 8px 10px; border-radius: 6px;
+  background: rgba(247,114,52,.06); border: 1px solid rgba(247,114,52,.18);
+  font-size: 12px; color: var(--text-sub);
+}
+.prod-flat-card.prod-sortable { cursor: grab; }
+.prod-flat-card.prod-sortable:active { cursor: grabbing; }
+.prod-flat-card.prod-sortable.dragging { opacity: .45; }
+.prod-flat-card.prod-sortable.drop-target { border-color: var(--accent-caramel); box-shadow: 0 0 0 2px rgba(247,114,52,.18); }
+.pfc-move { display: flex; gap: 2px; margin-left: auto; }
+.pfc-move .btn { padding: 2px 6px; min-width: 24px; font-size: 12px; line-height: 1.2; }
+.prod-sortable .pfc-more { margin-left: 0; }
 .pfc-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .pfc-main { min-width: 0; flex: 1; }
 .pfc-count {
@@ -7327,6 +7340,7 @@ function renderProducts(container) {
         </select>
         <span style="margin-left:auto;color:var(--text-light);font-size:12px;">${new Set(products.map(p => p.name)).size} 个产品 · ${products.length} 条资料</span>
       </div>
+      ${getProdSort() === 'custom' ? '<div class="prod-order-hint">按住卡片拖拽到目标位置，或用卡片右上角的 ↑ / ↓ 按钮移动；顺序自动保存，搜索筛选时也保持该顺序。</div>' : ''}
       <div id="prod-list"></div>
     </div>
   `;
@@ -7335,7 +7349,9 @@ function renderProducts(container) {
 
 // ---------------- 产品库排序 ----------------
 const PROD_SORT_KEY = 'lxk_product_sort';
+const PROD_ORDER_KEY = 'lxk_product_order';
 const PROD_SORT_OPTIONS = [
+  { key: 'custom', label: '自定义（拖拽排序）' },
   { key: 'name', label: '名称（拼音）' },
   { key: 'created_desc', label: '创建时间（新→旧）' },
   { key: 'created_asc', label: '创建时间（旧→新）' },
@@ -7348,11 +7364,100 @@ function getProdSort() {
   const v = localStorage.getItem(PROD_SORT_KEY) || 'name';
   return PROD_SORT_OPTIONS.some(o => o.key === v) ? v : 'name';
 }
+function getProdOrder() {
+  try {
+    const a = JSON.parse(localStorage.getItem(PROD_ORDER_KEY) || '[]');
+    return Array.isArray(a) ? a.filter(x => typeof x === 'string' && x) : [];
+  } catch (e) { return []; }
+}
+function saveProdOrder(names) { safeSetItem(PROD_ORDER_KEY, JSON.stringify(names)); }
+function productNameGroups(products) {
+  const groups = new Map();
+  (products || Store.getProducts()).forEach(p => {
+    const name = (p.name || '未命名产品').trim();
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(p);
+  });
+  return groups;
+}
+function allSortedProductNames() {
+  const groups = productNameGroups(Store.getProducts());
+  return sortProductNames(groups, Array.from(groups.keys()));
+}
+function syncProdOrderHint() {
+  const listBox = document.getElementById('prod-list');
+  if (!listBox) return;
+  let hint = document.querySelector('.prod-order-hint');
+  if (getProdSort() === 'custom') {
+    if (!hint) {
+      hint = document.createElement('div');
+      hint.className = 'prod-order-hint';
+      hint.textContent = '按住卡片拖拽到目标位置，或用卡片右上角的 ↑ / ↓ 按钮移动；顺序自动保存，搜索筛选时也保持该顺序。';
+      listBox.parentNode.insertBefore(hint, listBox);
+    }
+  } else if (hint) hint.remove();
+}
 function setProdSort(key) {
+  // 首次切到自定义排序时，以当前显示顺序作为初始顺序，避免突然跳动
+  if (key === 'custom' && getProdSort() !== 'custom' && !getProdOrder().length) {
+    saveProdOrder(allSortedProductNames());
+  }
   safeSetItem(PROD_SORT_KEY, key);
+  syncProdOrderHint();
   renderProductList();
   const sel = document.getElementById('prod-sort');
   if (sel) sel.value = getProdSort();
+}
+// ↑ / ↓ 按钮移动（手机与无拖拽环境可用）
+function moveProdOrder(name, dir) {
+  const names = allSortedProductNames();
+  const i = names.indexOf(name), j = i + dir;
+  if (i < 0 || j < 0 || j >= names.length) return;
+  names.splice(i, 1);
+  names.splice(j, 0, name);
+  saveProdOrder(names);
+  renderProductList();
+  showToast('产品顺序已保存');
+}
+// 拖拽移动：把 src 放到 target 之前或之后
+function moveProdNameTo(src, target, after) {
+  if (!src || src === target) return;
+  const names = allSortedProductNames();
+  const from = names.indexOf(src);
+  if (from < 0) return;
+  names.splice(from, 1);
+  let idx = names.indexOf(target);
+  if (idx < 0) idx = names.length;
+  names.splice(after ? idx + 1 : idx, 0, src);
+  saveProdOrder(names);
+  renderProductList();
+  showToast('产品顺序已保存');
+}
+let _prodDragName = '', _prodJustDragged = false;
+function prodDragStart(e, name) {
+  _prodDragName = name;
+  try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', name); } catch (err) {}
+  e.currentTarget.classList.add('dragging');
+}
+function prodDragOver(e) {
+  e.preventDefault();
+  try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+  e.currentTarget.classList.add('drop-target');
+}
+function prodDragLeave(e) { e.currentTarget.classList.remove('drop-target'); }
+function prodDragEnd() {
+  _prodDragName = '';
+  document.querySelectorAll('.prod-flat-card.dragging,.prod-flat-card.drop-target').forEach(el => el.classList.remove('dragging', 'drop-target'));
+}
+function prodDrop(e, target) {
+  e.preventDefault(); e.stopPropagation();
+  const src = _prodDragName || (e.dataTransfer && e.dataTransfer.getData('text/plain')) || '';
+  const rect = e.currentTarget.getBoundingClientRect();
+  const after = e.clientY > rect.top + rect.height / 2;
+  prodDragEnd();
+  _prodJustDragged = true;
+  setTimeout(function () { _prodJustDragged = false; }, 150);
+  moveProdNameTo(src, target, after);
 }
 // 对产品分组排序
 function sortProductNames(groups, names) {
@@ -7373,6 +7478,15 @@ function sortProductNames(groups, names) {
   const skuOf = name => (groups.get(name) || []).length;
   const byName = (a, b) => a.localeCompare(b, 'zh-CN');
   switch (mode) {
+    case 'custom': {
+      const rank = new Map();
+      getProdOrder().forEach((n, i) => { if (!rank.has(n)) rank.set(n, i); });
+      const last = Number.MAX_SAFE_INTEGER;
+      return list.sort((a, b) => {
+        const ai = rank.has(a) ? rank.get(a) : last, bi = rank.has(b) ? rank.get(b) : last;
+        return ai !== bi ? ai - bi : byName(a, b);
+      });
+    }
     case 'created_desc': return list.sort((a, b) => createdOf(b).localeCompare(createdOf(a)) || byName(a, b));
     case 'created_asc': return list.sort((a, b) => createdOf(a).localeCompare(createdOf(b)) || byName(a, b));
     case 'sku_desc': return list.sort((a, b) => skuOf(b) - skuOf(a) || byName(a, b));
@@ -7447,13 +7561,9 @@ function renderProductList() {
     return;
   }
 
-  const groups = new Map();
-  filtered.forEach(p => {
-    const name = (p.name || '未命名产品').trim();
-    if (!groups.has(name)) groups.set(name, []);
-    groups.get(name).push(p);
-  });
+  const groups = productNameGroups(filtered);
   const names = sortProductNames(groups, Array.from(groups.keys()));
+  const custom = getProdSort() === 'custom';
 
   box.innerHTML = `<div class="prod-flat-grid">${names.map(name => {
     const list = groups.get(name);
@@ -7476,13 +7586,23 @@ function renderProductList() {
     const colors = Array.from(new Set(list.map(p => pval(p, 'color')).filter(Boolean)));
     const short = arr => arr.length > 5 ? arr.slice(0, 5).join('、') + ' 等' : arr.join('、');
     const enc = poEnc(name);
-    return `<div class="prod-flat-card" onclick="showProductDetail(decodeURIComponent('${enc}'))" title="点击查看详细信息">
+    const dragAttrs = custom ? ` draggable="true" data-prod-name="${escAttr(name)}"
+      ondragstart="prodDragStart(event,decodeURIComponent('${enc}'))"
+      ondragover="prodDragOver(event)" ondragleave="prodDragLeave(event)"
+      ondrop="prodDrop(event,decodeURIComponent('${enc}'))" ondragend="prodDragEnd()"` : '';
+    return `<div class="prod-flat-card ${custom ? 'prod-sortable' : ''}"${dragAttrs}
+      onclick="if(!_prodJustDragged)showProductDetail(decodeURIComponent('${enc}'))"
+      title="${custom ? '拖拽调整顺序，点击查看详情' : '点击查看详细信息'}">
       <div class="pfc-head">
         ${thumbHtml}
         <div class="pfc-main">
           <div class="prod-name">${escHtml(name)}</div>
           <div class="pfc-count">${list.length} 条 SKU</div>
         </div>
+        ${custom ? `<span class="pfc-move" onclick="event.stopPropagation();">
+          <button class="btn btn-text btn-sm" title="上移" onclick="moveProdOrder(decodeURIComponent('${enc}'),-1)">↑</button>
+          <button class="btn btn-text btn-sm" title="下移" onclick="moveProdOrder(decodeURIComponent('${enc}'),1)">↓</button>
+        </span>` : ''}
         <span class="pfc-more">详情 ›</span>
       </div>
       <div class="pfc-lines">
@@ -8403,7 +8523,15 @@ function purchaseBatchList(arr) {
       total: rows.reduce((n, r) => n + (Number(r.total) || 0), 0),
       legacy: !first.batchId
     };
-  }).sort((a, b) => (b.orderDate || b.createdAt || '').localeCompare(a.orderDate || a.createdAt || ''));
+  }).sort((a, b) => {
+    // 严格按下单日期（新→旧）；未填下单日期的清单排最后，同日按创建/批次时间倒序
+    const ha = a.orderDate ? 1 : 0, hb = b.orderDate ? 1 : 0;
+    if (ha !== hb) return hb - ha;
+    if (ha && a.orderDate !== b.orderDate) return b.orderDate.localeCompare(a.orderDate);
+    const ca = a.createdAt || '', cb = b.createdAt || '';
+    if (ca !== cb) return cb.localeCompare(ca);
+    return a.name.localeCompare(b.name, 'zh-CN');
+  });
 }
 function renderPurchases(container) {
   const list = Store.getPurchases();
@@ -8458,7 +8586,7 @@ function purchaseBatchGroupsInner(batches) {
             <input type="checkbox" ${groupOn ? 'checked' : ''} onchange="toggleBillSelGroup('purchases','${b.id}',this.checked)">
           </label>
           <span class="bill-date-label">${escHtml(b.name)}</span>
-          <span class="bill-date-count">${b.rows.length} 个产品</span>
+          <span class="bill-date-count">${b.rows.length} 个产品 · ${b.orderDate ? '下单 ' + escHtml(fmtDateFull(b.orderDate)) : '未填下单日期'}</span>
           <span class="bill-date-amount">${money(b.total)}</span>
           <span class="bill-batch-tools" onclick="event.stopPropagation()">
             ${b.legacy ? '' : `

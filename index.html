@@ -2580,50 +2580,6 @@ body.sidebar-collapsed .nav-toggle-float { left: 0; }
 .sample-entry.returned .se-color { text-decoration: line-through; }
 .se-info { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 150px; }
 
-/* ===== 样品记录 · 智能录入 ===== */
-.smart-card { border: 1px solid var(--border-soft); }
-.smart-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.smart-emoji { font-size: 24px; line-height: 1; }
-.smart-title { font-size: 16px; font-weight: 700; color: var(--text-main); }
-.smart-sub { font-size: 12px; color: var(--text-sub); }
-.smart-textarea { width: 100%; resize: vertical; font-size: 14px; line-height: 1.7; min-height: 76px; }
-.smart-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.chip {
-  border: 1px solid var(--border-soft);
-  background: var(--cream-side, var(--cream-bg));
-  color: var(--text-sub);
-  border-radius: 999px;
-  padding: 5px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all .15s;
-}
-.chip:hover { background: var(--cream-card); color: var(--text-main); border-color: #C2D9C5; }
-.si-empty { font-size: 13px; color: var(--text-sub); padding: 8px 0; }
-.si-preview-head { font-size: 13px; color: var(--text-sub); margin: 14px 0 10px; }
-.si-preview-head b { color: var(--green-text); }
-.si-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
-.si-card {
-  background: var(--cream-side, var(--cream-bg));
-  border: 1px solid var(--border-soft);
-  border-radius: 14px;
-  padding: 10px 12px;
-}
-.si-name { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; word-break: break-all; }
-.si-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
-.si-tag {
-  font-size: 12px;
-  padding: 1px 8px;
-  border-radius: 999px;
-  background: var(--cream-card);
-  border: 1px solid var(--border-soft);
-  color: var(--text-sub);
-}
-.si-tag.qty { color: var(--text-main); font-weight: 700; }
-.si-tag.borr { color: #86909C; border-color: var(--cream-card-hover); background: var(--cream-bg); }
-.si-tag.ret { color: #3F7D57; border-color: #EAF1EC; background: #EAF1EC; }
-.si-date { font-size: 11px; color: var(--text-sub); }
-.si-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
 .se-color {
   display: inline-block;
   padding: 2px 10px;
@@ -2805,7 +2761,7 @@ body {
 
 /* ---------- 卡片体系 ---------- */
 .dashboard-hero, .board-card, .quote-card, .stat-card, .hs-card, .recent-col,
-.card, .si-card, .smart-card, .month-card, .month-card-body, .work-checkin-card,
+.card, .month-card, .month-card-body, .work-checkin-card,
 .leave-card, .sample-group, .punch-item, .calendar-wrap, .lunch-col {
   background: var(--cream-card) !important;
   background-image: none !important;
@@ -2855,7 +2811,7 @@ body {
 
 /* ---------- 列表行（表格化） ---------- */
 .task-item, .todo-item, .sched-item, .history-item, .lunch-item, .sample-entry,
-.si-card, .month-card {
+.month-card {
   background: var(--cream-card) !important;
   border: 1px solid var(--border-soft) !important;
   border-radius: var(--radius-sm) !important;
@@ -2894,7 +2850,7 @@ body {
 .btn:hover { filter: none; }
 
 /* ---------- 表单 ---------- */
-.input, .textarea, .select, .smart-textarea, .picker-trigger {
+.input, .textarea, .select, .picker-trigger {
   border: 1px solid var(--border-soft) !important;
   border-radius: var(--radius-sm) !important;
   background: var(--cream-card) !important;
@@ -2902,39 +2858,38 @@ body {
   box-shadow: none !important;
   font-size: 13px;
 }
-.input:focus, .textarea:focus, .select:focus, .smart-textarea:focus {
+.input:focus, .textarea:focus, .select:focus {
   outline: none !important;
   border-color: var(--accent-caramel) !important;
   box-shadow: 0 0 0 3px rgba(247, 114, 52, 0.10) !important;
 }
-.input::placeholder, .textarea::placeholder, .smart-textarea::placeholder { color: #C9CDD4; }
+.input::placeholder, .textarea::placeholder { color: #C9CDD4; }
 .picker-trigger:hover { background: var(--cream-card-hover) !important; }
 
 /* ---------- 状态标签 ---------- */
-.recent-pill.borrowed, .st-pill.on, .si-tag.borr {
+.recent-pill.borrowed, .st-pill.on {
   background: var(--tag-orange-bg) !important;
   color: var(--tag-orange-text) !important;
   border: none !important;
   font-weight: 500;
 }
-.recent-pill.returned, .st-pill.ret.on, .si-tag.ret {
+.recent-pill.returned, .st-pill.ret.on {
   background: var(--green-bg) !important;
   color: var(--green-text) !important;
   border: none !important;
   font-weight: 500;
 }
-.si-tag, .chip, .today-pill, .roll-badge, .link-badge,
+.today-pill, .roll-badge, .link-badge,
 .sched-repeat-badge, .sched-allday-badge, .cal-pill {
   border-radius: 4px !important;
   font-size: 12px !important;
   font-weight: 500 !important;
 }
-.chip, .today-pill, .si-tag, .cal-pill {
+.today-pill, .cal-pill {
   background: var(--cream-card) !important;
   border: 1px solid var(--border-soft) !important;
   color: var(--text-sub) !important;
 }
-.chip:hover { background: var(--tag-orange-bg) !important; border-color: var(--accent-caramel) !important; color: var(--tag-orange-text) !important; }
 .se-status { background: var(--cream-bg) !important; border: 1px solid var(--border-soft) !important; border-radius: 4px !important; padding: 2px; gap: 2px; }
 .st-pill { border-radius: 3px !important; padding: 2px 10px; font-size: 12px; }
 .cal-pill.todo { background: #E8F3FF !important; border-color: #BEDAFF !important; color: #1D5FD6 !important; }
@@ -3021,7 +2976,6 @@ body {
 .punch-dot.out { background: var(--accent-caramel); }
 .lunch-col.today { border-color: var(--accent-caramel) !important; background: #FFFAF5 !important; box-shadow: none !important; }
 .lunch-col { border-radius: var(--radius) !important; }
-.si-card { border-radius: var(--radius-sm) !important; }
 
 /* ---------- 折叠把手 / 内联菜单键 ---------- */
 .nav-toggle-inline, .nav-toggle-float {
@@ -3523,7 +3477,7 @@ body, .main, .sidebar, .card, .modal, .picker-sheet {
   border: 1px solid var(--border-soft) !important;
   box-shadow: none !important;
 }
-button, .nav-item, .nav-group-head, .cal-nav-btn, .input, select.input, textarea.input, .picker-trigger, .chip, .st-pill {
+button, .nav-item, .nav-group-head, .cal-nav-btn, .input, select.input, textarea.input, .picker-trigger, .st-pill {
   transition: background-color .16s var(--ease), border-color .16s var(--ease), color .16s var(--ease), opacity .16s var(--ease) !important;
 }
 .btn { border-radius: var(--radius-sm); }
@@ -3567,6 +3521,7 @@ html[data-theme="dark"] .cal-sched { color: #1D2129 !important; }
 .map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
 .map-item label { display: block; font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
 .po-table td { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.po-table tr.po-total-row td { font-weight: 700; color: var(--accent-caramel); background: var(--cream-bg); border-top: 1px solid var(--border-soft); }
 .form-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .form-actions-spacer { flex: 1; }
 .field-hint { font-size: 11px; color: var(--text-light); margin-top: 5px; }
@@ -3794,7 +3749,8 @@ const PRODUCT_FIELDS_DEFAULT = [
   { key: 'barcode',   label: '69码',     builtin: true },
   { key: 'material',  label: '材质',     builtin: true },
   { key: 'costPrice', label: '成本单价', builtin: true },
-  { key: 'salePrice', label: '销售单价', builtin: true }
+  { key: 'salePrice', label: '销售单价', builtin: true },
+  { key: 'tnPrice',   label: '铜牛结算价格', builtin: true }
 ];
 
 // 数据处理中心固定模板（采购订单导入字段 / 结算材料三类导出表头）
@@ -4076,7 +4032,17 @@ const Store = {
   saveProducts(arr) { safeSetItem('lxk_products', JSON.stringify(arr)); },
   getProductFields() {
     const raw = localStorage.getItem('lxk_product_fields');
-    return raw ? JSON.parse(raw) : PRODUCT_FIELDS_DEFAULT.map(f => ({ ...f }));
+    let fields;
+    try { fields = raw ? JSON.parse(raw) : PRODUCT_FIELDS_DEFAULT.map(f => ({ ...f })); }
+    catch (e) { fields = PRODUCT_FIELDS_DEFAULT.map(f => ({ ...f })); }
+    // 老数据一次性补上内置的「铜牛结算价格」，保留用户原有字段顺序与自定义字段
+    if (!fields.some(f => f.key === 'tnPrice')) {
+      const def = PRODUCT_FIELDS_DEFAULT.find(f => f.key === 'tnPrice');
+      const at = fields.findIndex(f => f.key === 'salePrice');
+      fields.splice(at >= 0 ? at + 1 : fields.length, 0, { ...def });
+      try { localStorage.setItem('lxk_product_fields', JSON.stringify(fields)); } catch (e) {}
+    }
+    return fields;
   },
   saveProductFields(arr) { safeSetItem('lxk_product_fields', JSON.stringify(arr)); },
   // 供应商 / 采购商历史词表（添加产品时自动记忆，供下次下拉选择）
@@ -6707,134 +6673,6 @@ function saveLunchNotes() {
 }
 
 // ====================================================================
-// 样品记录 · 智能录入（自然语言自动拆解 名称/颜色/尺码/数量/状态/日期）
-// ====================================================================
-const SAMPLE_COLORS = [
-  '米白色','奶白色','雪白色','纯白色','白色','米色','米黄色','杏色','卡其色','驼色','咖啡色','棕色','褐色','黑色','玄色',
-  '大红色','酒红色','玫红色','粉红色','桃红色','红色','橙色','橘色','鹅黄色','姜黄色','黄色','草绿色','军绿色','墨绿色','绿色',
-  '青色','青绿色','天蓝色','湖蓝色','藏蓝色','宝蓝色','深蓝色','蓝色','紫罗兰色','紫色','银灰色','灰色','银色','金色','香槟色',
-  '花色','拼色','印花','格子','条纹','牛仔蓝','雾霾蓝','豆绿色','浅灰色','深灰色','浅粉色','南瓜色','薄荷绿','珊瑚色',
-  '米白','奶白','雪白','白','米黄','卡其','驼色','咖啡','棕','褐','黑','红','橙','黄','绿','青','蓝','紫','灰','银','金','粉'
-];
-
-function sampleDateOffset(n) {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
-}
-
-function sampleStrip(s, text) {
-  return s.split(text).join(' ');
-}
-
-// 从文本中提取多个尺码（XS~5XL / 数字码 / 均码），返回 {sizes, rest}
-function extractSizes(s) {
-  const sizes = [];
-  let s2 = s;
-  const spans = [];
-  // 用「精确区间挖空」避免 L 误删 XL 中的 L 这类子串冲突
-  const mark = (re, transform) => {
-    let m; re.lastIndex = 0;
-    while ((m = re.exec(s2))) {
-      sizes.push(transform(m[0]));
-      spans.push([m.index, m.index + m[0].length]);
-    }
-  };
-  // 1) 字母尺码：XS/S/M/L/XL…（可带 码/号）
-  mark(/\b(XS|S|M|L|XL|XXL|XXXL|XXXXL|2XL|3XL|4XL|5XL)(?:\s*(?:码|号|尺码))?/gi,
-       t => t.replace(/\s*(?:码|号|尺码)/g, '').replace(/\s+/g, ''));
-  // 2) 均码
-  mark(/(均码|统一码|自由码|one\s*size)/gi, () => '均码');
-  // 3) 数字尺码：若文本出现 码/号/尺码 标记，则把所有 2-3 位数字视为尺码（兼容 “38 40 码”）；否则仅抓取紧跟 码/号 的
-  const hasSizingToken = /(码|号|尺码)/.test(s);
-  const numRe = hasSizingToken ? /\d{2,3}(?:\s*(?:码|号|尺码))?/g : /\d{2,3}\s*(?:码|号|尺码)/g;
-  mark(numRe, t => t.replace(/\D/g, ''));
-  // 按区间从后往前挖空
-  spans.sort((a, b) => b[0] - a[0]).forEach(([st, en]) => {
-    s2 = s2.slice(0, st) + ' '.repeat(en - st) + s2.slice(en);
-  });
-  // 清掉残留的 码/尺码/号 字眼
-  s2 = s2.replace(/(?:码|尺码|号)/g, ' ');
-  const uniq = [];
-  sizes.forEach(x => { if (x && uniq.indexOf(x) === -1) uniq.push(x); });
-  return { sizes: uniq, rest: s2 };
-}
-
-// 从文本中提取多个颜色（词表最长优先，支持“黑/蓝/黑蓝”），返回 {colors, rest}
-function extractColors(s) {
-  const colors = [];
-  let s2 = s;
-  const sorted = SAMPLE_COLORS.slice().sort((a, b) => b.length - a.length);
-  for (const c of sorted) {
-    if (s2.indexOf(c) !== -1) { colors.push(c.replace(/色$/, '')); s2 = sampleStrip(s2, c); }
-  }
-  let cm;
-  while ((cm = s2.match(/[一-龥]{1,3}色/))) { colors.push(cm[0].replace('色', '')); s2 = sampleStrip(s2, cm[0]); }
-  const uniq = [];
-  colors.forEach(x => { if (x && uniq.indexOf(x) === -1) uniq.push(x); });
-  return { colors: uniq, rest: s2 };
-}
-
-// 解析单条文本：支持多个颜色 + 多个尺码，自动展开为多条（颜色 × 尺码 笛卡尔积）
-function parseOneSample(line) {
-  let s = ' ' + (line || '') + ' ';
-  let date = Store.todayKey();
-
-  // 1) 日期：2026-11-13 / 11月13日 / 昨天 / 前天 / 今天
-  const dm = s.match(/(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})[日号]?/);
-  if (dm) { date = dm[1] + '-' + pad2(dm[2]) + '-' + pad2(dm[3]); s = sampleStrip(s, dm[0]); }
-  else if (/前天/.test(s)) { date = sampleDateOffset(-2); s = sampleStrip(s, '前天'); }
-  else if (/昨天/.test(s)) { date = sampleDateOffset(-1); s = sampleStrip(s, '昨天'); }
-  else if (/今天/.test(s)) { date = sampleDateOffset(0); s = sampleStrip(s, '今天'); }
-
-  // 2) 状态：已归还 / 未归还 / 借出
-  let status = 'borrowed';
-  if (/(已归还|归还了?|还了|returned)/i.test(s)) { status = 'returned'; s = s.replace(/已归还|归还了?|还了|returned/gi, ' '); }
-  else if (/(未归还|未还|借出|借走|外借|borrowed)/i.test(s)) { status = 'borrowed'; s = s.replace(/未归还|未还|借出|借走|外借|borrowed/gi, ' '); }
-
-  // “各” 字只是语气词（如“各2件”），解析时忽略，数量按每个颜色×尺码组合计
-  s = s.replace(/各/g, ' ');
-
-  // 3) 数量：×5 / 2件 / 数量3 / 两件（作用于每个颜色×尺码组合）
-  let qty = 1;
-  let qm = s.match(/(?:×|x|X|\*|＊|✕)\s*(\d+)/)
-        || s.match(/(\d+)\s*(件|个|条|只|双|副|匹|套|打|箱|枚|顶|支|瓶|本)/)
-        || s.match(/数量[:：]?\s*(\d+)/)
-        || s.match(/(\d+)\s*数量/);
-  if (qm) { qty = parseInt(qm[1], 10) || 1; s = sampleStrip(s, qm[0]); }
-  else {
-    const cn = s.match(/(两|二|三|四|五|六|七|八|九|十)\s*(件|个|条|只|双|副|匹|套|打|箱|枚|顶|支|瓶|本)/);
-    if (cn) {
-      const map = { '两':2,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10 };
-      qty = map[cn[1]] || 1;
-      s = sampleStrip(s, cn[0]);
-    }
-  }
-
-  // 4) 多个尺码 + 多个颜色
-  const sizeRes = extractSizes(s);
-  const colorRes = extractColors(sizeRes.rest);
-  s = colorRes.rest;
-  const colorList = colorRes.colors.length ? colorRes.colors : [''];
-  const sizeList = sizeRes.sizes.length ? sizeRes.sizes : [''];
-
-  // 5) 名称 = 剩余文本
-  let name = s.replace(/\s+/g, ' ').trim().replace(/^[，,、；;。\s]+|[，,、；;。\s]+$/g, '');
-  if (!name) name = '未命名样品';
-
-  // 6) 展开：颜色 × 尺码 笛卡尔积，每条组合各计 qty 条记录
-  const records = [];
-  for (const c of colorList) for (const z of sizeList) {
-    records.push({ name, color: c, size: z, qty, status, date });
-  }
-  return records;
-}
-
-function parseSmartSamples(raw) {
-  return (raw || '').split(/[\n；;]+/).map(x => x.trim()).filter(Boolean).flatMap(parseOneSample);
-}
-
-// ====================================================================
 // 样品记录（按产品名称自动归类 · 借用/归还状态）
 // ====================================================================
 function archiveSampleToHistory(it, at) {
@@ -6958,26 +6796,8 @@ function renderSampleRecords(container) {
     </div>
     ${statsHtml}
 
-    <div class="card smart-card">
-      <div class="smart-head">
-        <span class="smart-emoji">💬</span>
-        <div>
-          <div class="smart-title">智能录入</div>
-          <div class="smart-sub">一句话拆出 名称 / 颜色 / 尺码 / 数量，自动归类 · 支持一条录入多个颜色、多个尺码</div>
-        </div>
-      </div>
-      <textarea id="sm-smart" class="input smart-textarea" rows="4" placeholder="例如：羊毛大衣 米白 M 2件&#10;红色连衣裙 S码 已归还&#10;连衣裙 红 蓝 S M 2件 → 自动拆成 4 条&#10;（每行一条，可一次录多条）" oninput="previewSmartSamples()"></textarea>
-      <div class="smart-chips">
-        <button class="chip" onclick="fillSmart('羊毛大衣 米白 M 2件')">羊毛大衣 米白 M 2件</button>
-        <button class="chip" onclick="fillSmart('红色连衣裙 S码 已归还')">红色连衣裙 S码 已归还</button>
-        <button class="chip" onclick="fillSmart('连衣裙 红 蓝 S M 2件')">连衣裙 红 蓝 S M 2件</button>
-        <button class="chip" onclick="fillSmart('黑色T恤 蓝色 L ×5 昨天')">黑色T恤 蓝 L ×5 昨天</button>
-      </div>
-      <div id="sm-preview"></div>
-    </div>
-
     <div class="card">
-      <button class="btn btn-primary" onclick="showAddSampleModal()">➕ 手动添加样品</button>
+      <button class="btn btn-primary" onclick="showAddSampleModal()">➕ 添加样品</button>
       <div style="margin-top:16px;">${groupsHtml}</div>
     </div>
     <div class="card" style="margin-top:16px;">
@@ -6988,78 +6808,6 @@ function renderSampleRecords(container) {
       ${historyHtml}
     </div>
   `;
-}
-
-function fillSmart(text) {
-  const ta = document.getElementById('sm-smart');
-  if (!ta) return;
-  ta.value = ta.value ? ta.value + '\n' + text : text;
-  previewSmartSamples();
-}
-
-function clearSmartInput() {
-  const ta = document.getElementById('sm-smart');
-  if (ta) ta.value = '';
-  const box = document.getElementById('sm-preview');
-  if (box) box.innerHTML = '';
-}
-
-function previewSmartSamples() {
-  const ta = document.getElementById('sm-smart');
-  const box = document.getElementById('sm-preview');
-  if (!ta || !box) return;
-  const raw = ta.value;
-  if (!raw.trim()) { box.innerHTML = ''; return; }
-  const list = parseSmartSamples(raw);
-  if (!list.length) { box.innerHTML = '<div class="si-empty">没有可解析的内容</div>'; return; }
-  box.innerHTML = `
-    <div class="si-preview-head">已解析 <b>${list.length}</b> 条，确认后自动归类添加</div>
-    <div class="si-grid">
-      ${list.map(it => `
-        <div class="si-card">
-          <div class="si-name">${escHtml(it.name)}</div>
-          <div class="si-tags">
-            <span class="si-tag">${escHtml(it.color || '—')}</span>
-            <span class="si-tag">${escHtml(it.size || '—')}</span>
-            <span class="si-tag qty">×${escHtml(it.qty)}</span>
-            <span class="si-tag ${it.status === 'returned' ? 'ret' : 'borr'}">${it.status === 'returned' ? '已归还' : '未归还'}</span>
-          </div>
-          <div class="si-date">录入 ${escHtml(it.date)}</div>
-        </div>`).join('')}
-    </div>
-    <div class="si-actions">
-      <button class="btn btn-outline btn-sm" onclick="clearSmartInput()">清空</button>
-      <button class="btn btn-primary btn-sm" onclick="commitSmartSamples()">确认添加 ${list.length} 条</button>
-    </div>`;
-}
-
-function commitSmartSamples() {
-  const ta = document.getElementById('sm-smart');
-  if (!ta) return;
-  const list = parseSmartSamples(ta.value);
-  if (!list.length) { showToast('没有可添加的内容'); return; }
-  const arr = Store.getSamples();
-  const productByName = new Map(Store.getProducts().map(p => [p.name, p.id]));
-  list.forEach(it => {
-    const item = {
-      id: uid(),
-      productId: productByName.get((it.name || '').trim()) || '',
-      name: it.name,
-      color: it.color,
-      size: it.size,
-      qty: it.qty,
-      date: it.date,
-      status: it.status
-    };
-    if (item.status === 'returned') archiveSampleToHistory(item, (item.date || Store.todayKey()) + 'T12:00:00');
-    else arr.push(item);
-  });
-  Store.saveSamples(arr);
-  ta.value = '';
-  const box = document.getElementById('sm-preview');
-  if (box) box.innerHTML = '';
-  renderPage('sample-records');
-  showToast('已添加 ' + list.length + ' 条样品～ 📦');
 }
 
 function sampleProductOptions(selectedId) {
@@ -7593,6 +7341,7 @@ function renderProductList() {
       ((fv.buyer || '').trim() && '采购商：' + fv.buyer.trim()),
       ((fv.costPrice || '').trim() && '成本 ¥' + fv.costPrice.trim()),
       ((fv.salePrice || '').trim() && '售价 ¥' + fv.salePrice.trim()),
+      ((fv.tnPrice || '').trim() && '铜牛结算价 ¥' + fv.tnPrice.trim()),
       ((fv.material || '').trim() && '面料：' + fv.material.trim())
     ].filter(Boolean).join(' · ');
     const tags = Array.isArray(first.tags) ? first.tags : String(fv.tags || '').split(/[,，]/).map(s => s.trim()).filter(Boolean);
@@ -7674,7 +7423,7 @@ function showProductDetail(name) {
     ${imgs.length ? `<div class="pd-imgs">${imgs.map(src => `<img src="${src}" alt="" onload="fixThumbBg(this)" onclick="viewImage(this.src)">`).join('')}</div>` : ''}
     <div class="pd-meta">
       <span class="pd-chip">${list.length} 条 SKU</span>
-      ${(fv.costPrice || fv.salePrice) ? `<span class="pd-chip">成本 ¥${escHtml(fv.costPrice || '—')}</span><span class="pd-chip">售价 ¥${escHtml(fv.salePrice || '—')}</span>` : ''}
+      ${(fv.costPrice || fv.salePrice || fv.tnPrice) ? `<span class="pd-chip">成本 ¥${escHtml(fv.costPrice || '—')}</span><span class="pd-chip">售价 ¥${escHtml(fv.salePrice || '—')}</span>${fv.tnPrice ? `<span class="pd-chip">铜牛结算价 ¥${escHtml(fv.tnPrice)}</span>` : ''}` : ''}
       ${tags.map(t => `<span class="tag-chip">${escHtml(t)}</span>`).join('')}
     </div>
     ${infoRows ? `<div class="pd-info">${infoRows}</div>` : ''}
@@ -8089,7 +7838,7 @@ function openProductModal(id) {
   if (!prodDraft.variants[0].style) prodDraft.variants[0].style = (v0.style || '').trim();
   fields.forEach(f => { prodDraft.values[f.key] = p && p.values ? (p.values[f.key] || '') : ''; });
 
-  const specKeys = ['style', 'color', 'size', 'barcode', 'material', 'supplier', 'buyer', 'costPrice', 'salePrice'];
+  const specKeys = ['style', 'color', 'size', 'barcode', 'material', 'supplier', 'buyer', 'costPrice', 'salePrice', 'tnPrice'];
   const moreFields = fields.filter(f => specKeys.indexOf(f.key) < 0);
   const moreHtml = moreFields.length ? `
     <div class="form-group" style="margin-top:6px;">
@@ -8127,6 +7876,10 @@ function openProductModal(id) {
         <div class="form-group">
           <label>销售单价</label>
           <input type="number" class="input" id="pf_salePrice" value="${escAttr(prodDraft.values.salePrice || '')}" placeholder="如：99">
+        </div>
+        <div class="form-group">
+          <label>铜牛结算价格</label>
+          <input type="number" class="input" id="pf_tnPrice" value="${escAttr(prodDraft.values.tnPrice || '')}" placeholder="采购订单销售单价自动取此价">
         </div>
         <div class="form-group wide">
           <label>面料成分（可多选，也可自定义）</label>
@@ -10138,6 +9891,12 @@ function poMatchProductName(rawName) {
   return { name, product: null };
 }
 
+// 采购订单的销售单价优先取产品库「铜牛结算价格」
+function poTongniuPrice(product) {
+  const v = Number((product && product.values && product.values.tnPrice) || 0);
+  return v > 0 ? v : 0;
+}
+
 // 按产品名称汇总明细行（同一产品的款式/颜色/尺码合并，累计数量与金额）
 function poAggregateRows(rows) {
   const map = new Map();
@@ -10148,13 +9907,14 @@ function poAggregateRows(rows) {
     const matched = poMatchProductName(raw);
     const name = matched.name || raw;
     const qty = Number(r.qty) || 0;
-    const price = Number(r.unitPrice) || 0;
+    const tnPrice = poTongniuPrice(matched.product);
+    const price = tnPrice || Number(r.unitPrice) || 0;
     const amt = r.amount !== undefined && r.amount !== '' ? (Number(r.amount) || 0) : qty * price;
     if (!map.has(name)) {
       map.set(name, {
         name: name, rawName: raw, productId: matched.product ? matched.product.id : '',
         qty: 0, amount: 0, unit: (r.unit || '').trim() || '件',
-        unitPrice: price, style: r.style || '', color: r.color || '', size: r.size || '',
+        unitPrice: price, tnPrice: tnPrice, style: r.style || '', color: r.color || '', size: r.size || '',
         supplier: r.supplier || '', material: r.material || '', barcode: r.barcode || '',
         billNo: r.billNo || '', orderDate: r.orderDate || '', deliveryDate: r.deliveryDate || '',
         details: []
@@ -10164,6 +9924,7 @@ function poAggregateRows(rows) {
     g.qty += qty;
     g.amount += amt;
     if (!g.unitPrice && price) g.unitPrice = price;
+    if (tnPrice) g.tnPrice = tnPrice;
     if (!g.productId && matched.product) g.productId = matched.product.id;
     // 规格信息：优先取附件独立列 → 产品库 SKU 匹配 → 产品名后缀解析
     const parsed = poParseSpecFromName(raw, matched.name);
@@ -10191,6 +9952,10 @@ function poAggregateRows(rows) {
     g.style = (g.styles || []).join('、');
     g.color = (g.colors || []).join('、');
     g.size = (g.sizes || []).join('、');
+    if (g.tnPrice) {
+      g.unitPrice = g.tnPrice;
+      g.amount = +(g.qty * g.tnPrice).toFixed(2);
+    }
     return g;
   });
 }
@@ -10232,15 +9997,17 @@ function poRowForTemplate(tplHeaders, agg) {
 // 单行导出数据（与 PO_EXPORT_HEADERS 一一对应）
 function poExportRow(a) {
   return [
-    a.name || '', a.style || '', a.color || '', a.size || '',
-    Number(a.qty) || 0, a.unit || '件', Number(a.unitPrice) || 0, Number(a.amount) || 0,
-    a.supplier || '', a.barcode || '', a.material || '', a.billNo || '', a.orderDate || '', a.deliveryDate || ''
+    a.name || '', Number(a.qty) || 0, a.unit || '件',
+    Number(a.unitPrice) || 0, Number(a.amount) || 0
   ];
 }
-// 固定的 Excel 导出内容（表头 + 汇总数据行）
-const PO_EXPORT_HEADERS = ['产品名称', '款式', '颜色', '尺码', '数量', '单位', '销售单价', '金额', '供应商', '69码', '材质', '单据编号', '下单日期', '交货日期'];
+// 固定的 Excel 导出内容（表头 + 汇总数据行 + 数量/金额合计）
+const PO_EXPORT_HEADERS = ['产品名称', '数量', '单位', '销售单价', '金额'];
 function poExportAoa(aggRows) {
-  return [PO_EXPORT_HEADERS].concat(aggRows.map(poExportRow));
+  const rows = aggRows.map(poExportRow);
+  const totalQty = rows.reduce((n, r) => n + (Number(r[1]) || 0), 0);
+  const totalAmount = rows.reduce((n, r) => n + (Number(r[4]) || 0), 0);
+  return [PO_EXPORT_HEADERS].concat(rows, [['合计', totalQty, '', '', +totalAmount.toFixed(2)]]);
 }
 
 // 完整表格内容（用于 Excel 导出）
@@ -10577,7 +10344,9 @@ function renderPoPreview() {
   // 按产品名称汇总预览（名称已自动匹配产品库）
   const tplHeaders = PO_EXPORT_HEADERS;
   const agg = poAggregateRows(poDraft.rows);
-  const aggRows = agg.slice(0, 40).map(a => `<tr>${poExportRow(a).map(v =>
+  const exportAoa = poExportAoa(agg);
+  const previewRows = exportAoa.slice(1, Math.min(41, exportAoa.length - 1)).concat([exportAoa[exportAoa.length - 1]]);
+  const aggRows = previewRows.map(cells => `<tr${String(cells[0]) === '合计' ? ' class="po-total-row"' : ''}>${cells.map(v =>
     `<td>${escHtml(v === '' ? '—' : v)}</td>`).join('')}</tr>`).join('');
   const aggTotal = agg.reduce((n, a) => n + (Number(a.amount) || 0), 0);
   const aggQty = agg.reduce((n, a) => n + (Number(a.qty) || 0), 0);
@@ -11179,7 +10948,9 @@ function applyBillSelEdit(page) {
 // 采购按清单批次折叠；销售按每条销售清单折叠（一份采购清单对应一份销售清单，不按日期合并）
 const _billDateOpen = {};
 function billGroupsInner(page, list) {
-  return page === 'sales' ? salesListGroupsInner(list) : billDateGroupsInner(page, list);
+  if (page === 'sales') return salesListGroupsInner(list);
+  if (page === 'purchases') return purchaseBatchGroupsInner(purchaseBatchList(list || Store.getPurchases()));
+  return billDateGroupsInner(page, list);
 }
 function billDateGroups(page, list) {
   return `<div class="bill-date-groups" id="bill-date-groups-${page}">${billGroupsInner(page, list)}</div>`;
@@ -12575,7 +12346,7 @@ function showModal(html) {
   const box = document.getElementById('modal-content');
   box.innerHTML = html;
   // 信息录入类弹窗自动加宽；简单确认类保持紧凑
-  const dense = /variant-editor|bill-scroll|calc-line|map-grid|po-result|smart-textarea/.test(html)
+  const dense = /variant-editor|bill-scroll|calc-line|map-grid|po-result/.test(html)
     || (html.match(/class="form-group"/g) || []).length >= 3;
   box.classList.toggle('modal-compact', !dense);
   document.getElementById('modal-overlay').classList.add('show');

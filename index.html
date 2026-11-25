@@ -8444,6 +8444,13 @@ function setBillStatus(page, id, field, val, btn) {
   }
 }
 
+function setBillDateValue(inputId, v) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  inp.value = v || '';
+  const lbl = document.getElementById(inputId + '-label');
+  if (lbl) lbl.textContent = v ? fmtCNDate(v) : '选择日期';
+}
 function billDateFields(prefix, r) {
   return `
     <div class="form-group"><label>下单日期</label>${datePickerHtml(prefix + '_order', (r && r.orderDate) || Store.todayKey(), '选择日期')}</div>
@@ -9366,18 +9373,50 @@ function salesExpandedSelections() {
     if (seen.has(key)) return;
     seen.add(key); out.push({ kind, item });
   };
+  const wholeBatches = new Set(Array.from(_salesSel || []).filter(v => v.indexOf('bg:') === 0).map(v => v.slice(3)));
   Array.from(_salesSel || []).forEach(v => {
     if (v.indexOf('p:') === 0) push('product', products.find(x => x.id === v.slice(2)));
-    else if (v.indexOf('b:') === 0) push('purchase', purchases.find(x => x.id === v.slice(2)));
-    else if (v.indexOf('bg:') === 0) {
-      const batch = batches.find(x => x.id === v.slice(3));
-      if (batch) batch.rows.forEach(b => push('purchase', b));
+    else if (v.indexOf('bg:') === 0) push('batch', batches.find(x => x.id === v.slice(3)));
+    else if (v.indexOf('b:') === 0) {
+      const b = purchases.find(x => x.id === v.slice(2));
+      // 整份清单已选中时，不再重复展开它的单条明细（一份采购清单 = 一份销售清单）
+      if (b && !wholeBatches.has(purchaseBatchIdOf(b))) push('purchase', b);
     } else if (v.indexOf('bd:') === 0) {
       const date = v.slice(3);
-      purchases.filter(b => ((b.orderDate || '').trim() || '未填写日期') === date).forEach(b => push('purchase', b));
+      purchases.filter(b => ((b.orderDate || '').trim() || '未填写日期') === date)
+        .forEach(b => push('batch', batches.find(x => x.id === purchaseBatchIdOf(b))));
     }
   });
   return out;
+}
+function salesSelectionLabel(x) {
+  if (x.kind === 'product') return x.item.name || '产品';
+  if (x.kind === 'batch') return x.item.name || '采购清单';
+  return x.item.productName || x.item.billNo || '采购';
+}
+// 整份采购清单 → 一份销售清单：把清单内所有产品的规格明细汇总成一条销售记录
+function batchSaleSeed(batch, products) {
+  const rows = (batch.rows || []).filter(b => (Number(b.qty) || 0) > 0 || (b.lines || []).some(l => (Number(l.qty) || 0) > 0));
+  const lines = [];
+  let price = 0;
+  rows.forEach(b => {
+    const p = products.find(x => x.id === b.productId);
+    const unit = (p && p.values && p.values.salePrice) ? Number(p.values.salePrice) : (Number(b.unitPrice) || 0);
+    if (!(price > 0) && unit > 0) price = unit;
+    const src = b.lines && b.lines.length
+      ? b.lines
+      : [{ style: '', color: '', size: b.spec || productSpec(p), qty: Number(b.qty) || 0, unitPrice: unit }];
+    src.forEach(l => {
+      const q = Number(l.qty) || 0;
+      if (q > 0) lines.push({ style: l.style || '', color: l.color || '', size: l.size || '', qty: q, unitPrice: unit || Number(l.unitPrice) || 0 });
+    });
+  });
+  const first = rows[0] || {};
+  return {
+    rows, lines, price,
+    qty: lines.reduce((s, l) => s + (Number(l.qty) || 0), 0),
+    billNo: first.billNo || '', deliveryDate: first.deliveryDate || '', billDate: first.billDate || ''
+  };
 }
 function syncSalesPickerSummary() {
   const el = document.getElementById('sa_picker_summary');
@@ -9388,12 +9427,11 @@ function syncSalesPickerSummary() {
     el.textContent = '点击选择产品或采购清单（可多选）';
   } else {
     el.className = 'sa-picker-summary';
-    const labels = items.slice(0, items.length > 2 ? 2 : items.length)
-      .map(x => x.kind === 'product' ? (x.item.name || '产品') : (x.item.productName || x.item.billNo || '采购'));
+    const labels = items.slice(0, items.length > 2 ? 2 : items.length).map(salesSelectionLabel);
     el.textContent = labels.join('、') + (items.length > 1 ? ' 等 ' + items.length + ' 项' : '');
   }
   const hint = document.getElementById('sa_picker_hint');
-  if (hint) hint.textContent = items.length > 1 ? '已选 ' + items.length + ' 项，保存时将按每项生成一条销售记录。' : '';
+  if (hint) hint.textContent = items.length > 1 ? '已选 ' + items.length + ' 项，保存时每项生成一条销售清单（整份采购清单只生成一条）。' : '';
 }
 function ensureSalesPickOverlay() {
   let ov = document.getElementById('sales-pick-overlay');
@@ -9508,11 +9546,22 @@ function applySalesSelectionToForm() {
     const price = (item.values && item.values.salePrice) || '';
     pEl.value = price;
     openBillLineEditor('sa', productLineSeeds(item, price));
+  } else if (items[0].kind === 'batch') {
+    const seed = batchSaleSeed(item, Store.getProducts());
+    pEl.value = seed.price || '';
+    if (qEl && seed.qty > 0) qEl.value = seed.qty;
+    setBillDateValue('sa_order', item.orderDate || '');
+    setBillDateValue('sa_delivery', seed.deliveryDate);
+    setBillDateValue('sa_bill', seed.billDate);
+    openBillLineEditor('sa', seed.lines.length ? seed.lines : [{ style: '', color: '', size: '', qty: 0, unitPrice: seed.price }]);
   } else {
     const p = Store.getProducts().find(x => x.id === item.productId);
     const price = (p && p.values && p.values.salePrice) || item.unitPrice || '';
     pEl.value = price;
     if (qEl && (Number(item.qty) || 0) > 0) qEl.value = Number(item.qty);
+    setBillDateValue('sa_order', item.orderDate || '');
+    setBillDateValue('sa_delivery', item.deliveryDate || '');
+    setBillDateValue('sa_bill', item.billDate || '');
     const lines = item.lines && item.lines.length
       ? item.lines.map(l => ({ style: l.style || '', color: l.color || '', size: l.size || '', qty: Number(l.qty) || 0, unitPrice: Number(price) || 0 }))
       : [{ style: '', color: '', size: item.spec || productSpec(p), qty: Number(item.qty) || 0, unitPrice: Number(price) || 0 }];
@@ -9614,10 +9663,40 @@ function salesRecordFromPurchase(b, common, products) {
     qty: lines.reduce((s, l) => s + (Number(l.qty) || 0), 0),
     unitPrice: price,
     billNo: common.billNo || b.billNo || '',
-    orderDate: common.orderDate || b.orderDate || Store.todayKey(),
+    orderDate: b.orderDate || common.orderDate || Store.todayKey(),
     deliveryDate: common.deliveryDate || b.deliveryDate || '',
     billDate: common.billDate || b.billDate || '',
     note: common.note || b.note || '',
+    createdAt: Store.todayKey()
+  });
+}
+function salesRecordFromBatch(batch, common, products, linesText) {
+  const seed = batchSaleSeed(batch, products);
+  const lines = (linesText && linesText.trim())
+    ? parseSalesLines(linesText, '', common.qty, common.unitPrice).filter(l => (Number(l.qty) || 0) > 0)
+    : seed.lines;
+  const names = seed.rows.map(b => b.productName || '').filter(Boolean);
+  return Object.assign({}, common, {
+    id: uid(),
+    link: 'bg:' + batch.id,
+    source: 'purchase',
+    batchId: batch.id,
+    batchName: batch.name || '',
+    productId: '',
+    purchaseId: '',
+    productName: batch.name || '采购清单',
+    spec: names.slice(0, 3).join('、') + (names.length > 3 ? ' 等' : ''),
+    linkLabel: '采购清单 · ' + (batch.name || batch.id),
+    lines,
+    settledLines: [],
+    total: +lines.reduce((s, l) => s + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0).toFixed(2),
+    qty: lines.reduce((s, l) => s + (Number(l.qty) || 0), 0),
+    unitPrice: seed.price || common.unitPrice || 0,
+    billNo: common.billNo || seed.billNo,
+    orderDate: batch.orderDate || common.orderDate || Store.todayKey(),
+    deliveryDate: common.deliveryDate || seed.deliveryDate,
+    billDate: common.billDate || seed.billDate,
+    note: common.note,
     createdAt: Store.todayKey()
   });
 }
@@ -9634,7 +9713,9 @@ function saveSales(id) {
   items.forEach((x, idx) => {
     const rec = x.kind === 'product'
       ? salesRecordFromProduct(x.item, common, linesText)
-      : salesRecordFromPurchase(x.item, common, products);
+      : x.kind === 'batch'
+        ? salesRecordFromBatch(x.item, common, products, linesText)
+        : salesRecordFromPurchase(x.item, common, products);
     if (old && idx === 0) {
       rec.id = old.id;
       rec.createdAt = old.createdAt || Store.todayKey();
@@ -10981,10 +11062,8 @@ function billTable(page, list, date) {
   const cols = getBillCols(page);
   const defs = BILL_COLUMNS[page];
   const sel = billSel(page);
-  const allOn = list.length > 0 && list.every(r => sel.has(r.id));
-  const dAttr = date === undefined ? '' : escAttr(date);
   return `<div class="bill-scroll"><table class="bill-table">
-    <thead><tr><th class="bill-cb"><input type="checkbox" ${allOn ? 'checked' : ''} onchange="toggleBillSelGroup('${page}','${dAttr}',this.checked)" title="全选该日期下的记录"></th>${cols.map(k => `<th>${(defs.find(c => c.key === k) || {}).label || k}</th>`).join('')}</tr></thead>
+    <thead><tr><th class="bill-cb"></th>${cols.map(k => `<th>${(defs.find(c => c.key === k) || {}).label || k}</th>`).join('')}</tr></thead>
     <tbody>${list.map(r => `<tr><td class="bill-cb"><input type="checkbox" ${sel.has(r.id) ? 'checked' : ''} onchange="toggleBillSel('${page}','${r.id}',this.checked)"></td>${cols.map(k => `<td>${billCell(page, k, r)}</td>`).join('')}</tr>`).join('')}</tbody>
   </table></div>`;
 }
@@ -11005,7 +11084,7 @@ function saveBillList(page, arr) {
 function refreshBillGroups(page) {
   const host = document.getElementById('bill-date-groups-' + page);
   if (!host) { renderPage(page); return; }
-  host.innerHTML = page === 'purchases' ? purchaseBatchGroupsInner() : billDateGroupsInner(page, billListOf(page));
+  host.innerHTML = billGroupsInner(page, billListOf(page));
 }
 function toggleBillSel(page, id, checked) {
   const sel = billSel(page);
@@ -11017,7 +11096,7 @@ function toggleBillSelGroup(page, groupKey, checked) {
   billListOf(page)
     .filter(r => page === 'purchases'
       ? purchaseBatchIdOf(r) === groupKey
-      : ((r.orderDate || '').trim() || '未填写日期') === groupKey)
+      : (r.id === groupKey || ((r.orderDate || '').trim() || '未填写日期') === groupKey))
     .forEach(r => { if (checked) sel.add(r.id); else sel.delete(r.id); });
   refreshBillGroups(page);
 }
@@ -11094,10 +11173,52 @@ function applyBillSelEdit(page) {
   showToast('已更新 ' + n + ' 条记录的信息');
 }
 
-// 按「下单日期」把清单折叠收纳：日期倒序，每个日期一张可展开的卡片
+// 采购按清单批次折叠；销售按每条销售清单折叠（一份采购清单对应一份销售清单，不按日期合并）
 const _billDateOpen = {};
+function billGroupsInner(page, list) {
+  return page === 'sales' ? salesListGroupsInner(list) : billDateGroupsInner(page, list);
+}
 function billDateGroups(page, list) {
-  return `<div class="bill-date-groups" id="bill-date-groups-${page}">${billDateGroupsInner(page, list)}</div>`;
+  return `<div class="bill-date-groups" id="bill-date-groups-${page}">${billGroupsInner(page, list)}</div>`;
+}
+function salesListName(r) {
+  return r.batchName || r.productName || r.linkLabel || '销售清单';
+}
+function salesListGroupsInner(list) {
+  list = list || Store.getSales();
+  if (!_billDateOpen.sales) _billDateOpen.sales = new Set(); // 存已手动收起的销售清单 id，默认全部展开
+  const collapsed = _billDateOpen.sales;
+  const rows = list.slice().sort((a, b) =>
+    (b.orderDate || '').localeCompare(a.orderDate || '') ||
+    String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  return billBatchBar('sales') + rows.map(r => {
+    const open = !collapsed.has(r.id);
+    const sel = billSel('sales').has(r.id);
+    const detail = (r.lines || []).length;
+    return `
+      <div class="bill-date-card ${open ? 'open' : ''}">
+        <div class="bill-date-head" role="button" tabindex="0" title="点击展开/收起"
+             onclick="toggleSalesGroup('${r.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSalesGroup('${r.id}');}">
+          <span class="bill-date-chev chev-line"></span>
+          <label class="bill-date-sel" onclick="event.stopPropagation()" title="选中该销售清单">
+            <input type="checkbox" ${sel ? 'checked' : ''} onchange="toggleBillSel('sales','${r.id}',this.checked)">
+          </label>
+          <span class="bill-date-label">${escHtml(salesListName(r))}</span>
+          <span class="bill-date-count">${detail} 条明细${r.orderDate ? ' · 下单 ' + escHtml(fmtDateFull(r.orderDate)) : ''}</span>
+          <span class="bill-date-amount">${money(r.total)}</span>
+        </div>
+        ${open ? billTable('sales', [r], r.id) : ''}
+      </div>`;
+  }).join('');
+}
+function toggleSalesGroup(id) {
+  if (!_billDateOpen.sales) _billDateOpen.sales = new Set();
+  const set = _billDateOpen.sales;
+  if (set.has(id)) set.delete(id); else set.add(id);
+  const host = document.getElementById('bill-date-groups-sales');
+  if (host) { host.innerHTML = salesListGroupsInner(); return; }
+  renderPage('sales');
 }
 function billDateGroupsInner(page, list) {
   const groups = new Map();
@@ -11167,7 +11288,7 @@ function toggleBillDateGroup(page, date) {
   const host = document.getElementById('bill-date-groups-' + page);
   if (host) {
     const list = page === 'sales' ? Store.getSales() : Store.getPurchases();
-    host.innerHTML = billDateGroupsInner(page, list);
+    host.innerHTML = billGroupsInner(page, list);
     return;
   }
   renderPage(page);

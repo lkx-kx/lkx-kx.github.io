@@ -3439,6 +3439,18 @@ body {
 .modal-actions { position: sticky; bottom: -28px; z-index: 2; padding: 12px 0 0; background: var(--cream-card); }
 .sample-link { color: var(--accent-caramel); cursor: pointer; font-weight: 600; }
 .sample-link:hover { text-decoration: underline; }
+/* 采购清单批次：多选产品 / 批次操作按钮 */
+.pb-section { font-size: 12px; font-weight: 700; color: var(--accent-caramel); margin: 14px 0 8px; padding-left: 8px; border-left: 3px solid var(--accent-caramel); }
+.pb-multiselect { width: 100%; min-height: 118px; padding: 6px 8px !important; line-height: 1.6; }
+.pb-multiselect option { padding: 4px 6px; border-radius: 4px; }
+.pb-multiselect option:checked { background: var(--accent-caramel) !important; color: #fff !important; }
+.bill-batch-tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.bill-batch-tools .btn { white-space: nowrap; }
+@media (max-width: 700px) {
+  .bill-date-head { flex-wrap: wrap; }
+  .bill-date-amount { margin-left: 0; }
+  .bill-batch-tools { width: 100%; margin-top: 4px; }
+}
 
 /* ============ 现代 SaaS 后台 · 最终精修层 ============ */
 :root { --ease: cubic-bezier(.2,.7,.3,1); }
@@ -8357,33 +8369,467 @@ function noProductModal(page) {
   `);
 }
 
-/* ---- 采购清单 ---- */
+/* ---- 采购清单：一次录入或一次导入 = 一份清单（批次） ---- */
+function purchaseBatchIdOf(r) { return (r && r.batchId) || ('legacy:' + (((r && r.orderDate) || '').trim() || '未填写日期')); }
+function purchaseBatchList(arr) {
+  const map = new Map();
+  (arr || []).forEach(r => {
+    const bid = purchaseBatchIdOf(r);
+    if (!map.has(bid)) map.set(bid, []);
+    map.get(bid).push(r);
+  });
+  return Array.from(map, ([id, rows]) => {
+    const first = rows[0] || {};
+    return {
+      id, rows,
+      name: first.batchName || (first.orderDate ? '采购清单 · ' + fmtDateFull(first.orderDate) : '采购清单（历史记录）'),
+      billNo: first.billNo || '',
+      orderDate: first.orderDate || '',
+      createdAt: first.batchCreatedAt || first.createdAt || '',
+      total: rows.reduce((n, r) => n + (Number(r.total) || 0), 0),
+      legacy: !first.batchId
+    };
+  }).sort((a, b) => (b.orderDate || b.createdAt || '').localeCompare(a.orderDate || a.createdAt || ''));
+}
 function renderPurchases(container) {
   const list = Store.getPurchases();
+  const batches = purchaseBatchList(list);
   const total = list.reduce((s, r) => s + (Number(r.total) || 0), 0);
-  const unsettled = list.filter(r => r.payStatus !== 'settled').length;
-  const unmade = list.filter(r => r.makeStatus !== 'made').length;
+  const unsettled = batches.filter(b => b.rows.some(r => r.payStatus !== 'settled')).length;
+  const unmade = batches.filter(b => b.rows.some(r => r.makeStatus !== 'made')).length;
   container.innerHTML = `
     <div class="page-header">
       <span class="ph-icon">${DOG_ICONS['purchases']}</span>
       <span class="ph-title">采购清单</span>
-      <span class="ph-desc">关联产品库 · 成本单价自动带出，金额自动计算</span>
+      <span class="ph-desc">一次录入或导入 = 一份清单 · 清单内可增减产品</span>
       <button class="search-trigger" style="margin-left:auto;" onclick="openCommandPalette()">🔍 搜索 <span class="kbd">⌘K</span></button>
     </div>
     <div class="bill-stats">
-      <div class="bill-stat"><div class="bs-label">采购记录</div><div class="bs-val">${list.length}</div></div>
+      <div class="bill-stat"><div class="bs-label">采购清单 / 产品明细</div><div class="bs-val">${batches.length} / ${list.length}</div></div>
       <div class="bill-stat"><div class="bs-label">采购总金额</div><div class="bs-val accent">${money(total)}</div></div>
-      <div class="bill-stat"><div class="bs-label">未结算</div><div class="bs-val">${unsettled}</div></div>
-      <div class="bill-stat"><div class="bs-label">未做单</div><div class="bs-val">${unmade}</div></div>
+      <div class="bill-stat"><div class="bs-label">未结算清单</div><div class="bs-val">${unsettled}</div></div>
+      <div class="bill-stat"><div class="bs-label">未做单清单</div><div class="bs-val">${unmade}</div></div>
     </div>
     <div class="card">
       <div class="bill-toolbar">
-        <button class="btn btn-primary" onclick="openPurchaseModal()">➕ 新增采购</button>
+        <button class="btn btn-primary" onclick="openPurchaseBatchModal()">➕ 新增采购清单</button>
         <button class="btn btn-text btn-sm" onclick="openBillColumns('purchases')">⚙️ 列设置</button>
       </div>
-      ${list.length ? billDateGroups('purchases', list) : emptyState('🛒', '还没有采购记录', '点击「新增采购」关联产品库，即可自动带出成本单价并计算金额。')}
+      ${batches.length ? purchaseBatchGroups(batches) : emptyState('🛒', '还没有采购清单', '点击「新增采购清单」，可一次多选多个产品或导入订单附件明细表。')}
     </div>
   `;
+}
+function purchaseBatchGroups(batches) {
+  return `<div class="bill-date-groups" id="bill-date-groups-purchases">${purchaseBatchGroupsInner(batches)}</div>`;
+}
+function purchaseBatchGroupsInner(batches) {
+  batches = batches || purchaseBatchList(Store.getPurchases());
+  if (_billDateOpen.purchases === undefined) {
+    _billDateOpen.purchases = new Set();
+    if (batches.length) _billDateOpen.purchases.add(batches[0].id);
+  }
+  const openSet = _billDateOpen.purchases;
+  const sel = billSel('purchases');
+  return `${billBatchBar('purchases')}${batches.map(b => {
+    const open = openSet.has(b.id);
+    const groupOn = b.rows.length > 0 && b.rows.every(r => sel.has(r.id));
+    return `
+      <div class="bill-date-card ${open ? 'open' : ''}">
+        <div class="bill-date-head" role="button" tabindex="0" title="点击展开/收起"
+             onclick="togglePurchaseBatch('${b.id}')"
+             onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePurchaseBatch('${b.id}');}">
+          <span class="bill-date-chev chev-line"></span>
+          <label class="bill-date-sel" onclick="event.stopPropagation()" title="全选该清单下的产品">
+            <input type="checkbox" ${groupOn ? 'checked' : ''} onchange="toggleBillSelGroup('purchases','${b.id}',this.checked)">
+          </label>
+          <span class="bill-date-label">${escHtml(b.name)}</span>
+          <span class="bill-date-count">${b.rows.length} 个产品</span>
+          <span class="bill-date-amount">${money(b.total)}</span>
+          <span class="bill-batch-tools" onclick="event.stopPropagation()">
+            ${b.legacy ? '' : `
+              <button class="btn btn-outline btn-sm" onclick="openPurchaseBatchEdit('${b.id}')">编辑清单</button>
+              <button class="btn btn-outline btn-sm" onclick="openPurchaseAddProducts('${b.id}')">＋产品</button>
+              <button class="btn btn-danger btn-sm" onclick="deletePurchaseBatch('${b.id}')">删除清单</button>`}
+          </span>
+        </div>
+        ${open ? billTable('purchases', b.rows, b.id) : ''}
+      </div>`;
+  }).join('')}`;
+}
+function togglePurchaseBatch(id) {
+  if (!_billDateOpen.purchases) _billDateOpen.purchases = new Set();
+  const set = _billDateOpen.purchases;
+  if (set.has(id)) set.delete(id); else set.add(id);
+  const host = document.getElementById('bill-date-groups-purchases');
+  if (host) { host.innerHTML = purchaseBatchGroupsInner(); return; }
+  renderPage('purchases');
+}
+
+/* ---------------- 采购清单（批次）新增 / 编辑 / 追加 ---------------- */
+let pbDraft = null;
+let pbEditIdx = -1;
+function pbCommonFields(seed) {
+  const s = seed || {};
+  return {
+    batchName: s.batchName || ('采购清单 ' + Store.todayKey()),
+    billNo: s.billNo || '',
+    orderDate: s.orderDate || Store.todayKey(),
+    deliveryDate: s.deliveryDate || '',
+    billDate: s.billDate || '',
+    payStatus: s.payStatus || 'unsettled',
+    makeStatus: s.makeStatus || 'unmade',
+    note: s.note || ''
+  };
+}
+function pbApplyCommon(rows, common) {
+  rows.forEach(r => {
+    r.batchName = common.batchName;
+    r.billNo = common.billNo;
+    r.orderDate = common.orderDate;
+    r.deliveryDate = common.deliveryDate;
+    r.billDate = common.billDate;
+    r.payStatus = common.payStatus;
+    r.makeStatus = common.makeStatus;
+    r.note = common.note;
+  });
+}
+function pbRecordFromProduct(p, common) {
+  const price = Number((p.values || {}).costPrice) || 0;
+  const spec = productSpec(p);
+  return Object.assign({
+    id: uid(), productId: p.id, productName: p.name, spec,
+    style: '', color: '', size: spec,
+    lines: [{ style: '', color: '', size: spec, qty: 1, unitPrice: price }],
+    qty: 1, unitPrice: price, total: price
+  }, common);
+}
+// 附件汇总产品 → 采购产品行（成本单价优先取产品库）
+function pbRecordFromAgg(a, common) {
+  const qty = Number(a.qty) || 0;
+  if (!(qty > 0)) return null;
+  const p = a.productId ? Store.getProducts().find(x => x.id === a.productId) : null;
+  const libCost = p ? (Number((p.values || {}).costPrice) || 0) : 0;
+  const price = libCost > 0 ? libCost : (Number(a.unitPrice) || 0);
+  const details = (a.details || []).filter(d => (Number(d.qty) || 0) > 0);
+  const lines = details.map(d => {
+    const parsed = poParseSpecFromName(d.name || a.name, a.name);
+    return {
+      style: (d.style || parsed.style || '').trim(),
+      color: (d.color || parsed.color || '').trim(),
+      size: (d.size || parsed.size || '').trim(),
+      qty: Number(d.qty) || 0, unitPrice: price
+    };
+  });
+  if (!lines.length) lines.push({ style: a.style || '', color: a.color || '', size: a.size || '', qty, unitPrice: price });
+  const realQty = lines.reduce((n, l) => n + l.qty, 0);
+  const total = lines.reduce((n, l) => n + l.qty * l.unitPrice, 0);
+  return Object.assign({
+    id: uid(), productId: p ? p.id : '', productName: a.name,
+    spec: [a.style, a.color, a.size].filter(Boolean).join(' / '),
+    style: a.style || '', color: a.color || '', size: a.size || '',
+    lines, qty: realQty, unitPrice: price, total: +total.toFixed(2)
+  }, common);
+}
+function pbModalHtml(title) {
+  const c = pbDraft.common;
+  const statusOpts = (id, cur, off, on, onLabel, offLabel) => `
+    <label>${onLabel === '已结算' ? '结算状态' : '做单状态'}</label>
+    <select class="input" id="pb_${id}">
+      <option value="${off}" ${cur !== on ? 'selected' : ''}>${offLabel}</option>
+      <option value="${on}" ${cur === on ? 'selected' : ''}>${onLabel}</option>
+    </select>`;
+  return `
+    <div class="modal-title">${escHtml(title || '➕ 新增采购清单')}</div>
+    <div class="field-hint" style="margin-bottom:12px;">一次录入或导入生成一份采购清单；保存后仍可继续往清单里增减产品。按住 Ctrl / ⌘ 可多选产品。</div>
+    <div class="pb-section">清单信息</div>
+    <div class="calc-line">
+      <label>清单名称</label><input class="input" id="pb_name" value="${escAttr(c.batchName)}" placeholder="如：11月采购">
+      <label>单据编号</label><input class="input" id="pb_billno" value="${escAttr(c.billNo)}" placeholder="可留空">
+    </div>
+    <div class="calc-line">
+      <label>下单日期</label>${datePickerHtml('pb_order', c.orderDate, '选择日期')}
+      <label>交货日期</label>${datePickerHtml('pb_delivery', c.deliveryDate, '选择日期')}
+      <label>系统单据日期</label>${datePickerHtml('pb_bill', c.billDate, '选择日期')}
+    </div>
+    <div class="calc-line">
+      ${statusOpts('pay', c.payStatus, 'unsettled', 'settled', '已结算', '未结算')}
+      ${statusOpts('make', c.makeStatus, 'unmade', 'made', '已做单', '未做单')}
+    </div>
+    <div class="pb-section">添加产品</div>
+    <div class="ps-box">
+      <input type="search" class="input" id="pb_kw" value="${escAttr(pbDraft.kw || '')}" placeholder="输入产品名 / 款式 / 颜色 / 尺码 模糊查找" oninput="renderPbSearchOptions(this.value)" autocomplete="off">
+      <div class="ps-hint" id="pb_count"></div>
+    </div>
+    <select class="input pb-multiselect" id="pb_products" multiple size="6"></select>
+    <div class="form-actions">
+      <button type="button" class="btn btn-primary btn-sm" onclick="pbAddSelected()">＋ 添加选中产品</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="pbPickFiles()">📥 导入订单附件明细表</button>
+      <span class="form-actions-spacer"></span>
+      <span class="field-hint" id="pb_import_hint">支持 .xlsx / .xls，可多选或多次导入</span>
+    </div>
+    <div class="pb-section">清单产品（<span id="pb_item_count">0</span>）</div>
+    <div id="pb_items"></div>
+    <div class="form-group" style="margin-top:12px;"><label>备注</label><textarea class="input" id="pb_note" rows="2" placeholder="可留空">${escHtml(c.note)}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="pbSave()">保存清单</button>
+    </div>`;
+}
+function openPurchaseBatchModal() {
+  const products = Store.getProducts();
+  if (!products.length) { noProductModal('products'); return; }
+  pbDraft = { mode: 'create', items: [], common: pbCommonFields(), kw: '' };
+  showModal(pbModalHtml());
+  renderPbSearchOptions('');
+  renderPbItems();
+}
+function pbReadCommon() {
+  const val = id => { const el = document.getElementById('pb_' + id); return el ? el.value : ''; };
+  const kwEl = document.getElementById('pb_kw');
+  if (kwEl) pbDraft.kw = kwEl.value;
+  pbDraft.common = {
+    batchName: val('name').trim() || ('采购清单 ' + Store.todayKey()),
+    billNo: val('billno').trim(),
+    orderDate: val('order') || Store.todayKey(),
+    deliveryDate: val('delivery'),
+    billDate: val('bill'),
+    payStatus: val('pay') || 'unsettled',
+    makeStatus: val('make') || 'unmade',
+    note: val('note')
+  };
+}
+function renderPbSearchOptions(kw) {
+  const sel = document.getElementById('pb_products');
+  if (!sel) return;
+  const chosen = Array.from(sel.selectedOptions || []).map(o => o.value);
+  pbDraft.kw = kw || '';
+  const list = searchProducts(kw);
+  sel.innerHTML = list.map(p =>
+    `<option value="${p.id}" ${chosen.indexOf(p.id) >= 0 ? 'selected' : ''}>${escHtml(productLabel(p))}</option>`).join('');
+  const cnt = document.getElementById('pb_count');
+  if (cnt) cnt.textContent = (kw || '').trim() ? `匹配到 ${list.length} 个产品` : `共 ${list.length} 个产品`;
+}
+function pbAddSelected() {
+  pbReadCommon();
+  const sel = document.getElementById('pb_products');
+  const ids = sel ? Array.from(sel.selectedOptions || []).map(o => o.value) : [];
+  if (!ids.length) { showToast('请先选择产品（可按住 Ctrl / ⌘ 多选）'); return; }
+  const products = Store.getProducts();
+  let n = 0, dup = 0;
+  ids.forEach(id => {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    if (pbDraft.items.some(it => it.productId === id)) { dup++; return; }
+    pbDraft.items.push(pbRecordFromProduct(p, pbDraft.common));
+    n++;
+  });
+  renderPbItems();
+  showToast(n ? '已添加 ' + n + ' 个产品到清单' + (dup ? '（' + dup + ' 个重复已跳过）' : '') : '选中的产品已在清单中');
+}
+function renderPbItems() {
+  const box = document.getElementById('pb_items');
+  if (!box || !pbDraft) return;
+  const items = pbDraft.items;
+  const total = items.reduce((n, r) => n + (Number(r.total) || 0), 0);
+  box.innerHTML = items.length ? `
+    <div class="bill-scroll"><table class="bill-table">
+      <thead><tr><th>产品</th><th>规格明细</th><th>数量</th><th>成本单价</th><th>金额</th><th>操作</th></tr></thead>
+      <tbody>${items.map((r, i) => `<tr>
+        <td><div class="bill-name">${escHtml(r.productName)}</div><div class="bill-sub">${escHtml(r.spec || '')}</div></td>
+        <td>${(r.lines || []).map(l => `${escHtml([l.style, l.color, l.size].filter(Boolean).join('/') || '默认')} ×${l.qty}`).join('<br>') || '—'}</td>
+        <td>${r.qty}</td><td>${money(r.unitPrice)}</td><td class="bill-total">${money(r.total)}</td>
+        <td><div class="bill-actions">
+          <button type="button" class="btn btn-outline btn-sm" onclick="pbEditLines(${i})">改规格</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="pbRemoveItem(${i})">移除</button>
+        </div></td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    <div class="form-actions"><span class="form-actions-spacer"></span><span class="field-hint">清单合计</span><b class="bill-total">${money(total)}</b></div>`
+    : `<div class="empty-block">还没有产品，请用上方搜索多选或导入附件明细。</div>`;
+  const c = document.getElementById('pb_item_count');
+  if (c) c.textContent = items.length;
+}
+function pbRemoveItem(i) {
+  pbReadCommon();
+  pbDraft.items.splice(i, 1);
+  renderPbItems();
+}
+function pbEditLines(i) {
+  pbReadCommon();
+  pbEditIdx = i;
+  const r = pbDraft.items[i];
+  showModal(`
+    <div class="modal-title">✏️ 规格明细 · ${escHtml(r.productName)}</div>
+    <div class="field-hint" style="margin-bottom:10px;">按款式 / 颜色 / 尺码分别填写数量；数量为 0 的明细不会保存。</div>
+    <div id="pbl-line-editor"></div><textarea id="pbl_lines" style="display:none;"></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="pbBackToList()">返回清单</button>
+      <button class="btn btn-primary" onclick="pbSaveLines()">保存明细</button>
+    </div>`);
+  openBillLineEditor('pbl', r.lines && r.lines.length ? r.lines : [{ style: '', color: '', size: r.spec || '', qty: r.qty, unitPrice: r.unitPrice }]);
+}
+function pbSaveLines() {
+  syncBillLines('pbl');
+  const lines = billParsedLines('pbl', '', 0, 0);
+  if (!lines.length) { showToast('请至少填写一条数量大于 0 的明细'); return; }
+  const r = pbDraft.items[pbEditIdx];
+  if (!r) { pbBackToList(); return; }
+  r.lines = lines;
+  r.qty = lines.reduce((n, l) => n + l.qty, 0);
+  r.unitPrice = lines[0].unitPrice;
+  r.total = +lines.reduce((n, l) => n + l.qty * l.unitPrice, 0).toFixed(2);
+  pbBackToList();
+  showToast('规格明细已更新');
+}
+function pbBackToList() {
+  showModal(pbModalHtml(pbDraft.mode === 'append' ? '✏️ 追加产品到清单' : '➕ 新增采购清单'));
+  renderPbSearchOptions(pbDraft.kw || '');
+  renderPbItems();
+}
+// 移动端安全：file input 必须先挂到 DOM 再 click（iOS Safari 会静默忽略游离节点）
+function pbPickFiles() {
+  pbReadCommon();
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.xlsx,.xls'; inp.multiple = true; inp.style.display = 'none';
+  inp.onchange = () => {
+    const files = inp.files;
+    if (inp.parentNode) inp.remove();
+    if (files && files.length) pbReadFiles(files);
+  };
+  document.body.appendChild(inp);
+  inp.click();
+  window.addEventListener('focus', function fallback() {
+    window.removeEventListener('focus', fallback);
+    if (inp.parentNode) inp.remove();
+  }, { once: true });
+}
+function pbReadFiles(files) {
+  if (typeof XLSX === 'undefined') { showToast('Excel 组件未加载，请刷新页面重试'); return; }
+  const list = Array.from(files).filter(f => /\.xlsx?$/i.test(f.name || ''));
+  if (!list.length) { showToast('请选择 Excel 文件（.xlsx / .xls）'); return; }
+  const hint = document.getElementById('pb_import_hint');
+  if (hint) hint.textContent = '正在解析 ' + list.length + ' 个文件…';
+  let pending = list.length;
+  const rows = [], names = [];
+  list.forEach(f => parsePoFile(f, res => {
+    if (res && res.rawRows.length) {
+      const map = poAutoMapping(res.headers);
+      res.rawRows.forEach(row => {
+        const o = {};
+        PO_HEADER_KEYS.forEach(k => {
+          const ci = map[k];
+          o[k] = ci >= 0 && ci < row.length ? String(row[ci] == null ? '' : row[ci]).trim() : '';
+        });
+        if (PO_HEADER_KEYS.some(k => o[k] !== '')) rows.push(o);
+      });
+      names.push(f.name);
+    }
+    if (--pending === 0) pbFinishImport(rows, names);
+  }));
+}
+function pbFinishImport(rows, names) {
+  const hint = document.getElementById('pb_import_hint');
+  if (!rows.length) {
+    if (hint) hint.textContent = '未识别到产品明细，请检查表头';
+    showToast('文件里没有识别到产品明细');
+    return;
+  }
+  pbReadCommon();
+  const agg = poAggregateRows(rows);
+  let n = 0, unmatched = 0;
+  agg.forEach(a => {
+    if (!(Number(a.qty) > 0)) return;
+    const r = pbRecordFromAgg(a, pbDraft.common);
+    if (!r) return;
+    if (!r.productId) unmatched++;
+    if (pbDraft.items.some(it => it.productName === r.productName)) return;
+    pbDraft.items.push(r);
+    n++;
+  });
+  renderPbItems();
+  if (hint) hint.textContent = `已识别 ${names.length} 个文件 · ${n} 个产品` + (unmatched ? `（${unmatched} 个未匹配产品库）` : '');
+  showToast('已从附件识别添加 ' + n + ' 个产品' + (unmatched ? '，' + unmatched + ' 个未匹配产品库' : ''));
+}
+function pbSave() {
+  pbReadCommon();
+  if (!pbDraft.items.length) { showToast('请至少添加一个产品'); return; }
+  const arr = Store.getPurchases();
+  const common = Object.assign({}, pbDraft.common, { batchName: pbDraft.common.batchName.trim() });
+  const batchId = pbDraft.mode === 'append' ? pbDraft.batchId : ('batch_' + uid());
+  const created = new Date().toISOString();
+  const added = pbDraft.items.map(r => Object.assign({}, r, {
+    batchId, batchName: common.batchName,
+    batchCreatedAt: pbDraft.batchCreatedAt || created,
+    createdAt: r.createdAt || Store.todayKey()
+  }));
+  pbApplyCommon(added, common);
+  const batchRows = arr.filter(r => purchaseBatchIdOf(r) === batchId);
+  pbApplyCommon(batchRows, common);
+  Store.savePurchases(arr.concat(added));
+  closeModal();
+  renderPage('purchases');
+  showToast(pbDraft.mode === 'append'
+    ? '已往清单追加 ' + added.length + ' 个产品 🛒'
+    : '采购清单已保存：' + added.length + ' 个产品 🛒');
+}
+function openPurchaseBatchEdit(batchId) {
+  const rows = Store.getPurchases().filter(r => purchaseBatchIdOf(r) === batchId);
+  if (!rows.length) return;
+  const first = rows[0];
+  showModal(`
+    <div class="modal-title">✏️ 编辑采购清单</div>
+    <div class="form-group"><label>清单名称</label><input type="text" class="input" id="pbe_name" value="${escAttr(first.batchName || '')}"></div>
+    ${billDateFields('pbe', first)}
+    ${billStatusFields('pbe', first)}
+    <div class="form-group"><label>单据编号</label><input type="text" class="input" id="pbe_billno" value="${escAttr(first.billNo || '')}" placeholder="可留空"></div>
+    <div class="form-group"><label>备注</label><textarea class="input" id="pbe_note" rows="2">${escHtml(first.note || '')}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="savePurchaseBatchEdit('${batchId}')">保存</button>
+    </div>`);
+}
+function savePurchaseBatchEdit(batchId) {
+  const val = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  const arr = Store.getPurchases();
+  let n = 0;
+  arr.forEach(r => {
+    if (purchaseBatchIdOf(r) !== batchId) return;
+    r.batchName = val('pbe_name').trim() || r.batchName;
+    r.billNo = val('pbe_billno').trim();
+    r.orderDate = val('pbe_order');
+    r.deliveryDate = val('pbe_delivery');
+    r.billDate = val('pbe_bill');
+    r.payStatus = val('pbe_pay') || 'unsettled';
+    r.makeStatus = val('pbe_make') || 'unmade';
+    r.note = val('pbe_note');
+    n++;
+  });
+  Store.savePurchases(arr);
+  closeModal();
+  refreshBillGroups('purchases');
+  showToast('清单信息已更新（' + n + ' 个产品）');
+}
+function openPurchaseAddProducts(batchId) {
+  const products = Store.getProducts();
+  if (!products.length) { noProductModal('products'); return; }
+  const rows = Store.getPurchases().filter(r => purchaseBatchIdOf(r) === batchId);
+  if (!rows.length) return;
+  const first = rows[0];
+  const seed = {
+    batchName: first.batchName, billNo: first.billNo, orderDate: first.orderDate,
+    deliveryDate: first.deliveryDate, billDate: first.billDate,
+    payStatus: first.payStatus, makeStatus: first.makeStatus, note: first.note
+  };
+  pbDraft = { mode: 'append', batchId, items: [], common: pbCommonFields(seed), batchCreatedAt: first.batchCreatedAt || '', kw: '' };
+  showModal(pbModalHtml('✏️ 追加产品到清单 · ' + (first.batchName || '')));
+  renderPbSearchOptions('');
+  renderPbItems();
+}
+function deletePurchaseBatch(batchId) {
+  Store.savePurchases(Store.getPurchases().filter(r => purchaseBatchIdOf(r) !== batchId));
+  billSel('purchases').clear();
+  refreshBillGroups('purchases');
+  showToast('采购清单已删除');
 }
 
 function openPurchaseModal(id) {
@@ -8447,8 +8893,14 @@ function savePurchase(id) {
   const total = lines.length ? lines.reduce((n, l) => n + (Number(l.qty) || 0) * (Number(l.unitPrice) || 0), 0) : common.qty * common.unitPrice;
   const rec = Object.assign({
     id: id || uid(), productId, productName: p.name, spec: productSpec(p),
-    lines, total: +total.toFixed(2), createdAt: Store.todayKey()
+    lines, total: +total.toFixed(2), createdAt: r ? r.createdAt : Store.todayKey()
   }, common);
+  // 编辑清单里的单个产品时保留所属批次，避免产品掉出清单
+  if (r && r.batchId) {
+    rec.batchId = r.batchId;
+    rec.batchName = r.batchName;
+    rec.batchCreatedAt = r.batchCreatedAt;
+  }
   const arr = Store.getPurchases();
   if (id) {
     const i = arr.findIndex(x => x.id === id);
@@ -9507,7 +9959,7 @@ function renderPoOrders(container) {
     <div class="page-header">
       <span class="ph-icon">${DOG_ICONS['po-orders']}</span>
       <span class="ph-title">采购订单</span>
-      <span class="ph-desc">上传订单附件明细 · 自动匹配产品库并统一汇总 · 可导入采购清单或导出 Excel</span>
+      <span class="ph-desc">上传订单附件明细 · 自动匹配产品库并统一汇总 · 可导出 Excel（添加产品请到「采购清单」导入）</span>
     </div>
     <div class="card">
       <div class="section-head">
@@ -9703,8 +10155,7 @@ function renderPoPreview() {
       <div class="form-actions">
         <button class="btn btn-text btn-sm" onclick="clearPoDraft()">清空</button>
         <button class="btn btn-outline btn-sm" onclick="savePoBatch()">保存加工记录</button>
-        <button class="btn btn-primary btn-sm" onclick="importPoToPurchases()">导入采购清单</button>
-        <button class="btn btn-outline btn-sm" onclick="exportPoDraft()">导出 Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="exportPoDraft()">导出 Excel</button>
       </div>
     </div>`;
 }
@@ -9825,42 +10276,6 @@ function deletePoBatch(id) {
   Store.savePoOrders(Store.getPoOrders().filter(x => x.id !== id));
   renderPage('po-orders');
 }
-function importPoToPurchases() {
-  if (!poDraft || !poDraft.rows.length) { showToast('没有可导入的数据'); return; }
-  const arr = Store.getPurchases();
-  let added = 0, noCost = 0;
-  // 按产品名汇总后导入：数量/金额按产品归并，成本单价取产品库录入的成本单价
-  poAggregateRows(poDraft.rows).forEach(a => {
-    const qty = Number(a.qty) || 0;
-    if (!(qty > 0)) return;
-    const p = a.productId ? Store.getProducts().find(x => x.id === a.productId) : null;
-    const libCost = p ? Number((p.values || {}).costPrice) : 0;
-    // 成本单价优先取产品库录入值；产品库没有该产品时退回附件里的价格
-    const price = libCost > 0 ? libCost : (Number(a.unitPrice) || 0);
-    if (!(libCost > 0)) noCost++;
-    // 款式 / 颜色 / 尺码 分开填入；生成结构化明细，便于后续按规格追踪
-    const style = a.style || '';
-    const color = a.color || '';
-    const size = a.size || '';
-    const lines = [{ style, color, size, qty, unitPrice: price }];
-    arr.push({
-      id: uid(), productId: p ? p.id : '', productName: a.name,
-      spec: [style, color, size].filter(Boolean).join(' / '),
-      style, color, size,
-      lines,
-      qty, unitPrice: price, total: +(qty * price).toFixed(2),
-      billNo: a.billNo || '', orderDate: a.orderDate || '', deliveryDate: a.deliveryDate || '', billDate: '',
-      payStatus: 'unsettled', makeStatus: 'unmade',
-      note: a.supplier ? '供应商：' + a.supplier : '', createdAt: Store.todayKey()
-    });
-    added++;
-  });
-  Store.savePurchases(arr);
-  showToast(noCost
-    ? '已导入 ' + added + ' 条到采购清单（' + noCost + ' 条未匹配产品库，成本价沿用附件价格）'
-    : '已导入 ' + added + ' 条到采购清单，成本单价取自产品库');
-}
-
 /* ---- 结算材料 ---- */
 let settleDraft = { salesId: '', lines: [] };
 
@@ -10220,17 +10635,19 @@ function saveBillList(page, arr) {
 function refreshBillGroups(page) {
   const host = document.getElementById('bill-date-groups-' + page);
   if (!host) { renderPage(page); return; }
-  host.innerHTML = billDateGroupsInner(page, billListOf(page));
+  host.innerHTML = page === 'purchases' ? purchaseBatchGroupsInner() : billDateGroupsInner(page, billListOf(page));
 }
 function toggleBillSel(page, id, checked) {
   const sel = billSel(page);
   if (checked) sel.add(id); else sel.delete(id);
   refreshBillGroups(page);
 }
-function toggleBillSelGroup(page, date, checked) {
+function toggleBillSelGroup(page, groupKey, checked) {
   const sel = billSel(page);
   billListOf(page)
-    .filter(r => ((r.orderDate || '').trim() || '未填写日期') === date)
+    .filter(r => page === 'purchases'
+      ? purchaseBatchIdOf(r) === groupKey
+      : ((r.orderDate || '').trim() || '未填写日期') === groupKey)
     .forEach(r => { if (checked) sel.add(r.id); else sel.delete(r.id); });
   refreshBillGroups(page);
 }
